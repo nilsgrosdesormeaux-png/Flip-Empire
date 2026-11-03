@@ -1356,8 +1356,8 @@ function computeNb(){
 const CITY_MULT=c=>Math.pow(12,c);
 const propBase=o=>(o.t==='apt'?9000:900)*o.f*CITY_MULT(S.city)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
 const propPrice=o=>Math.round(propBase(o)*Math.pow(1.1,ownedCount()));
-const propRent=(o,l)=>propBase(o)*.035*[0,1,2.2,4,9][l]*blockMult(o);
-const renovCost=(o,l)=>Math.round(propBase(o)*.8*l);
+const propRent=(o,l)=>propBase(o)*.035*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
+const renovCost=(o,l)=>Math.round(propBase(o)*([0,1.2,3][l]||3));
 const dailyRent=()=>propsList().reduce((a,o)=>a+(S.props[o.pid]?propRent(o,S.props[o.pid]):0),0);
 const propName=o=>TH_.dome?(o.t==='apt'?'Module d’habitation':'Dôme résidentiel'):o.t==='apt'?`Immeuble de ${o.f} étages`:o.f>1?`Maison de ${o.f} étages`:'Petite maison';
 const nearBiz=o=>BIZ.filter(b=>S.biz[b.id].lvl&&Math.max(Math.abs(o.x+o.w/2-(b.p.x+b.p.w/2)),Math.abs(o.y+o.d/2-(b.p.y+b.p.d/2)))<=3.5);
@@ -2716,7 +2716,7 @@ function blockCost(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);let
 function buyBlock(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);if(!l.length)return;const c=blockCost(id);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
   spend(c);l.forEach(o=>{S.props[o.pid]=1;S.counts.propsBought++});computeNb();addXP(10*l.length);sfx('rank');checkTrophies();
   toast(`🏘️ Îlot ${id} entièrement à toi : loyers ×1,5 et boutiques voisines +10 % !`)}
-const rebuildCost=o=>Math.round(propBase(o)*5);
+const rebuildCost=o=>Math.round(propBase(o)*8);
 function rebuild(pid){const o=DECOR.find(x=>x.pid===pid);if(!o||S.props[pid]!==3)return;const c=rebuildCost(o);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
   spend(c);S.props[pid]=4;S.propUp[pid]=o.t==='apt'?4:3;computeNb();sfx('rank');addXP(15);
   const [X,Y]=worldToPage(o.x+o.w/2,o.y+o.d/2,(o.f+S.propUp[pid])*FH);burstAt(X,Y,6,'🏗️ Nouvelle résidence !');toast(`🏗️ Reconstruite en résidence moderne : loyer ×9 par rapport au départ.`)}
@@ -3090,6 +3090,301 @@ Object.assign(EV,{
 });
 ['nantes_mecene','nantes_crue','lyon_guide','lyon_lumieres','paris_star','paris_touristes','londres_royal','ny_tuyau','ny_broadway','tokyo_seisme','tokyo_figurine','dubai_expo','dubai_sable','lune_meteores','lune_famille','magnat_ipo','magnat_fondation','magnat_rachat','magnat_paparazzi','retraite'].forEach(k=>EV_POOL.push(k));
 ['banque','influ','tendance','vol','panne','hygiene','celebrite','fete','stagiaire','journaliste','augmentation','maman','sport','bilan','ado'].forEach(k=>{if(EV[k])EV[k].cool=EV[k].cool||(k==='maman'||k==='ado'?18:28)});
+/* ===== AGENT ECO ===== */
+/* Club de foot : recettes de match, progression longue, mercato négocié, forme et blessures.
+   Carte : stade qui grandit avec le niveau, immeubles rénovés plus beaux. */
+const ECO_ST=[
+  {n:'Terrain municipal',cap:300,c:0,d:0,m:0},
+  {n:'Main courante et buvette',cap:800,c:6000,d:0,m:30},
+  {n:'Tribune de 2 000 places',cap:2000,c:30000,d:0,m:120},
+  {n:'Tribunes couvertes (5 000 places)',cap:5000,c:150000,d:1,m:500},
+  {n:'Stade de 10 000 places',cap:10000,c:600000,d:2,m:2000},
+  {n:'Stade de 20 000 places et projecteurs',cap:20000,c:2.5e6,d:3,m:8000},
+  {n:'Grand stade de 40 000 places',cap:40000,c:1e7,d:4,m:30000},
+  {n:'Arène de 60 000 places, toit et écran géant',cap:60000,c:4e7,d:5,m:110000}];
+const ECO_CO=[{n:'Entraîneur bénévole',c:0,w:0},{n:'Éducateur diplômé',c:8000,w:120},{n:'Entraîneur diplômé',c:40000,w:500},{n:'Ancien pro reconverti',c:200000,w:2200},
+  {n:'Entraîneur de Ligue 2',c:900000,w:9000},{n:'Coach de renom',c:4e6,w:36000},{n:'Manager international',c:1.6e7,w:140000}];
+const ECO_SHOP=[{n:'Aucune',c:0,k:0},{n:'Stand de maillots',c:12000,k:1},{n:'Boutique officielle',c:90000,k:2.5},{n:'Mégastore',c:600000,k:5},{n:'Boutique en ligne mondiale',c:5e6,k:9}];
+const ECO_MED=[{n:'Trousse de secours',c:0,w:0},{n:'Kiné à mi-temps',c:20000,w:100},{n:'Staff médical',c:250000,w:1200},{n:'Centre de performance',c:3e6,w:15000}];
+const ECO_ACAD=[{n:'Aucun',c:0},{n:'Petit',c:40000},{n:'Réputé',c:400000},{n:'Élite',c:4e6}];
+const ECO_TIX=[{n:'Populaire',p:.6,d:1.2,f:1.03},{n:'Normal',p:1,d:1,f:1},{n:'Élevé',p:1.5,d:.78,f:.99},{n:'Premium',p:2.4,d:.52,f:.97}];
+const ECO_TIXB=[5,7,10,14,20,30],ECO_BUV=[2,2.5,3,4,5,6],ECO_TV=[0,200,1500,12000,120000,900000],ECO_DIVW=[1,1.7,3.2,7,15,34];
+const ECO_KITS=[['#D7263D','#FFFFFF'],['#1F4E9E','#F7E733'],['#17834A','#FFFFFF'],['#6A1B9A','#F7C82F'],['#1E2B2A','#E53935'],['#F57C00','#1E2B2A'],['#00A3E0','#FFFFFF']];
+const ECO_SPONS=['Boulangerie du Coin','Garage du Centre','Pizzeria Bella','Assurances Horizon','BTP Durand','Banque Régionale','Opérateur Flash','Air Azur','Énergies Nova','Géant de la Tech'];
+function ecoHash(s){let h=7;for(const ch of String(s||'x'))h=(h*31+ch.charCodeAt(0))>>>0;return h}
+function ecoM(){return CITY_MULT(S.city||0)}
+function ecoPM(){return 1/(S.speed||1)}
+function ecoC(){const C=S.club;
+  if(!C.ecoV){C.ecoV=1;if(C.own){C.stade=[0,2,4,6][clamp(C.stade|0,0,3)];C.coach=[0,2,3,5][clamp(C.coach|0,0,3)]}}
+  if(C.tix==null)C.tix=1;C.shop=C.shop||0;C.med=C.med||0;C.acad=C.acad||0;C.signs=C.signs||0;C.seasonRev=C.seasonRev||0;
+  if(C.kit==null)C.kit=ecoHash(C.name)%ECO_KITS.length;
+  C.stade=clamp(C.stade|0,0,ECO_ST.length-1);C.coach=clamp(C.coach|0,0,ECO_CO.length-1);C.div=clamp(C.div|0,0,DIVS.length-1);
+  (C.squad||[]).forEach(p=>{if(p.fit==null)p.fit=70;if(p.inj==null)p.inj=0});
+  return C}
+function ecoKit(){const C=S.club;return ECO_KITS[(C.kit==null?ecoHash(C.name):C.kit)%ECO_KITS.length]}
+function ecoEff(p){return p.inj>0?Math.round(p.note*.55):p.note+Math.round(((p.fit==null?70:p.fit)-70)/8)}
+function ecoStr(){const c=S.club;if(!c.squad||!c.squad.length)return c.str;return Math.round(c.squad.reduce((a,p)=>a+ecoEff(p),0)/c.squad.length+(c.coach|0)*2.5+((c.morale||50)-50)/10)}
+function ecoPrice(note,div){return Math.round(80*Math.pow(note/10,3.6)*Math.pow(1+div,1.6)*ecoM()*(hasP('foot')?.85:1))}
+function ecoWage(p,div){return .0035*Math.pow(p.note,3)*ECO_DIVW[div]*ecoM()}
+function ecoCosts(){const C=ecoC(),M=ecoM();const pl=Math.round((C.squad||[]).reduce((a,p)=>a+ecoWage(p,C.div),0)),staff=Math.round((ECO_CO[C.coach].w+ECO_MED[C.med].w)*M),up=Math.round(ECO_ST[C.stade].m*M);return{pl,staff,up,tot:pl+staff+up}}
+function ecoGate(home,res){const C=ecoC(),M=ecoM(),st=ECO_ST[C.stade],T=ECO_TIX[C.tix]||ECO_TIX[1],d=C.div;
+  const att=home?Math.max(0,Math.min(st.cap,Math.round(C.fans*T.d*(.75+(C.morale||50)/200)))):0;
+  const g={home,att,cap:st.cap,tix:Math.round(att*ECO_TIXB[d]*T.p*M),buv:Math.round(att*(ECO_BUV[d]+.4*C.stade)*M),
+    shop:Math.round((home?att:C.fans*.15)*ECO_SHOP[C.shop].k*(1+d*.15)*M),
+    spons:C.spons?Math.round(C.spons.amt*(C.spons.b?(res==='W'?1.7:.45):1)):0,tv:Math.round(ECO_TV[d]*M)};
+  g.tot=g.tix+g.buv+g.shop+g.spons+g.tv;return g}
+function ecoReluct(o){const C=S.club;return clamp((o.note-(lvlStr(C.div)+8))/45-Math.min(.15,(C.stade|0)*.02),0,.75)}
+
+/* --- Club : redéfinitions --- */
+function genOffers(){const C=ecoC(),sq=C.squad||[],avg=sq.length?sq.reduce((a,p)=>a+p.note,0)/sq.length:30;
+  C.offers=[0,1,2,3].map(()=>{const note=clamp(Math.round(avg+rand(-2,14)),15,99);return{name:pick(PNAMES),poste:pick(POSTES),note,price:ecoPrice(note,C.div)}})}
+function buyClub(nm){const c=clubCost2();if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);
+  Object.assign(S.club,{own:true,name:nm,div:0,stade:0,fans:150,coach:0,acad:0,pts:0,played:0,seasons:[],morale:60,form:[],match:null,
+    ecoV:1,tix:1,shop:0,med:0,spons:null,sOff:null,lastGate:null,seasonRev:0,signs:0,kit:ecoHash(nm)%ECO_KITS.length});
+  S.club.squad=POSTES.map(p=>({poste:p,name:pick(PNAMES),note:randInt(20,32),fit:70,inj:0}));S.club.str=ecoStr();S.club.table=genTable(0);genOffers();
+  sfx('rank');addXP(30);closeModal();S.tab='quetes';S.qTab='club';toast(`⚽ Tu es le nouveau président de ${nm} ! Premier match en août.`)}
+function buyPlayer(i){ecoNego(i,1)}
+function ecoNego(i,v){const C=ecoC(),o=C.offers&&C.offers[i];if(!o)return;
+  if(C.signs>=2){toast('📋 Deux signatures par mois au maximum. Reviens le mois prochain.');sfx('no');return}
+  const pay=Math.round(o.price*[.8,1,1.2][v]);if(S.cash<pay){toast(`Il te manque ${fmt(pay-S.cash)}.`);sfx('no');return}
+  const rel=ecoReluct(o),pr=clamp([.4,.8,.97][v]-rel,.03,.97);
+  if(Math.random()<pr){spend(pay);const k=C.squad.findIndex(p=>p.poste===o.poste),old=C.squad[k],refund=Math.round(ecoPrice(old.note,C.div)*.35);earn(refund);
+    C.squad[k]={poste:o.poste,name:o.name,note:o.note,fit:75,inj:0};C.offers.splice(i,1);C.signs++;C.str=ecoStr();C.morale=clamp((C.morale||50)+5,0,100);sfx('rank');
+    toast(`✍️ ${o.name} signe pour ${fmt(pay)} ! ${old.name} est revendu ${fmt(refund)}.`)}
+  else{if(v===0&&!o.tried){o.tried=1;o.price=Math.round(o.price*1.1);toast(`🙅 ${o.name} refuse ton offre et demande maintenant ${fmt(o.price)}.`)}
+    else{C.offers.splice(i,1);toast(`🙅 ${o.name} ${rel>.25?'ne veut pas jouer en '+DIVS[C.div]:'signe dans un autre club'}.`)}sfx('no')}}
+function autoScore(){const C=S.club,me=ecoStr()+(C.match.home?3:0),op=C.match.oppStr;let gf=0,ga=0;for(let t=0;t<30;t++){if(Math.random()<.045*Math.exp((me-op)/25))gf++;if(Math.random()<.045*Math.exp((op-me)/25))ga++}return [gf,ga]}
+function watchMatch(){const C=S.club;if(!C.match||C.match.done)return;
+  LMX={min:0,gf:0,ga:0,lines:[],tac:null,me:ecoStr()+(C.match.home?3:0),op:C.match.oppStr,half:false,atk:1,def:1};
+  lmRender();clearInterval(lmT);lmT=setInterval(lmStep,320);sfx('event')}
+function clubMonth(pm,m){
+  const C=S.club;if(!C.own)return;ecoC();
+  if(C.match&&!C.match.done)finishMatch(autoScore(),true);
+  const k=ecoCosts(),due=Math.round(k.tot*pm);
+  if(due>0){if(S.cash>=due)spend(due);else{const miss=due-Math.max(0,S.cash);S.cash=0;C.morale=clamp((C.morale||50)-12,0,100);if(S.started)toast(`💸 Salaires du club payés en retard (${fmt(miss)} manquants) : le moral chute.`)}dispCash=Math.min(dispCash,S.cash)}
+  C.lastCosts=due;
+  if(m===5&&C.played>0)endSeason();
+  C.squad.forEach(p=>{if(p.inj>0)p.inj--;
+    if(Math.random()<.2+C.coach*.08)p.note=clamp(p.note+1,0,99);
+    p.fit=clamp(Math.round(p.fit+(70-p.fit)*.25+rand(-10,10)+((C.morale||50)-50)/12+C.med*1.5),30,100);
+    if(isSeason(m)&&!p.inj&&Math.random()<Math.max(.012,.06-C.med*.016)){p.inj=Math.max(1,randInt(1,3)-(C.med>=2?1:0));if(S.started){const n=p.name,d=p.inj;setTimeout(()=>toast(`🚑 ${n} est blessé : absent ${d} mois.`),1200)}}});
+  C.str=ecoStr();C.signs=0;genOffers();
+  if(isSeason(m)){const opp=pick(C.table.filter(t=>!t.me));C.match={opp:opp.n,oppStr:opp.str,done:false,home:Math.random()<.5};if(S.started)setTimeout(()=>toast(`⚽ Jour de match : ${C.name} contre ${opp.n} ! Regarde-le en direct.`),2500)}else C.match=null;
+}
+function finishMatch([gf,ga],auto){
+  const C=ecoC(),M=C.match;if(!M||M.done)return;M.done=true;M.gf=gf;M.ga=ga;const res=gf>ga?'W':gf===ga?'D':'L';
+  C.played++;const me=C.table.find(t=>t.me);me.pts+=res==='W'?3:res==='D'?1:0;
+  const others=C.table.filter(t=>!t.me&&t.n!==M.opp);const opp=C.table.find(t=>t.n===M.opp);if(opp)opp.pts+=res==='L'?3:res==='D'?1:0;
+  others.sort(()=>Math.random()-.5);for(let i=0;i+1<others.length;i+=2){const a=others[i],b=others[i+1],r=Math.random()-.5+(a.str-b.str)/60;if(r>.12)a.pts+=3;else if(r<-.12)b.pts+=3;else{a.pts++;b.pts++}}
+  if(others.length%2)others[others.length-1].pts+=randInt(0,3);
+  const g=ecoGate(M.home,res),pm=ecoPM();['tix','buv','shop','spons','tv','tot'].forEach(k=>g[k]=Math.round(g[k]*pm));
+  if(g.tot>0)earn(g.tot);C.lastGate=g;C.seasonRev=(C.seasonRev||0)+g.tot;
+  const st=ECO_ST[C.stade],T=ECO_TIX[C.tix]||ECO_TIX[1];
+  C.fans=Math.round(C.fans*(res==='W'?1.05:res==='L'?.98:1.01)*T.f);
+  if(C.fans<st.cap*1.2)C.fans+=Math.round((st.cap*1.2-C.fans)*(.03+.012*C.div)*(res==='L'?.5:1));
+  C.fans=Math.max(80,C.fans);C.morale=clamp((C.morale||50)+(res==='W'?8:res==='L'?-8:0),0,100);
+  C.form=(C.form||[]).concat(res).slice(-5);if(res==='W')S.rep=clamp(S.rep+.8,0,100);
+  C.last={opp:M.opp,gf,ga,res};
+  if(S.started&&S.tab==='ville')burstWorld(STADE.x+STADE.w/2,STADE.y+STADE.d/2,40,4,'Recette +'+fmt(g.tot));
+  if(auto&&S.started)toast(`⚽ ${C.name} ${gf}-${ga} ${M.opp}. ${res==='W'?'Victoire !':res==='D'?'Match nul.':'Défaite.'} 🎟️ Recette du match : +${fmt(g.tot)}`);
+}
+function endSeason(){
+  const C=ecoC(),tbl=C.table.slice().sort((a,b)=>b.pts-a.pts),rank=tbl.findIndex(t=>t.me)+1;let msg,up=false,good=false;
+  if(rank<=2&&C.div<DIVS.length-1){C.div++;up=true;good=true;C.fans=Math.round(C.fans*1.35);msg=`🎉 ${rank===1?'Champion':'2e'} ! Promotion en ${DIVS[C.div]} !`;S.rep=clamp(S.rep+6,0,100)}
+  else if(rank===1&&C.div===DIVS.length-1){good=true;msg='🏆 Champion de Ligue 1 !';FXC=[];trophy('t_champion');S.rep=clamp(S.rep+15,0,100)}
+  else if(rank>=9&&C.div>0){C.div--;msg=`😞 ${rank}e : relégation en ${DIVS[C.div]}.`;S.rep=clamp(S.rep-4,0,100)}
+  else msg=`${rank}e : maintien en ${DIVS[C.div]}.`;
+  C.squad.forEach(p=>p.note=clamp(p.note+C.acad*2,0,99));
+  const rev=C.seasonRev||0;
+  C.seasons.unshift({y:yearOf(S.day)-1,div:DIVS[up?C.div-1:C.div],pts:tbl.find(t=>t.me).pts,msg});if(C.seasons.length>12)C.seasons.length=12;
+  queueModal(`<div class="reveal-box pop">${good?'🏆':'⚽'}</div><h2>Fin de saison</h2><p><strong>${esc(C.name)}</strong> termine ${rank}e avec ${tbl.find(t=>t.me).pts} points.</p><p>Recettes des matchs cette saison : <strong>${fmt(rev)}</strong>.${C.spons?` Le contrat avec ${esc(C.spons.n)} est terminé : cherche un nouveau sponsor.`:''}</p><div class="verdict ${good?'good':/relégation/.test(msg)?'bad':'mid'}" style="margin-top:12px">${msg}</div><button class="btn big" style="margin-top:16px" data-a="close">Continuer</button>`);
+  C.pts=0;C.played=0;C.table=genTable(C.div);C.table[0].n=C.name;C.spons=null;C.sOff=null;C.seasonRev=0;
+}
+function lmRender(end){
+  const C=S.club,M=C.match;if(!LMX)return;
+  const res=end?(LMX.gf>LMX.ga?['good','🎉 Victoire !']:LMX.gf===LMX.ga?['mid','🤝 Match nul']:['bad','😞 Défaite']):null,g=C.lastGate;
+  modal(`<div class="lmatch"><p class="hint">${DIVS[C.div]}, ${M.home?'à domicile':'à l’extérieur'}</p>
+    <div class="score"><div><b>${esc(C.name)}</b></div><div class="sc">${LMX.gf} - ${LMX.ga}</div><div><b>${esc(M.opp)}</b></div></div>
+    <div class="life-bar"><i style="width:${LMX.min/90*100}%"></i></div><p class="hint" style="text-align:center">${LMX.min}′</p>
+    ${LMX.half&&!LMX.tac?`<div class="life-dec"><h3>Mi-temps : ta consigne ?</h3><div class="ev-ch"><button class="btn ghost ev-btn" data-a="lmtac" data-v="atk">⚔️ Attaquer à outrance (plus de buts… des deux côtés)</button><button class="btn ghost ev-btn" data-a="lmtac" data-v="def">🛡️ Défendre le résultat</button><button class="btn ghost ev-btn" data-a="lmtac" data-v="talk">🗣️ Discours de vestiaire</button></div></div>`:''}
+    <div class="lm-feed">${LMX.lines.slice(0,8).map(l=>`<p class="${l.g?'lm-g':l.b?'lm-b':''}"><b>${l.m}′</b> ${l.t}</p>`).join('')}</div>
+    ${res?`<div class="verdict ${res[0]}" style="margin-top:10px">${res[1]}</div>${g?`<div class="panel" style="margin-top:10px;text-align:left">${ecoGateHTML(g)}</div>`:''}<button class="btn big" style="margin-top:12px" data-a="lmclose">Retour</button>`:''}</div>`);
+}
+function ecoGateHTML(g){const r=(l,v)=>v?`<div class="kv"><span>${l}</span><b>+${fmt(v)}</b></div>`:'';
+  return (g.home?r(`🎟️ Billetterie (${g.att.toLocaleString('fr-FR')} spectateurs sur ${g.cap.toLocaleString('fr-FR')} places)`,g.tix)+r('🌭 Buvette',g.buv):'<p class="hint">Match à l’extérieur : pas de billetterie ni de buvette.</p>')
+    +r('👕 Boutique du club',g.shop)+r('🤝 Sponsor maillot',g.spons)+r('📺 Droits TV',g.tv)+`<div class="kv"><span><strong>Recette du match</strong></span><b class="pos">+${fmt(g.tot)}</b></div>`}
+function ecoUp(k){const C=ecoC(),M=ecoM();let L,cur,label;
+  if(k==='stade'){L=ECO_ST;cur=C.stade}else if(k==='coach'){L=ECO_CO;cur=C.coach}else if(k==='shop'){L=ECO_SHOP;cur=C.shop}else if(k==='med'){L=ECO_MED;cur=C.med}else if(k==='acad'){L=ECO_ACAD;cur=C.acad}else return;
+  const n=L[cur+1];if(!n)return;if(n.d!=null&&C.div<n.d){toast(`🏟️ ${n.n} : il faut d’abord jouer en ${DIVS[n.d]}.`);sfx('no');return}
+  const c=Math.round(n.c*M);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);
+  if(k==='stade'){C.stade++;C.fans=Math.round(C.fans*1.15);label=`🏟️ ${n.n} : plus de places, plus de recettes. Regarde-le grandir sur la carte !`;sfx('rank')}
+  else{C[k]++;label={coach:`🧑‍🏫 ${n.n} engagé : les joueurs progressent plus vite.`,shop:`👕 ${n.n} ouverte : chaque match rapporte plus.`,med:`🩺 ${n.n} : moins de blessures, meilleure forme.`,acad:`🎓 Centre de formation ${n.n.toLowerCase()} : +2 par niveau pour chaque joueur en fin de saison.`}[k];sfx('good')}
+  C.str=ecoStr();toast(label)}
+function clubAct(k){ecoUp(k)}
+function ecoSponsOffers(){const C=ecoC(),M=ecoM(),base=(C.fans*2+ECO_ST[C.stade].cap)*Math.pow(1+C.div,1.3)*M,used=new Set();
+  C.sOff=[0,1,2].map(i=>{let n;do{n=ECO_SPONS[clamp(C.div*2+randInt(-1,3),0,ECO_SPONS.length-1)]}while(used.has(n)&&used.size<5);used.add(n);return{n,amt:Math.round(base*rand(.75,1.15)),b:i===2}});C.sOffDay=S.day}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="eco_"]');if(!b||b.disabled||!S.club)return;const a=b.dataset.a.slice(4),v=b.dataset.v;
+  if(a==='up')ecoUp(v);
+  else if(a==='tix'){ecoC().tix=clamp(+v,0,ECO_TIX.length-1);sfx('tap')}
+  else if(a==='sfind'){const C=ecoC();if(C.sOffDay===S.day&&C.sOff)return;ecoSponsOffers();sfx('tap')}
+  else if(a==='spick'){const C=ecoC(),o=C.sOff&&C.sOff[+v];if(!o||C.spons)return;C.spons=o;C.sOff=null;sfx('rank');toast(`🤝 ${o.n} s’affiche sur ton maillot jusqu’à la fin de la saison.`)}
+  else if(a==='nego')ecoNego(+b.dataset.i,+v);
+  else if(a==='kit'){const C=ecoC();C.kit=(C.kit+1)%ECO_KITS.length;sfx('tap')}
+  else return;
+  render()});
+function vClub(){
+  const C=S.club;
+  if(!C.own)return `<div class="clubhero"><div class="ch-ic">⚽</div><h2>Le club de la ville est à vendre</h2><p>Il végète en District, le stade est vide, les supporters attendent un sauveur. Président d’un club, c’est la gloire… et les factures.</p><div class="kv" style="margin-top:10px"><span>Prix du rachat</span><b>${fmt(clubCost2())}</b></div><button class="btn big go" style="margin-top:12px" data-a="clubbuy" ${S.cash>=clubCost2()?'':'disabled'}>⚽ Racheter le club</button></div>`;
+  ecoC();const MM=ecoM(),tbl=C.table.slice().sort((a,b)=>b.pts-a.pts),rank=tbl.findIndex(t=>t.me)+1,M=C.match,k=ecoCosts(),g=C.lastGate,est=ecoGate(true,'D'),kit=ecoKit();
+  const upBtn=(key,L,cur,ic)=>{const n=L[cur+1];if(!n)return '';const c=Math.round(n.c*MM),lock=n.d!=null&&C.div<n.d,ok=!lock&&S.cash>=c;
+    return `<button class="btn small ${ok?'go':''}" data-a="eco_up" data-v="${key}" data-cost="${c}" ${ok?'':'disabled'}>${ic} ${n.n} (${fmt(c)})${lock?` · dès ${DIVS[n.d]}`:''}</button>`};
+  const sp=C.spons;
+  return `<div class="clubhero"><div class="ch-ic">⚽</div><h2>${esc(C.name)}</h2><p class="hint">${DIVS[C.div]}, ${rank}e, ${C.fans.toLocaleString('fr-FR')} supporters</p>
+    <div class="form">${(C.form||[]).map(r=>`<span class="f${r}">${r==='W'?'V':r==='D'?'N':'D'}</span>`).join('')||'<span class="hint">Pas encore de match</span>'}</div>
+    ${gaugeHTML('⚽ Niveau',ecoStr())}${gaugeHTML('🔥 Moral',C.morale||50)}
+    ${M&&!M.done?`<div class="nextm"><b>Ce mois-ci : ${esc(C.name)} – ${esc(M.opp)}</b><span class="hint">${M.home?`À domicile : recette estimée ${fmt(est.tot*ecoPM())}`:'À l’extérieur'}, adversaire niveau ${M.oppStr}</span><button class="btn big pinkb" data-a="watch">📺 Regarder le match en direct</button></div>`:M&&M.done?`<p class="review-mini">Ce mois-ci : ${esc(C.name)} <b>${M.gf}-${M.ga}</b> ${esc(M.opp)}</p>`:'<p class="review-mini">Trêve estivale : c’est le moment du mercato !</p>'}</div>
+  <div class="sec-head"><h2>💰 Recette du dernier match</h2><p>Saison : +${fmt(C.seasonRev||0)}</p></div>
+  <div class="panel">${g?ecoGateHTML(g):'<p class="hint">Chaque match rapporte : billetterie et buvette à domicile, boutique, sponsor et droits TV.</p>'}
+    <div class="kv" style="margin-top:6px"><span>Prochain match à domicile (estimation)</span><b>${fmt(est.tot*ecoPM())}</b></div></div>
+  <div class="sec-head"><h2>🎫 Prix des places</h2><p>${est.att.toLocaleString('fr-FR')} spectateurs attendus sur ${ECO_ST[C.stade].cap.toLocaleString('fr-FR')}</p></div>
+  <div class="panel"><div class="ordrow">${ECO_TIX.map((t,i)=>`<button class="chip ${C.tix===i?'onchip':''}" data-a="eco_tix" data-v="${i}">${t.n} ${fmt(ECO_TIXB[C.div]*t.p*MM)}</button>`).join('')}</div>
+    <p class="hint" style="margin-top:6px">Places pas chères : stade plein et plus de supporters. Places chères : plus d’argent par spectateur, mais moins de monde.</p></div>
+  <div class="sec-head"><h2>🤝 Sponsor maillot</h2><p>${sp?'Contrat jusqu’en fin de saison':'Aucun sponsor'}</p></div>
+  <div class="panel">${sp?`<div class="kv"><span>${esc(sp.n)}${sp.b?' (prime à la victoire)':''}</span><b>${sp.b?fmt(sp.amt*.45)+' à '+fmt(sp.amt*1.7):fmt(sp.amt)} par match</b></div>`
+    :C.sOff?C.sOff.map((o,i)=>`<div class="pl"><span class="pl-n">${esc(o.n)}<br><span class="hint">${o.b?`${fmt(o.amt*.45)} par match, ${fmt(o.amt*1.7)} si victoire`:`${fmt(o.amt)} par match, garanti`}</span></span><button class="btn small go" data-a="eco_spick" data-v="${i}">Signer</button></div>`).join('')
+    :`<button class="btn small go" data-a="eco_sfind">🔎 Chercher un sponsor</button><p class="hint" style="margin-top:6px">Plus tu as de supporters, de places et une bonne division, plus le contrat est gros.</p>`}</div>
+  <div class="sec-head"><h2>🏆 Classement</h2><p>2 premiers montent, 2 derniers descendent</p></div>
+  <div class="panel"><table class="ltable">${tbl.map((t,i)=>`<tr class="${t.me?'me':''} ${i<2?'up':i>=8?'dn':''}"><td>${i+1}</td><td>${esc(t.n)}</td><td><b>${t.pts}</b></td></tr>`).join('')}</table></div>
+  <div class="sec-head"><h2>👥 Effectif</h2><p>Salaires ${fmt(k.pl)}/mois</p></div>
+  <div class="panel">${C.squad.map(p=>`<div class="pl"><span class="pl-p">${p.poste}</span><span class="pl-n">${esc(p.name)} ${p.inj?`<span class="hint">🚑 ${p.inj} mois</span>`:p.fit>=82?'🔥':p.fit<50?'🥶':''}</span><div class="gbar" style="flex:1"><i style="width:${p.note}%;background:${p.inj?'#C2362B':p.note>=70?'#C9A227':'#17834A'}"></i></div><b>${p.note}</b></div>`).join('')}
+    <p class="hint" style="margin-top:6px">🔥 en forme, 🥶 en méforme, 🚑 blessé (joue à moitié de son niveau).</p></div>
+  <div class="sec-head"><h2>✍️ Mercato</h2><p>${2-(C.signs||0)} signature${2-(C.signs||0)>1?'s':''} possible${2-(C.signs||0)>1?'s':''} ce mois-ci</p></div>
+  <div class="panel">${(C.offers||[]).map((o,i)=>{const rel=ecoReluct(o);return `<div class="pl" style="flex-wrap:wrap"><span class="pl-p">${o.poste}</span><span class="pl-n">${esc(o.name)} <b>${o.note}</b>${rel>.05?` <span class="hint">😒 hésite à venir en ${DIVS[C.div]}</span>`:''}</span>
+      <div class="bs-row" style="width:100%">${[0,1,2].map(v=>{const p=Math.round(o.price*[.8,1,1.2][v]);return `<button class="btn small ${v===1?'go':'ghost'}" data-a="eco_nego" data-i="${i}" data-v="${v}" data-cost="${p}" ${S.cash>=p&&(C.signs||0)<2?'':'disabled'}>${['Proposer','Payer','Surenchérir'][v]} ${fmt(p)}</button>`}).join('')}</div></div>`}).join('')||'<p class="hint">Plus d’offres ce mois-ci.</p>'}
+    <p class="hint" style="margin-top:6px">Une offre basse peut être refusée, une surenchère passe presque toujours. Les bons joueurs boudent les petites divisions. Le joueur remplacé est revendu à 35 % de sa valeur.</p></div>
+  <div class="sec-head"><h2>🏟️ Infrastructures</h2><p>Coûts fixes ${fmt(k.tot)}/mois</p></div>
+  <div class="panel"><div class="kv"><span>Stade</span><b>${ECO_ST[C.stade].n}</b></div><div class="kv"><span>Entraîneur</span><b>${ECO_CO[C.coach].n}</b></div><div class="kv"><span>Boutique</span><b>${ECO_SHOP[C.shop].n}</b></div><div class="kv"><span>Soins</span><b>${ECO_MED[C.med].n}</b></div><div class="kv"><span>Centre de formation</span><b>${ECO_ACAD[C.acad].n}</b></div>
+    <div class="bs-row" style="margin-top:8px">${upBtn('stade',ECO_ST,C.stade,'🏟️')}${upBtn('coach',ECO_CO,C.coach,'🧑‍🏫')}${upBtn('shop',ECO_SHOP,C.shop,'👕')}${upBtn('med',ECO_MED,C.med,'🩺')}${upBtn('acad',ECO_ACAD,C.acad,'🎓')}</div></div>
+  <div class="sec-head"><h2>📒 Dépenses du mois</h2><p>Droits TV : ${fmt(ECO_TV[C.div]*MM)} par match</p></div>
+  <div class="panel"><div class="kv"><span>Salaires des joueurs</span><b>−${fmt(k.pl)}</b></div><div class="kv"><span>Staff (entraîneur, soins)</span><b>−${fmt(k.staff)}</b></div><div class="kv"><span>Entretien du stade</span><b>−${fmt(k.up)}</b></div>
+    <p class="hint" style="margin-top:6px">Les salaires montent avec le niveau des joueurs et la division. S’il manque de l’argent, ils sont payés en retard et le moral chute.</p>
+    <button class="btn ghost small" style="margin-top:8px" data-a="eco_kit"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${kit[0]};border:1px solid #0003;vertical-align:-1px"></span><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${kit[1]};border:1px solid #0003;vertical-align:-1px;margin-right:4px"></span>Changer les couleurs du club</button></div>
+  ${C.seasons.length?`<div class="sec-head"><h2>📜 Palmarès</h2></div><div class="panel"><ul class="ug">${C.seasons.map(s=>`<li><span>${s.y}, ${s.div}</span><span>${s.msg}</span></li>`).join('')}</ul></div>`:''}`;
+}
+
+/* --- Stade sur la carte --- */
+const ECO_SV=[{L:6,T:0,R:0,F:0,s:1},{L:8,T:0,R:4,F:0,s:1,rail:1,kiosk:1},{L:13,T:0,R:6,F:0,s:2,rail:1,kiosk:1,board:1},{L:17,T:8,R:9,F:5,s:2,rail:1,roofL:1,flags:1,board:1},
+  {L:21,T:14,R:12,F:9,s:3,roofL:1,ads:1,flags:1,board:1},{L:27,T:20,R:15,F:12,s:3,roofL:1,roofT:1,lights:1,ads:1,flags:1,board:1},
+  {L:34,T:30,R:19,F:17,s:3,roofL:1,roofT:1,roofR:1,lights:1,corners:1,screen:1,ads:1,flags:1},{L:44,T:40,R:24,F:22,s:4,ring:1,corners:1,screen:1,ads:1,flags:1}];
+function ecoCrowd(f,z0,z1,n,seed,cols,jump){if(n<1||z1-z0<1)return;const R=mulberry(seed);for(let i=0;i<n;i++){const u=.04+R()*.92,z=z0+R()*(z1-z0),c=R(),pt=f(u,z),dy=jump?Math.max(0,Math.sin(T*9+i*1.7))*1.5:0;ctx.fillStyle=cols[c<.5?0:c<.75?1:c<.9?2:3];ctx.fillRect(pt[0]-.7,pt[1]-1.5-dy,1.5,1.7)}}
+function ecoTopCrowd(x,y,w,d,h,n,seed,cols,jump){if(n<1)return;const R=mulberry(seed);for(let i=0;i<n;i++){const pt=iso(x+(.06+R()*.88)*w,y+(.06+R()*.88)*d,h),c=R(),dy=jump?Math.max(0,Math.sin(T*9+i*1.3))*1.5:0;ctx.fillStyle=cols[c<.5?0:c<.75?1:c<.9?2:3];ctx.fillRect(pt[0]-.7,pt[1]-1.5-dy,1.5,1.7)}}
+function ecoRows(f,z0,z1,col){for(let z=z0+2;z<z1-.5;z+=3.2)q(f,0,1,z,z+.9,col)}
+function ecoMast(x,y,h,on){const b=iso(x,y);ctx.strokeStyle=shade('#8A939C',1);ctx.lineWidth=1.8;line(b,[b[0],b[1]-h]);ctx.lineWidth=.8;line([b[0]-3,b[1]],[b[0],b[1]-h*.4]);line([b[0]+3,b[1]],[b[0],b[1]-h*.4]);
+  ctx.fillStyle=shade('#5B6B7A',1);ctx.fillRect(b[0]-7,b[1]-h-6,14,8);ctx.fillStyle=on?'#FFF8D6':shade('#E5E5E5',1);for(let i=0;i<3;i++)for(let j=0;j<2;j++)ctx.fillRect(b[0]-6+i*4.3,b[1]-h-5+j*3.6,3.2,2.6);return [b[0],b[1]-h-2]}
+function ecoFlag(p,col,col2,i){const w=Math.sin(T*4+i)*1.4;ctx.strokeStyle=shade('#6B6B6B',1);ctx.lineWidth=.9;line(p,[p[0],p[1]-12]);ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(p[0],p[1]-12);ctx.lineTo(p[0]+9,p[1]-10+w);ctx.lineTo(p[0],p[1]-7);ctx.closePath();ctx.fill();ctx.fillStyle=col2;ctx.fillRect(p[0],p[1]-10.2,4,1)}
+function drawStade(){
+  const P=STADE,C=S.club,own=C.own;if(own)ecoC();
+  const lvl=own?C.stade:-1,V=own?ECO_SV[lvl]:{L:5,T:0,R:0,F:0,s:1},kit=own?ecoKit():['#9AA3AD','#D9DEE4'],k1=kit[0],k2=kit[1];
+  const season=own&&isSeason(monthOf(S.day)),live=own&&C.match&&!C.match.done,g=C.lastGate;
+  const fill=own?(season?(g&&g.home&&g.cap?Math.max(.3,g.att/g.cap):.45):.06):0;
+  const cols=[shade(k1,1),shade(k2,1),shade('#FFFFFF',.95),shade('#2B2B2B',1)];
+  const I=.45,e=.03,D=I-e,conc=TH_.moon?'#8E8E8E':'#B9B4AA',stand=own?(lvl>=4?'#C9CED6':'#B8BEC4'):'#9AA3AD',seat=own?k1:'#9AA3AD';
+  const night=NIGHT>.35,lightsOn=(V.lights||V.ring)&&(night||live&&DUSK>.2);
+  poly(ctx,quadT(P.x,P.y,P.x+P.w,P.y+P.d),shade(lvl>=4?conc:(TH_.moon?'#9C9C9C':'#9FB89A'),1));
+  for(let k=0;k<6;k++)poly(ctx,quadT(P.x+I,P.y+I+k*(3.1/6),P.x+P.w-I,P.y+I+(k+1)*(3.1/6)),shade(k%2?'#4CAF50':'#43A047',lightsOn?1.12:1));
+  ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.1;const Lq=quadT(P.x+.55,P.y+.55,P.x+P.w-.55,P.y+P.d-.55);ctx.beginPath();Lq.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();
+  line(iso(P.x+.55,P.y+P.d/2),iso(P.x+P.w-.55,P.y+P.d/2));const cc=iso(P.x+P.w/2,P.y+P.d/2);ctx.beginPath();ctx.ellipse(cc[0],cc[1],14,7,0,0,7);ctx.stroke();
+  [P.y+.56,P.y+P.d-.56].forEach(y=>{const a=iso(P.x+P.w/2-.22,y),b=iso(P.x+P.w/2+.22,y);ctx.strokeStyle='#FFFFFF';ctx.lineWidth=1.2;line(a,[a[0],a[1]-5]);line(b,[b[0],b[1]-5]);line([a[0],a[1]-5],[b[0],b[1]-5])});
+  if(live){const R=mulberry(7);for(let i=0;i<12;i++){const bx=P.x+I+.2+R()*1.7+Math.sin(T*1.3+i)*.12,by=P.y+I+.3+R()*2.5+Math.cos(T*1.1+i*2)*.18,p=iso(bx,by);ctx.fillStyle=i<6?cols[0]:'#2B2B2B';ctx.fillRect(p[0]-1,p[1]-4,2,4)}const bp=iso(P.x+P.w/2+Math.sin(T*1.7)*.5,P.y+P.d/2+Math.cos(T*1.2)*.9);ctx.fillStyle='#FFF';ctx.beginPath();ctx.arc(bp[0],bp[1]-1,1.2,0,7);ctx.fill()}
+  if(lightsOn){ctx.globalCompositeOperation='lighter';ctx.fillStyle=`rgba(255,250,215,${.12+.12*NIGHT})`;poly(ctx,quadT(P.x+I,P.y+I,P.x+P.w-I,P.y+P.d-I),ctx.fillStyle);ctx.globalCompositeOperation='source-over'}
+  const masts=[];if(V.lights)masts.push(ecoMast(P.x-.08,P.y-.08,lvl>=6?80:66,lightsOn));
+  const cH=Math.max(V.L,V.T);if(V.corners){const r=box(P.x+e,P.y+e,D,D,cH,stand,{top:'#AEB4BC'});q(r.fL,0,1,cH-5,cH-2,shade(k1,1))}
+  const nB=Math.round(fill*Math.min(140,(lvl+2)*16));
+  if(V.T){const dd=D/V.s;for(let k=0;k<V.s;k++){const h=V.T*(V.s-k)/V.s,lo=k<V.s-1?V.T*(V.s-k-1)/V.s:0,r=box(P.x+I,P.y+e+k*dd,P.w-2*I,dd,h,seat,{top:'#D9DEE4',kl:.95});ecoRows(r.fL,lo,h,shade(k2,.92));if(own)ecoCrowd(r.fL,lo+1,h-1,Math.round(nB*.6/V.s),11+k,cols,live)}}
+  if(V.L){const dd=D/V.s;for(let k=0;k<V.s;k++){const h=V.L*(V.s-k)/V.s,lo=k<V.s-1?V.L*(V.s-k-1)/V.s:0,r=box(P.x+e+k*dd,P.y+I,dd,P.d-2*I,h,seat,{top:'#D9DEE4',kr:.82});ecoRows(r.fR,lo,h,shade(k2,.92));if(own)ecoCrowd(r.fR,lo+1,h-1,Math.round(nB/V.s),31+k,cols,live)}}
+  const roof=(x,y,w,d,z,ring)=>{if(ring)ctx.globalAlpha=.62;const r=box(x,y,w,d,2.5,ring?'#EEF3F7':'#E3E7EB',{z0:z,top:ring?'#F4F8FB':'#EDEFF2'});ctx.globalAlpha=1;return r};
+  if(V.roofL||V.ring){const z=V.L+(V.ring?5:4),r=roof(P.x-.02,P.y+I-.05,.66,P.d-2*I+.1,z,V.ring);q(r.fR,0,1,z+.3,z+2.2,shade(k1,1));if(V.ring&&night){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.6;q(r.fR,0,1,z-1,z+3.5,k1);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}}
+  if(V.roofT||V.ring){const z=V.T+(V.ring?5:4),r=roof(P.x+I-.05,P.y-.02,P.w-2*I+.1,.66,z,V.ring);q(r.fL,0,1,z+.3,z+2.2,shade(k1,1))}
+  if(V.ring){const z=cH+5;roof(P.x-.02,P.y-.02,.66,.66,z,true)}
+  if(V.screen){const z0=cH+(V.ring?9:4),r=box(P.x+.12,P.y+.1,.62,.05,17,'#2B2B2B',{z0});q(r.fL,.05,.95,z0+2,z0+15,night?'#0E2A47':'#16324F');q(r.fL,.05,.95,z0+12,z0+15,shade(k1,1));
+    const c=r.fL(.5,z0+7);ctx.fillStyle='#FFFFFF';ctx.font='700 7px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';const L=C.last;ctx.fillText(live?(Math.floor(T*2)%2?'LIVE':'⚽'):L?`${L.gf} - ${L.ga}`:'0 - 0',c[0],c[1]);
+    const b=iso(P.x+.43,P.y+.12,cH);ctx.strokeStyle='#555';ctx.lineWidth=1;line(b,[b[0],b[1]-(z0-cH)])}
+  else if(own&&lvl>=2){const b=iso(P.x+.25,P.y+.25,0);ctx.strokeStyle=shade('#555',1);ctx.lineWidth=1.2;line(b,[b[0],b[1]-20]);ctx.fillStyle=shade('#1E2B2A',1);ctx.fillRect(b[0]-9,b[1]-29,18,10);ctx.fillStyle='#F7E733';ctx.font='700 6px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(C.last?`${C.last.gf}-${C.last.ga}`:'0-0',b[0],b[1]-24)}
+  if(V.corners){box(P.x+P.w-I,P.y+e,D,D,Math.max(V.T,V.R),stand,{top:'#AEB4BC'});box(P.x+e,P.y+P.d-I,D,D,Math.max(V.L,V.F),stand,{top:'#AEB4BC'})}
+  if(V.lights){masts.push(ecoMast(P.x+P.w+.08,P.y-.08,lvl>=6?80:66,lightsOn),ecoMast(P.x-.08,P.y+P.d+.08,lvl>=6?80:66,lightsOn))}
+  if(V.rail){ctx.strokeStyle='rgba(255,255,255,.95)';ctx.lineWidth=1;const Rq=quadT(P.x+I-.03,P.y+I-.03,P.x+P.w-I+.03,P.y+P.d-I+.03,3);ctx.beginPath();Rq.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke()}
+  if(V.ads){const seg=8;for(let i=0;i<seg;i++){const y0=P.y+I+i*(P.d-2*I)/seg;const r=box(P.x+I-.05,y0,.03,(P.d-2*I)/seg,3,i%2?k1:k2,{kr:night?1.25:.95});}
+    for(let i=0;i<6;i++){const x0=P.x+I+i*(P.w-2*I)/6;box(x0,P.y+I-.05,(P.w-2*I)/6,.03,3,i%2?k2:k1,{kl:night?1.25:1})}}
+  if(V.kiosk){const r=box(P.x+P.w-.42,P.y+.08,.32,.28,8,'#F4F1EA',{top:k1});q(r.fL,.1,.9,2,6,shade('#BFE3F2',1));awning(r.fL,'L',k1,8)}
+  const nF=Math.round(fill*Math.min(90,(lvl+1)*10));
+  if(V.F){const r=box(P.x+I,P.y+P.d-I,P.w-2*I,D,V.F,stand,{top:seat});ecoTopCrowd(P.x+I,P.y+P.d-I,P.w-2*I,D,V.F,Math.round(nF*.6),51,cols,live);q(r.fL,0,1,V.F*.45,V.F*.6,shade(k1,1));for(let i=0;i<4;i++)q(r.fL,.1+i*.22,.18+i*.22,0,Math.min(7,V.F*.35),shade('#3A3A3A',1));
+    if(V.roofR||V.ring){const z=V.F+(V.ring?5:4),rr2=roof(P.x+I-.05,P.y+P.d-.42,P.w-2*I+.1,.44,z,V.ring);q(rr2.fL,0,1,z,z+2.5,shade(k1,1))}}
+  if(V.R){const r=box(P.x+P.w-I,P.y+I,D,P.d-2*I,V.R,stand,{top:seat});ecoTopCrowd(P.x+P.w-I,P.y+I,D,P.d-2*I,V.R,nF,61,cols,live);q(r.fR,0,1,V.R*.45,V.R*.6,shade(k1,1));for(let i=0;i<6;i++)q(r.fR,.06+i*.16,.12+i*.16,0,Math.min(7,V.R*.35),shade('#3A3A3A',1));
+    if(V.ring&&night){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55;q(r.fR,0,1,V.R-4,V.R-1.5,k1);q(r.fL||r.fR,0,1,V.R-4,V.R-1.5,k1);ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
+    if(V.roofR||V.ring){const z=V.R+(V.ring?5:4),rr2=roof(P.x+P.w-.42,P.y+I-.05,.44,P.d-2*I+.1,z,V.ring);q(rr2.fR,0,1,z,z+2.5,shade(k1,1))}}
+  if(V.corners){const h=Math.max(V.R,V.F),r=box(P.x+P.w-I,P.y+P.d-I,D,D,h,stand,{top:'#AEB4BC'});q(r.fL,0,1,h*.45,h*.6,shade(k1,1));q(r.fR,0,1,h*.45,h*.6,shade(k1,1));
+    if(V.ring){roof(P.x+P.w-.64,P.y+P.d-.64,.66,.66,h+5,true);roof(P.x+P.w-.64,P.y-.02,.66,.66,Math.max(V.T,V.R)+5,true);roof(P.x-.02,P.y+P.d-.64,.66,.66,Math.max(V.L,V.F)+5,true)}}
+  if(V.lights)masts.push(ecoMast(P.x+P.w+.08,P.y+P.d+.08,lvl>=6?80:66,lightsOn));
+  if(V.ring&&lightsOn){ctx.fillStyle='#FFF8D6';[[P.x+.6,P.y+.6],[P.x+P.w-.6,P.y+.6],[P.x+.6,P.y+P.d-.6],[P.x+P.w-.6,P.y+P.d-.6]].forEach(([x,y],i)=>{const p=iso(x,y,[V.L,V.T,V.F,V.R][i]+8);masts.push([p[0],p[1]]);ctx.fillRect(p[0]-4,p[1]-1.5,8,3)})}
+  if(lightsOn&&masts.length){ctx.globalCompositeOperation='lighter';masts.forEach(m=>{ctx.fillStyle=`rgba(255,246,201,${.08+.1*NIGHT})`;ctx.beginPath();ctx.moveTo(m[0],m[1]);ctx.lineTo(cc[0]-34,cc[1]+4);ctx.lineTo(cc[0]+34,cc[1]-4);ctx.closePath();ctx.fill()});ctx.globalCompositeOperation='source-over'}
+  if(V.flags){const zt=V.L+(V.roofL||V.ring?(V.ring?7.5:6.5):0);for(let i=0;i<3;i++){const p=iso(P.x+.1,P.y+I+.3+i*1.1,zt);ecoFlag(p,i%2?shade(k2,1):shade(k1,1),i%2?shade(k1,1):shade(k2,1),i)}}
+  if(!own){const r=box(P.x+P.w-.4,P.y+.6,.35,P.d-1.2,5,'#9AA3AD',{top:'#D9DEE4'})}
+  const top=iso(P.x+P.w/2,P.y+P.d/2,Math.max(18,V.L+(V.ring?10:4)));badge(top,'⚽');
+  HITS.push({hex:quadHex(P,Math.max(30,V.L)),kind:'stade',id:'stade',top});
+}
+
+/* --- Immeubles : rendu par niveau de rénovation --- */
+function ecoHouseFacade(o,r,ff,l,cols){
+  if(l<2)return;
+  for(const f of [r.fL,r.fR])for(let fl=0;fl<ff;fl++)for(let c=0;c<cols;c++){const u0=(c+.18)/cols,u1=(c+.82)/cols,z=fl*FH+1.8;
+    if(l>=4){q(f,u0-.02,u1+.02,z,z+1.2,shade('#F4F6F8',1))}else{q(f,u0,u1,z,z+1.6,shade(fl%2?'#3E8E41':'#4E9F3D',1));if((c+fl)%2===0)q(f,u0+.05,u0+.12,z+1.6,z+2.7,shade('#F4A7C0',1))}}
+  if(l>=3){const h=ff*FH;for(const f of [r.fL,r.fR]){for(let fl=1;fl<ff;fl++)q(f,0,1,fl*FH,fl*FH+1,shade('#F4F1EA',1));q(f,0,1,h-2.2,h,shade('#E0B84A',1))}
+    q(r.fL,.42,.58,0,9,shade(l>=4?'#2B3A4A':'#7A4A2A',1));q(r.fL,.4,.6,9,10.2,shade('#E0B84A',1))}
+  if(l>=4){for(const f of [r.fL,r.fR])for(let c=0;c<=cols;c++){const u=c/cols;q(f,Math.max(0,u-.012),Math.min(1,u+.012),0,ff*FH,shade('#F4F6F8',1))}
+    if(NIGHT>.3){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.5*NIGHT;q(r.fL,0,1,ff*FH-2.5,ff*FH,'#FFD45E');q(r.fR,0,1,ff*FH-2.5,ff*FH,'#FFD45E');ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}}
+}
+function ecoHouseRoof(o,h,l){
+  if(l>=4){box(o.x+.06,o.y+.06,o.w-.12,o.d-.12,1.5,'#D8D2C4',{z0:h,top:'#E6E0D2'});
+    poly(ctx,quadT(o.x+.18,o.y+.18,o.x+o.w*.58,o.y+o.d*.62,h+1.6),shade('#5FC8F0',1));
+    const ph=box(o.x+o.w*.64,o.y+.14,o.w*.26,o.d*.36,9,'#F4F6F8',{z0:h+1.5,top:'#E0B84A'});q(ph.fL,.1,.9,2,7,shade('#9CCBEA',1));
+    const t=iso(o.x+o.w*.75,o.y+o.d*.78,h+1.5);ctx.fillStyle=shade('#3E8E41',1);ctx.beginPath();ctx.arc(t[0],t[1]-5,4,0,7);ctx.fill();ctx.fillStyle=shade('#6B4F35',1);ctx.fillRect(t[0]-.6,t[1]-2,1.2,2);
+    if(o.t==='apt'){const a=iso(o.x+o.w*.77,o.y+o.d*.3,h+10.5);ctx.strokeStyle=shade('#8A939C',1);ctx.lineWidth=1;line(a,[a[0],a[1]-12]);ctx.fillStyle=Math.floor(T*1.5)%2?'#FF4D4D':'#B03030';ctx.fillRect(a[0]-1,a[1]-13,2,2)}
+    return iso(o.x+o.w/2,o.y+o.d/2,h+12)}
+  box(o.x+.1,o.y+.1,o.w-.2,o.d-.2,2,'#5DA34A',{z0:h,top:'#6CB85A'});
+  [[.3,.3],[.7,.55],[.35,.75]].forEach(([u,v],i)=>{const t=iso(o.x+o.w*u,o.y+o.d*v,h+2);ctx.fillStyle=shade(i%2?'#3E8E41':'#4E9F3D',1);ctx.beginPath();ctx.arc(t[0],t[1]-4,3.5,0,7);ctx.fill()});
+  const pa=iso(o.x+o.w*.62,o.y+o.d*.3,h+2);ctx.strokeStyle=shade('#6B6B6B',1);ctx.lineWidth=.8;line(pa,[pa[0],pa[1]-7]);ctx.fillStyle=shade('#E86A5B',1);ctx.beginPath();ctx.moveTo(pa[0]-5,pa[1]-6);ctx.lineTo(pa[0],pa[1]-10);ctx.lineTo(pa[0]+5,pa[1]-6);ctx.closePath();ctx.fill();
+  return iso(o.x+o.w/2,o.y+o.d/2,h+10)}
+function ecoSolar(o,h){const rh=Math.min(16,o.d*14),D=iso(o.x,o.y+o.d,h),C=iso(o.x+o.w,o.y+o.d,h),R1=iso(o.x,o.y+o.d/2,h+rh),R2=iso(o.x+o.w,o.y+o.d/2,h+rh);
+  const P=(s,t)=>{const a=[D[0]+(C[0]-D[0])*s,D[1]+(C[1]-D[1])*s],b=[R1[0]+(R2[0]-R1[0])*s,R1[1]+(R2[1]-R1[1])*s];return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t]};
+  poly(ctx,[P(.2,.2),P(.8,.2),P(.8,.75),P(.2,.75)],shade('#2A4A7A',1));ctx.strokeStyle='rgba(190,215,240,.6)';ctx.lineWidth=.5;line(P(.5,.2),P(.5,.75));line(P(.2,.47),P(.8,.47))}
+function drawHouse(o){
+  let r;const h=(o.f+((S.propUp||{})[o.pid]||0))*FH;
+  if(TH_.dome){const p=iso(o.x+o.w/2,o.y+o.d/2),rx=(o.t==='apt'?62:30),ry=rx/2,hh=o.t==='apt'?52:26,lv=(S.props&&S.props[o.pid])||0;
+    ctx.fillStyle=shade('#D5D5D5',1);ctx.beginPath();ctx.ellipse(p[0],p[1],rx,ry,0,0,7);ctx.fill();
+    const g=ctx.createLinearGradient(p[0]-rx,0,p[0]+rx,0);g.addColorStop(0,'rgba(220,240,255,.95)');g.addColorStop(1,'rgba(140,180,210,.9)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.ellipse(p[0],p[1]-2,rx*.92,hh,0,Math.PI,0);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1;for(let k=1;k<4;k++){ctx.beginPath();ctx.ellipse(p[0],p[1]-2,rx*.92*k/4,hh,0,Math.PI,0);ctx.stroke()}
+    if(lv>=3){ctx.strokeStyle='#E0B84A';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(p[0],p[1]-1,rx*.93,ry*.9,0,0,Math.PI);ctx.stroke()}
+    if(NIGHT>.3){ctx.fillStyle=`rgba(255,214,94,${(lv>=4?.55:.35)*NIGHT})`;ctx.beginPath();ctx.ellipse(p[0],p[1]-6,rx*.6,hh*.5,0,Math.PI,0);ctx.closePath();ctx.fill()}
+    return {hex:[[p[0]-rx,p[1]],[p[0],p[1]+ry],[p[0]+rx,p[1]],[p[0]+rx,p[1]-hh],[p[0],p[1]-hh-ry],[p[0]-rx,p[1]-hh]],top:[p[0],p[1]-hh]};
+  }
+  const own=S.props&&S.props[o.pid],l=own||0,ff=o.f+((S.propUp||{})[o.pid]||0);r=box(o.x,o.y,o.w,o.d,ff*FH,o.c,{top:own?'#F2C94C':(o.roof?o.c:'#BFC7CC'),kl:l>=3?.92:.86,kr:l>=3?.72:.66});
+  const sd=Math.round(o.x*7+o.y*13);const cols=o.t==='apt'?4:2,glass=l>=4?'#9CCBEA':TH_.tall?'#BFD7EA':null;
+  windows(r.fL,cols,ff,0,sd,glass);windows(r.fR,cols,ff,0,sd+5,glass);
+  if(!TH_.mansard)ecoHouseFacade(o,r,ff,l,cols);
+  if((TH_.neon||TH_.billboard)&&o.f>=3&&sd%3===0){const nc=NEON[sd%4];const glow=NIGHT>.3;q(r.fL,.36,.64,h*.35,h*.8,glow?nc:shade(nc,.85));if(glow){ctx.globalAlpha=.25*NIGHT;q(r.fL,.3,.7,h*.3,h*.85,nc);ctx.globalAlpha=1}if(TH_.neon){ctx.fillStyle='#1E2B2A';const c=r.fL(.5,h*.6);ctx.font='700 7px sans-serif';ctx.textAlign='center';ctx.fillText(['寿司','カフェ','本','酒'][sd%4],c[0],c[1])}}
+  if(TH_.mansard){for(let fl=1;fl<o.f;fl++){ctx.strokeStyle=shade('#3A3A3A',1);ctx.lineWidth=.8;line(r.fL(.05,fl*FH+1),r.fL(.95,fl*FH+1));line(r.fR(.05,fl*FH+1),r.fR(.95,fl*FH+1))}}
+  if(TH_.mansard){box(o.x+.06,o.y+.06,o.w-.12,o.d-.12,9,l>=3?'#4A5866':'#5B6B7A',{z0:h,kt:1.1});box(o.x+.15,o.y+.2,.12,.12,6,'#C47A5A',{z0:h+9});if(l>=3){const t=iso(o.x+o.w/2,o.y+o.d/2,h+9);ctx.fillStyle='#E0B84A';ctx.fillRect(t[0]-6,t[1]-1,12,2)}r.top=iso(o.x+o.w/2,o.y+o.d/2,h+12)}
+  else if(o.roof&&!(S.propUp||{})[o.pid]){pitched(o.x,o.y,o.w,o.d,h,own?'#E0A800':o.rc,o.c);if(l>=3)ecoSolar(o,h);r.top=iso(o.x+o.w/2,o.y+o.d/2,h+14)}
+  else if(l>=3)r.top=ecoHouseRoof(o,h,l);
+  else if(o.wt){cyl(o.x+o.w*.3,o.y+o.d*.3,.12,10,'#8A6A4A',{z0:h});cone(o.x+o.w*.3,o.y+o.d*.3,.13,h+10,6,'#6B4F35')}
+  else box(o.x+.25,o.y+.25,.22,.22,5,'#9AA3AD',{z0:h});
+  return r;
+}
+function rebuild(pid){const o=DECOR.find(x=>x.pid===pid);if(!o||S.props[pid]!==3)return;const c=rebuildCost(o);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
+  spend(c);S.props[pid]=4;S.propUp[pid]=o.t==='apt'?4:3;computeNb();sfx('rank');addXP(15);
+  const [X,Y]=worldToPage(o.x+o.w/2,o.y+o.d/2,(o.f+S.propUp[pid])*FH);burstAt(X,Y,6,'🏗️ Nouvelle résidence !');toast(`🏗️ Résidence de standing : loyer ${fmt(propRent(o,4))} par mois, 24 fois le loyer de départ.`)}
+/* ===== FIN AGENT ECO ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
