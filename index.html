@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Flip Empire, prototype jouable</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1E2B2A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Flip Empire">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<title>Flip Empire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Permanent+Marker&display=swap" rel="stylesheet">
@@ -468,6 +476,12 @@ const fmtM=m=>m.toLocaleString('fr-FR',{maximumFractionDigits:2});
 const mmss=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KEY='flipEmpire_v9';
+let DEFER_INSTALL=null;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const installable=()=>!!DEFER_INSTALL;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER_INSTALL=e});
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 const DAY_SEC=40;
 const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -548,8 +562,29 @@ function newGame(){return{cash:200,lifetime:0,lifetimeAll:0,day:1,dayProg:0,stag
   partner:null,kids:[],gen:1,dynasty:[],sitBonus:1,notified:[],dead:false,speed:1,cohort:[],grandkids:0,yearsMarried:0,
   pol:{office:null,cand:false,pop:0,prog:[],acts:{},nextElec:19,budget:0,projects:[],mood:null,poll:null,wins:0,terms:0},
   club:{own:false,name:'',div:0,str:30,stade:0,fans:120,coach:0,acad:0,pts:0,played:0,last:null,seasons:[],acts:{}}}}
-function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):null}catch(e){return null}}
-function save(){S.lastSeen=Date.now();try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+/* Sauvegarde : clé stable, copie de secours, reprise des anciennes versions, champs manquants complétés */
+const OLD_KEYS=['flipEmpire_v8','flipEmpire_v7','flipEmpire_v6','flipEmpire_v5','flipEmpire_v4','flipEmpire_v3','flipEmpire_v2','flipEmpire_v1','flipEmpire'];
+function fillDefaults(d,o){for(const k in d){if(o[k]===undefined||o[k]===null&&d[k]!==null)o[k]=d[k];else if(d[k]&&typeof d[k]==='object'&&!Array.isArray(d[k])&&o[k]&&typeof o[k]==='object'&&!Array.isArray(o[k]))fillDefaults(d[k],o[k])}return o}
+function repair(o){
+  if(!o||typeof o!=='object')return null;
+  fillDefaults(newGame(),o);
+  if(!isFinite(o.cash)||o.cash<0)o.cash=0;
+  o.share=Math.min(.5,Math.max(0,+o.share||0));
+  return o;
+}
+function readKey(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch(e){return null}}
+function load(){
+  let o=readKey(KEY)||readKey(KEY+'_bak');
+  if(!o)for(const k of OLD_KEYS){o=readKey(k);if(o)break}
+  return repair(o);
+}
+let saveFails=0;
+function save(){S.lastSeen=Date.now();try{const j=JSON.stringify(S);localStorage.setItem(KEY,j);localStorage.setItem(KEY+'_bak',j);saveFails=0}catch(e){saveFails++}}
+function exportSave(){save();try{return btoa(unescape(encodeURIComponent(JSON.stringify(S))))}catch(e){return ''}}
+function importSave(code){try{const o=repair(JSON.parse(decodeURIComponent(escape(atob(code.trim())))));if(!o||!o.biz)return false;S=o;save();return true}catch(e){return false}}
+addEventListener('pagehide',()=>save());
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')save()});
+try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
 let S=load()||newGame();
 let dispCash=S.cash,sel=null;
 
@@ -576,7 +611,7 @@ const satOf=id=>{const q=S.biz[id].q;return (q.clean+q.wait+q.qual)/3};
 const satMult=id=>.4+1.2*satOf(id)/100;
 const avgSat=()=>{const o=openIds();return o.length?o.reduce((a,id)=>a+satOf(id),0)/o.length:75};
 const trophyMult=()=>(1+.05*S.trophies.length)*(S.trophies.length>=TROPHIES.length?2:1);
-function permMult(){return (.8+S.rep/250)*(1+.1*S.stars)*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-S.share)*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
+function permMult(){return (.8+S.rep/250)*(1+.1*S.stars)*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-Math.min(.5,Math.max(0,S.share||0)))*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
 const boosted=()=>Date.now()<S.boostUntil,frenzy=()=>Date.now()<S.frenzyUntil;
 const tempMult=()=>{const ev=dayEvent(S.day);return (boosted()?2:1)*(frenzy()?5:1)*(ev?ev.m:1)};
 const modMult=id=>S.mods.reduce((a,m)=>(S.day<=m.until&&(!m.biz||m.biz===id))?a*m.m:a,1);
@@ -1967,7 +2002,7 @@ function franchise(){
   if(S.mkt&&S.mkt.a)S.mkt.a.forEach((x,i)=>{if(x.qty){S.mkt.sel=i;mktSell('max')}});
   const keep={stars:S.stars+ns,city:Math.min(S.city+1,CITIES.length-1),trophies:S.trophies,claimed:S.claimed,notified:S.notified,lifetimeAll:S.lifetimeAll,rep:Math.max(40,Math.round(S.rep*.6+20)),
     stats:S.stats,counts:S.counts,xp:S.xp,streak:S.streak,lastDaily:S.lastDaily,sound:S.sound,started:true,hintSeen:true,day:S.day,hero:S.hero,journal:S.journal,flags:{dimanche:S.flags.dimanche,assistant:S.flags.assistant,karim:S.flags.karim,famUsed:S.flags.famUsed,vipPlus:S.flags.vipPlus,lastKid:S.flags.lastKid},
-    energy:Math.max(60,S.energy),share:S.share,partner:S.partner,kids:S.kids,gen:S.gen,dynasty:S.dynasty,sitBonus:S.sitBonus,speed:S.speed,cohort:S.cohort,grandkids:S.grandkids,yearsMarried:S.yearsMarried};
+    energy:Math.max(60,S.energy),share:0,partner:S.partner,kids:S.kids,gen:S.gen,dynasty:S.dynasty,sitBonus:S.sitBonus,speed:S.speed,cohort:S.cohort,grandkids:S.grandkids,yearsMarried:S.yearsMarried};
   S=Object.assign(newGame(),keep);S.pol.nextElec=S.day+12;dispCash=S.cash;sel=null;applyCityBiz(S.city);S.mkt=freshMkt();genCity(S.city);camTo(11,10,true);addXP(100);sfx('rank');checkTrophies();
   const c=CITIES[S.city];
   S.journal.unshift({day:S.day,who:c.e,name:c.n,title:'Nouvelle franchise',choice:'Ouvrir une franchise',res:`Tu t’installes à ${c.n}${S.partner&&S.partner.stage!=='couple'?' avec ta famille':''}. ${c.t}`,fx:[`⭐ ${S.stars} étoiles`]});
@@ -2427,7 +2462,10 @@ function vEmpire(){
   <div class="stats"><div class="stat"><strong>${fmt(S.lifetimeAll)}</strong><span>Gagné au total</span></div><div class="stat"><strong>${S.day}</strong><span>Mois d’aventure</span></div>
     <div class="stat"><strong>${S.stats.decisions}</strong><span>Décisions prises</span></div><div class="stat"><strong>${S.stats.reviews5}</strong><span>Avis 5 étoiles</span></div></div>
   <div class="panel" style="margin-top:14px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'🔊 Activés':'🔇 Coupés'}</button></div></div>
-  <div class="foot"><p>Prototype jouable de Flip Empire. Ta partie est enregistrée dans ce navigateur.</p><button class="btn ghost small" data-a="reset">Recommencer une nouvelle vie</button></div>`;
+  <div class="foot"><p>Prototype jouable de Flip Empire. Ta partie est enregistrée dans ce navigateur.</p><button class="btn ghost small" data-a="reset">Recommencer une nouvelle vie</button></div>
+  <div class="panel" style="margin-top:14px"><h3 style="margin:0 0 6px">💾 Ma sauvegarde</h3><p class="hint">Ta partie s’enregistre toute seule toutes les 5 secondes. Pour la passer sur un autre appareil, copie ton code puis colle-le là-bas.</p>
+    <div class="bs-row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-a="savexp">📤 Copier mon code</button><button class="btn small ghost" data-a="saveimp">📥 Coller un code</button>${installable()?`<button class="btn small go" data-a="install">📲 Installer l’appli</button>`:''}</div>
+    ${isIOS()&&!isStandalone()?`<p class="hint" style="margin-top:8px">📲 Sur iPhone : touche <b>Partager</b> ⬆️ dans Safari, puis <b>Sur l’écran d’accueil</b>.</p>`:''}</div>`;
 }
 function chartSVG(){
   const h=S.mkt.hist,mn=Math.min(...h),mx=Math.max(...h),W=320,H=130,r=mx-mn||1;
@@ -2566,6 +2604,10 @@ document.addEventListener('click',e=>{
     case 'sellprop':sellProp(id);sel=null;break;
     case 'boost':boost();full=false;break;
     case 'sound':S.sound=!S.sound;if(S.sound)sfx('buy');break;
+    case 'savexp':{const c=exportSave();const done=()=>toast('📤 Code copié. Colle-le sur ton autre appareil.');if(navigator.clipboard)navigator.clipboard.writeText(c).then(done,()=>modal(`<h2>Ton code de sauvegarde</h2><textarea readonly style="width:100%;height:140px">${c}</textarea><button class="btn" data-a="close">Fermer</button>`));else modal(`<h2>Ton code de sauvegarde</h2><textarea readonly style="width:100%;height:140px">${c}</textarea><button class="btn" data-a="close">Fermer</button>`);full=false;break}
+    case 'saveimp':modal(`<h2>Coller un code de sauvegarde</h2><p class="hint">Ta partie actuelle sera remplacée.</p><textarea id="impcode" style="width:100%;height:140px"></textarea><div style="display:grid;gap:8px;margin-top:12px"><button class="btn big" data-a="saveimp2">Charger cette partie</button><button class="btn ghost" data-a="close">Annuler</button></div>`);full=false;break;
+    case 'saveimp2':{const t=$('#impcode');if(t&&importSave(t.value)){location.reload()}else toast('Code invalide.');full=false;break}
+    case 'install':if(DEFER_INSTALL){DEFER_INSTALL.prompt();DEFER_INSTALL=null}break;
     case 'openev':if(S.tab==='vie'){full=false;break}showEvent();full=false;break;
     case 'decide':decide(+b.dataset.i,false);full=false;setTimeout(render,1000);break;
     case 'stage':upgradeStage();break;

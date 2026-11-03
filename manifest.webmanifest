@@ -1,0 +1,17 @@
+{
+  "name": "Flip Empire",
+  "short_name": "Flip Empire",
+  "description": "Construis ton empire, de ta ville jusqu'à la Lune.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E2B2A",
+  "theme_color": "#1E2B2A",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
