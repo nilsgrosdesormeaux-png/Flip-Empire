@@ -4735,6 +4735,368 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
   if(a==='dec_war'&&P.cand&&P.camp.warN<3){const c=costSec(100*(P.camp.warN+1));if(S.cash<c){sfx('no');return}spend(c);P.camp.warN++;P.camp.war+=2;toast('💰 Budget de campagne renforcé : +2 partout.');sfx('good')}
   render()});
 /* ===== FIN AGENT DECISIONS ===== */
+/* ===== AGENT MATCH ===== */
+/* Jour de match : avant-match (compo, forme, adversaire, plan de jeu), direct avec décisions, après-match (pourquoi, notes, recette).
+   Un seul moteur (mxStep) sert au direct, au pronostic et aux matchs non regardés résolus en fin de mois. */
+let MX=null,mxT=null;
+const MX_TAC={
+  bloc:{n:'Bloc bas et contres',d:'On défend tous ensemble et on part vite. Moins d’occasions des deux côtés.',atk:.78,def:.66,tire:.85},
+  equi:{n:'Équilibré',d:'Ni folie ni frilosité. Le plan sûr quand on connaît mal l’adversaire.',atk:1,def:1,tire:1},
+  press:{n:'Pressing haut',d:'On étouffe leur relance. Plus d’occasions, mais on s’expose et les jambes brûlent.',atk:1.32,def:1.2,tire:1.45}};
+const MX_STY={
+  poss:{n:'jeu de possession',d:'Ils font tourner le ballon jusqu’à trouver la faille.',plus:'press',minus:'bloc',pw:'Pressés haut, leurs défenseurs perdent des ballons.',mw:'Si on recule, ils finissent par trouver l’ouverture.'},
+  contre:{n:'jeu de contre',d:'Ils attendent bas et piquent dès qu’on se découvre.',plus:'bloc',minus:'press',pw:'Sans espace dans notre dos, leurs contres tombent à plat.',mw:'Un pressing haut leur offre la profondeur qu’ils cherchent.'},
+  pressing:{n:'pressing',d:'Ils harcèlent le porteur dès notre relance.',plus:'bloc',minus:'equi',pw:'Un bloc bas et des ballons longs dans leur dos les punissent.',mw:'Une relance courte et tranquille, c’est exactement ce qu’ils attendent.'},
+  physique:{n:'jeu physique',d:'Ballons longs, duels, deuxièmes ballons.',plus:'equi',minus:'press',pw:'Ballon au sol et patience : leurs grands gabarits courent dans le vide.',mw:'Presser haut, c’est accepter leurs duels et s’épuiser.'}};
+const MX_HALF={push:{n:'Tout pour l’attaque',d:'Plus d’occasions pour nous, mais la défense se découvre.',atk:1.3,def:1.28},
+  keep:{n:'On ne change rien',d:'Le plan tient, on garde l’équilibre.',atk:1,def:1},
+  lock:{n:'Verrouiller',d:'On recule pour tenir le score. Peu d’occasions des deux côtés.',atk:.68,def:.66}};
+const MX_OPN=['Barbier','Vasseur','Ndiaye','Collet','Marchand','Petitjean','Ouattara','Leclerc','Brunet','Kanté','Morel','Da Silva','Hamon','Rigaud','Tessier','Guérin','Diakité','Laporte'];
+const MX_TXT={
+  goal:['{j} reçoit dos au but, pivote et croise du gauche. Filet opposé.','Centre tendu de la droite, {j} coupe au premier poteau. Le gardien n’a rien vu.','Dégagement raté en face, {j} contrôle de la poitrine et reprend de volée.','Une-deux plein axe, {j} se présente seul et ouvre le pied.','Coup franc à vingt mètres. {j} enroule par-dessus le mur, le gardien reste planté.','Le gardien relâche une frappe anodine, {j} a suivi. Il n’y avait plus qu’à pousser.','{j} élimine son vis-à-vis d’un crochet et tire entre les jambes du dernier défenseur.','Corner rentrant, cafouillage, et c’est {j} qui trouve un trou de souris.','{j} tente sa chance de trente mètres. Personne n’y croit, sauf le ballon : lucarne.','Penalty obtenu par {j}, qui le tire lui-même. Contre-pied parfait.','Contre éclair : trois passes, et {j} conclut en pleine course.','{j} a fait l’appel que personne n’a suivi. Seul au point de penalty, il ne tremble pas.'],
+  t_open:['Le score est ouvert.','{c} frappe le premier.','Premier coup porté.'],
+  t_ahead:['{c} repasse devant.','Et revoilà {c} devant !','Le match bascule.'],
+  t_break:['Le break.','Deux buts d’avance, on respire.','{a} vacille.'],
+  t_more:['Ça tourne à la démonstration.','Les « olé » descendent des tribunes.','{a} a lâché.'],
+  t_equal:['Tout est à refaire pour {a}.','Égalisation, tout le banc se lève.','On repart de zéro.'],
+  t_behind:['L’écart se réduit.','Il reste de l’espoir.','On y croit encore.'],
+  t_late:['À ce moment du match, ça vaut de l’or.','Quel timing.','Le stade explose.'],
+  ogoal:['{o} profite d’une relance ratée et ne tremble pas.','Contre éclair de {a}, {o} conclut au premier poteau.','Corner pour {a}, {o} s’élève plus haut que tout le monde.','{o} déclenche de loin. {gk} est battu sur sa droite.','Erreur de marquage, {o} pousse le ballon dans le but vide.','Penalty pour {a} après une main dans la surface. {o} le transforme.','{o} élimine deux joueurs dans un mouchoir de poche et croise. Rien à faire pour {gk}.','Coup franc de {o}, le ballon caresse la barre et rentre.','Centre en retrait, {o} arrive lancé. Plat du pied, but.','{o} récupère haut et file seul vers le but. {gk} ne peut que regarder.'],
+  o_open:['{a} ouvre le score.','Coup dur.','Il va falloir courir après le score.'],
+  o_ahead:['{a} repasse devant.','Et ça recommence.','Le coup de massue.'],
+  o_break:['Deux buts de retard, ça se complique.','{c} prend l’eau.','Le banc se prend la tête dans les mains.'],
+  o_more:['La soirée tourne au cauchemar.','Les tribunes commencent à se vider.','Plus rien ne va.'],
+  o_equal:['{a} égalise.','Tout est à refaire.','L’avance s’envole.'],
+  o_behind:['{a} revient à un but.','Le doute s’installe.','Ça se resserre.'],
+  miss:['{j} s’échappe côté droit, sa frappe file à côté du second poteau.','Tête de {j} sur corner, juste au-dessus.','{j} hésite à frapper, le défenseur revient et dégage en touche.','Énorme parade du gardien adverse sur une reprise de {j}.','{j} trouve le poteau ! Le ballon longe la ligne et sort.','Frappe de {j} contrée in extremis. Corner.','{j} lobe le gardien… et un défenseur sauve sur la ligne.','Le centre de {j} traverse toute la surface sans trouver preneur.','{j} se jette sur un centre en retrait, trop court d’un rien.','But de {j} refusé pour hors-jeu. Le banc proteste, l’arbitre ne bouge pas.','{j} frappe fort mais en plein sur le gardien.','Ballon piqué de {j} pour personne. Il s’excuse d’un geste.'],
+  save:['{gk} sort dans les pieds de {o}. Sauvetage.','{o} seul face au but… au-dessus ! On respire.','Frappe de {o} repoussée par {gk}, la défense dégage.','{o} touche le montant. {c} a eu chaud.','{gk} détourne du bout des gants une tête de {o}.','{o} part seul, le drapeau se lève : hors-jeu.','Tir de {o} contré par {j}, qui se jette.','{o} tente l’enroulé : trop enlevé.','{j} tacle au dernier moment devant {o}. Propre.','Coup franc de {o} dans le mur. {a} insiste.'],
+  flav:['Longue séquence de passes de {a}. {c} recule et attend.','Le jeu se hache, trois fautes en deux minutes au milieu.','{j} réclame le ballon en profondeur, la passe ne vient jamais.','Duel musclé entre {j} et {o}. Les deux se relèvent en se jaugeant.','L’arbitre laisse jouer, l’avantage profite à {c}.','{c} fait tourner et cherche l’ouverture. Patience.','Temps faible pour {c} : plus personne ne propose devant.','Touche longue de {a}, {j} dégage de la tête.','Le banc adverse conteste chaque coup de sifflet.','{j} glisse sur une pelouse grasse. Rien de grave, le public rigole.'],
+  flav_h:['Le kop tape des mains en rythme, tout le stade suit.','Un tifo se déroule derrière le but.','Les tribunes sifflent chaque prise de balle de {o}.'],
+  flav_a:['Le parcage visiteur chante plus fort que le stade entier.','Sifflets à chaque touche de balle de {j}. Il a l’air d’aimer ça.'],
+  flav_w:['{c} gère sans s’affoler.','{j} temporise près du poteau de corner. Malin.'],
+  flav_l:['{c} pousse, mais rien de précis dans les trente derniers mètres.','Il faut une réaction, et vite.'],
+  yel:['Carton jaune pour {j}, tacle en retard.','{j} retient {o} par le maillot. Jaune, logique.','Jaune pour {j}, qui a trop protesté.','{j} casse une contre-attaque d’une faute. Averti.'],
+  red:['Deuxième jaune pour {j}. Il sort, {c} finit à quatre.','{j} récidive, l’arbitre n’hésite pas : rouge.'],
+  oyel:['Jaune pour {o}, qui découpe {j} à mi-terrain.','{o} averti pour simulation. Le public apprécie.','{o} dégage le ballon après le sifflet. Jaune.'],
+  ored:['Rouge direct pour {o}, semelle en avant. {a} à quatre !','Second jaune pour {o}, expulsé. Ça s’ouvre pour {c}.'],
+  inj:['{j} reste au sol en se tenant la cuisse. Le kiné entre.','{j} boite après un choc genou contre genou.','Mauvaise réception pour {j}, qui grimace et fait signe au banc.'],
+  tired:['{j} a les mains sur les genoux. Le réservoir est vide.','{j} arrive avec une seconde de retard sur chaque ballon.'],
+  sub:['Changement : {i} remplace {j}.','{i} entre à la place de {j}.','{j} sort sous les applaudissements, {i} le remplace.'],
+  ko_h:['Coup d’envoi devant {att} spectateurs. {c} attaque vers la droite.','C’est parti, devant {att} spectateurs. Le kop donne de la voix.'],
+  ko_a:['Coup d’envoi chez {a}. Le stade siffle, {c} a le ballon.','C’est parti chez {a}, ambiance hostile.'],
+  half:['Mi-temps, {s} au tableau d’affichage.','Pause. {s} pour l’instant.'],
+  h_push:['Retour des vestiaires : tout le monde devant, quitte à prendre des risques.'],
+  h_keep:['Retour des vestiaires : même plan, mêmes visages.'],
+  h_lock:['Retour des vestiaires : on resserre les lignes, priorité au score.'],
+  calm:['Consigne passée à {j} : plus de tacle glissé.'],
+  stay:['{j} serre les dents et reste sur le terrain.'],
+  end_w:['Coup de sifflet final. {c} l’emporte {s}.','C’est fini ! Victoire {s}, les joueurs filent saluer le public.'],
+  end_d:['Fin du match, {s}. Chacun repart avec un point.','L’arbitre siffle la fin. {s}, et un goût d’inachevé.'],
+  end_l:['C’est terminé. Défaite {s}.','Fin du match. {a} s’impose, {s}, on rentre tête basse.']};
+function mxSn(n){const a=String(n).split(' ');return a.length>1?a.slice(1).join(' '):String(n)}
+function mxIc(po){return String(po||'').split(' ')[0]}
+function mxEff(p){if(!p||p.red)return 0;return p.hurt?p.note*.6:p.note+(p.fit-70)/8-(p.cau?3:0)}
+function mxBase(X){const C=S.club;return (C.coach|0)*2.5+((C.morale||50)-50)/10+(X.home?3:0)+(X.prime?2:0)}
+function mxStr(X){return X.me.reduce((a,p)=>a+mxEff(p),0)/X.me.length+mxBase(X)}
+function mxOp(X){return X.oppStr+(X.home?0:3)-X.opRed*6}
+function mxFit(X){return Math.round(X.me.reduce((a,p)=>a+p.fit,0)/X.me.length)}
+function mxMods(X){const T=MX_TAC[X.tac],H=MX_HALF[X.half||'keep'],st=MX_STY[X.style];let a=T.atk*H.atk,d=T.def*H.def;
+  if(st.plus===X.tac){a*=1.18;d*=.85}else if(st.minus===X.tac){a*=.88;d*=1.18}return [a,d]}
+function mxCanSub(X){return X.bench.some(b=>!b.abs)&&X.subs<3}
+function mxScore(X){return X.gf+'-'+X.ga}
+
+function mxNew(){const C=ecoC(),M=C.match;
+  let sq=C.squad&&C.squad.length?C.squad:null;
+  const avg=sq?sq.reduce((a,p)=>a+p.note,0)/sq.length:(C.str||30),used=new Set((sq||[]).map(p=>p.name));
+  const youth=()=>{let n,k=0;do{n=pick(PNAMES)}while(used.has(n)&&k++<40);used.add(n);
+    return {name:n,poste:'Jeune du club',note:clamp(Math.round(avg-7+(C.acad|0)*2+rand(-2,2)),10,99),fit:92,ref:-1,y:0,g:0,as:0}};
+  const me=(sq||POSTES.map(p=>({poste:p,name:pick(PNAMES),note:Math.round(avg),fit:70,inj:0}))).map((p,i)=>({name:p.name,poste:p.poste,note:p.note,fit:p.fit==null?70:p.fit,ref:sq?i:-1,y:0,g:0,as:0,abs:p.inj>0?'blessé':p.sus>0?'suspendu':''}));
+  const h=ecoHash(M.opp),opn=[];for(let i=0;opn.length<5;i++){const n=MX_OPN[(h+i*7)%MX_OPN.length];if(!opn.includes(n))opn.push(n)}
+  const X={min:0,gf:0,ga:0,me,pos:me.map(p=>p.poste),bench:[youth(),youth()],out:[],subs:0,tac:'equi',half:null,home:!!M.home,opp:M.opp,oppStr:M.oppStr,
+    style:Object.keys(MX_STY)[h%4],opRed:0,prime:false,xf:0,xa:0,ev:[],lines:[],lid:0,ask:null,deck:{},phase:'pre',opn,asked:{},bx:50,by:50,fast:false,subsOpen:false,
+    att:ecoGate(true,'D').att,day:C.played+1};
+  me.forEach((p,i)=>{if(p.abs){const k=X.bench.findIndex(b=>!b.abs);if(k>=0){const b=X.bench.splice(k,1)[0];me[i]=b;X.bench.push(p)}else{p.hurt=!!p.inj}}});
+  return X}
+
+function mxPick(X,cat){const L=MX_TXT[cat];let d=X.deck[cat];
+  if(!d||!d.length){d=X.deck[cat]=L.map((_,i)=>i).sort(()=>Math.random()-.5);if(d.length>1&&d[0]===X.deck['_'+cat])d.push(d.shift())}
+  const k=d.shift();X.deck['_'+cat]=k;return L[k]}
+function mxFill(X,t,v){v=v||{};const live=X.me.filter(p=>!p.red);
+  const rep={c:S.club.name,a:X.opp,gk:mxSn(X.me[0].name),o:v.o||pick(X.opn),j:mxSn((v.p||pick(live)||X.me[1]).name),s:mxScore(X),att:(X.att||0).toLocaleString('fr-FR'),i:v.i||''};
+  return t.replace(/\{(\w+)\}/g,(m,x)=>rep[x]!=null?rep[x]:m)}
+function mxLine(X,t,cls){X.lines.unshift({id:++X.lid,m:X.min,t,k:cls||''});if(X.lines.length>40)X.lines.length=40}
+function mxSay(X,cat,v,cls){if(X.quiet||!MX_TXT[cat])return;let t=mxFill(X,mxPick(X,cat),v);if(v&&v.tag)t+=' '+v.tag;mxLine(X,t,cls)}
+function mxTag(X,us){if(X.quiet)return '';const d=us?X.gf-X.ga:X.ga-X.gf,first=X.gf+X.ga===1;
+  const cat=(us?'t_':'o_')+(first?'open':d===0?'equal':d===1?'ahead':d===2?'break':d>2?'more':'behind');
+  let t=mxFill(X,mxPick(X,cat));if(us&&X.min>=82&&d>=0)t+=' '+mxPick(X,'t_late');return t}
+function mxAsk(X,a){if(X.ask&&!X.auto){(X.q=X.q||[]).push(a);return}if(X.auto){mxAnswer(X,a.k==='half'?'keep':a.k==='inj'&&mxCanSub(X)?'sub':'stay',a);return}X.ask=a}
+function mxSub(X,i){const k=X.bench.reduce((bi,b,j)=>!b.abs&&(bi<0||mxEff(b)>mxEff(X.bench[bi]))?j:bi,-1);if(k<0||X.subs>=3)return false;
+  const o=X.me[i],b=X.bench.splice(k,1)[0];if(X.phase==='pre'){X.me[i]=b;X.bench.push(o);return true}
+  o.off=X.min;X.out.push(o);b.on=X.min;X.me[i]=b;X.subs++;mxSay(X,'sub',{p:o,i:mxSn(b.name)});return true}
+function mxAnswer(X,v,a){a=a||X.ask;X.ask=null;if(!a)return;const p=X.me[a.i];if(X.q&&X.q.length)X.ask=X.q.shift();
+  if(a.k==='half'){X.half=MX_HALF[v]?v:'keep';mxSay(X,'h_'+X.half,null,'h')}
+  else if(v==='sub'&&p&&mxSub(X,a.i)){}
+  else if(v==='calm'&&p){p.cau=1;mxSay(X,'calm',{p})}
+  else if(a.k==='inj'&&p){p.stay=1;mxSay(X,'stay',{p})}}
+function mxW(p,pos){const s=String(pos);return s.includes('Buteur')?5:s.includes('Ailier')?3:s.includes('Milieu')?2:s.includes('Défenseur')?.6:.05}
+function mxChance(X,us){const q=rand(.1,.48);
+  if(us){X.xf+=q;const cand=X.me.map((p,i)=>({p,i,w:p.red?0:mxW(p,X.pos[i])*Math.max(.2,mxEff(p)/30)}));const sh=wpick(cand).p;
+    X.bx=rand(84,94);X.by=rand(28,72);
+    if(Math.random()<q){X.gf++;sh.g++;const ot=X.me.filter(p=>p!==sh&&!p.red&&p!==X.me[0]);if(ot.length&&Math.random()<.7)pick(ot).as++;
+      X.ev.push({m:X.min,k:'g',n:mxSn(sh.name)});mxSay(X,'goal',{p:sh,tag:mxTag(X,1)},'g')}
+    else mxSay(X,'miss',{p:sh})}
+  else{X.xa+=q;X.bx=rand(6,16);X.by=rand(28,72);
+    if(Math.random()<q){X.ga++;const o=pick(X.opn);X.ev.push({m:X.min,k:'G',n:o});
+      mxSay(X,'ogoal',{o,tag:mxTag(X,0)},'b')}
+    else mxSay(X,'save',{p:pick(X.me.filter((p,i)=>i>0&&!p.red))||X.me[0]})}}
+function mxStep(X){if(X.ask||X.subsOpen||X.phase!=='live')return;
+  X.min+=2;
+  const s=mxStr(X),o=mxOp(X),[a,d]=mxMods(X),dd=s-o,T=MX_TAC[X.tac],H=MX_HALF[X.half||'keep'];
+  const pMe=Math.min(.32,.1*Math.exp(dd/22)*a),pOp=Math.min(.32,.1*Math.exp(-dd/22)*d);
+  X.me.forEach(p=>{if(!p.red)p.fit=Math.max(12,p.fit-(.5*T.tire*(H.atk>1?1.15:1)+Math.random()*.3))});
+  const r=Math.random();
+  if(r<pMe)mxChance(X,1);else if(r<pMe+pOp)mxChance(X,0);
+  else{X.bx=clamp(50+dd*1.2+rand(-28,28),14,86);X.by=rand(20,80);const r2=Math.random(),live=X.me.map((p,i)=>({p,i})).filter(x=>!x.p.red);
+    const avgFit=mxFit(X),inj=.006*(avgFit<55?1.6:1);
+    if(r2<.02*(X.tac==='press'?1.4:1)){const t=wpick(live.map(x=>({...x,w:(String(X.pos[x.i]).includes('Défenseur')?3:String(X.pos[x.i]).includes('Milieu')?2.5:1)*(x.p.cau?.3:1)})));const p=t.p;
+      if(p.y){p.y=2;p.red=1;X.ev.push({m:X.min,k:'r',n:mxSn(p.name)});mxSay(X,'red',{p},'b')}
+      else{p.y=1;X.ev.push({m:X.min,k:'y',n:mxSn(p.name)});mxSay(X,'yel',{p},'y');if(mxCanSub(X)&&X.min<84)mxAsk(X,{k:'yel',i:t.i})}}
+    else if(r2<.035){if(!X.opRed&&Math.random()<.18){X.opRed=1;X.ev.push({m:X.min,k:'R',n:pick(X.opn)});mxSay(X,'ored',null,'g')}else mxSay(X,'oyel')}
+    else if(r2<.035+inj){const c=live.filter(x=>!x.p.hurt);if(c.length){const t=pick(c);t.p.hurt=1;X.ev.push({m:X.min,k:'i',n:mxSn(t.p.name)});mxSay(X,'inj',{p:t.p},'y');mxAsk(X,{k:'inj',i:t.i})}}
+    else if(!X.quiet&&r2<.2){const lead=X.gf-X.ga,c=Math.random();mxSay(X,c<.3?(X.home?'flav_h':'flav_a'):c<.5&&lead>0?'flav_w':c<.5&&lead<0?'flav_l':'flav')}
+    else if(!X.auto&&!X.asked.tired&&X.min>=54&&mxCanSub(X)){const t=live.find(x=>x.p.fit<36&&!x.p.hurt);if(t){X.asked.tired=1;mxSay(X,'tired',{p:t.p},'y');mxAsk(X,{k:'tired',i:t.i})}}}
+  if(X.min===44){X.min=45;mxSay(X,'half',null,'h');mxAsk(X,{k:'half'})}
+  if(X.min>=89){X.min=90;X.phase='done';X.ask=null;X.q=null;X.subsOpen=false;const w=X.gf>X.ga?'end_w':X.gf<X.ga?'end_l':'end_d';mxSay(X,w,null,'h')}}
+function mxKick(X){X.phase='live';X.s0=Math.round(X.me.reduce((a,p)=>a+(p.abs?p.note*.6:p.note),0)/5+(S.club.coach|0)*2.5+((S.club.morale||50)-50)/10);X.f0=mxFit(X);X.me.forEach(p=>p.f0=p.fit);X.bench.forEach(p=>p.f0=p.fit);mxSay(X,X.home?'ko_h':'ko_a',null,'h')}
+function mxSim(X){X.auto=1;let k=0;while(X.phase==='live'&&k++<200){if(X.ask)mxAnswer(X,X.ask.k==='half'?'keep':'stay');X.subsOpen=false;mxStep(X)}}
+function mxOdds(X){const n=240;let w=0,d=0;const base=JSON.stringify(X);
+  for(let i=0;i<n;i++){const Y=JSON.parse(base);Y.quiet=1;Y.auto=1;Y.lines=[];mxKick(Y);mxSim(Y);if(Y.gf>Y.ga)w++;else if(Y.gf===Y.ga)d++}
+  const r=v=>Math.round(v/n*20)*5;const W=r(w),D=r(d);return [W,D,Math.max(0,100-W-D)]}
+
+/* --- Effets sur l'effectif et rapport --- */
+function mxRate(X){const res=X.gf>X.ga?1:X.gf<X.ga?-1:0;
+  X.me.concat(X.out).forEach(p=>{const pos=String(p.pp||p.poste);let r=6+res*.4+p.g*1.1+p.as*.6-(p.y===1?.3:0)-(p.red?1.6:0)+rand(-.35,.35);
+    if(/Gardien|Défenseur/.test(pos))r+=X.ga===0?.7:-.35*X.ga;if(p.fit<30)r-=.3;if(p.hurt)r-=.3;
+    const mins=(p.off!=null?p.off:90)-(p.on||0);r=6+(r-6)*Math.min(1,mins/45);p.mins=mins;p.rt=clamp(Math.round(r*10)/10,3,9.8)});}
+function mxApply(X){const C=S.club,sq=C.squad||[],played=new Set();
+  X.me.concat(X.out).forEach(p=>{if(p.ref<0||!sq[p.ref])return;const q=sq[p.ref];played.add(p.ref);
+    q.fit=clamp(Math.round(((p.f0==null?70:p.f0)+p.fit)/2+10),30,100);if(p.hurt)q.inj=Math.max(q.inj|0,p.stay?3:2);if(p.red)q.sus=1;else if(q.sus)q.sus=0});
+  sq.forEach((q,i)=>{if(!played.has(i)){q.fit=clamp((q.fit==null?70:q.fit)+8,30,100);if(q.sus)q.sus=0}});
+  C.str=ecoStr()}
+function mxPos(X){X.me.forEach((p,i)=>{if(!p.pp)p.pp=X.pos[i]})}
+function mxWhy(X){const L=[],add=(s,t)=>L.push({s,t}),st=MX_STY[X.style],T=MX_TAC[X.tac],g=S.club.lastGate;
+  const d=X.s0-X.oppStr;
+  add(d>=4?1:d<=-4?-1:0,d>=4?`Effectif plus fort sur le papier : niveau ${X.s0} contre ${X.oppStr}.`:d<=-4?`Adversaire plus fort sur le papier : niveau ${X.oppStr} contre ${X.s0}.`:`Deux équipes de même niveau : ${X.s0} contre ${X.oppStr}.`);
+  if(X.f0>=78)add(1,`Jambes fraîches au coup d’envoi (forme ${X.f0}).`);else if(X.f0<=60)add(-1,`Joueurs fatigués au coup d’envoi (forme ${X.f0}).`);
+  add(X.home?1:-1,X.home?`À domicile, porté par ${(g&&g.att||X.att||0).toLocaleString('fr-FR')} spectateurs.`:'À l’extérieur, sans le soutien du public.');
+  add(st.plus===X.tac?1:st.minus===X.tac?-1:0,st.plus===X.tac?`${T.n} contre leur ${st.n} : bien vu. ${st.pw}`:st.minus===X.tac?`${T.n} contre leur ${st.n} : mauvais choix. ${st.mw}`:`${T.n} : sans effet particulier sur leur ${st.n}.`);
+  if(X.half&&X.half!=='keep'){const f=X.ev.filter(e=>e.m>45&&e.k==='g').length,a=X.ev.filter(e=>e.m>45&&e.k==='G').length;
+    add(X.half==='push'?(f>a?1:f<a?-1:0):(a===0?1:-1),`Consigne de la mi-temps « ${MX_HALF[X.half].n} » : ${f} but${f>1?'s':''} marqué${f>1?'s':''}, ${a} encaissé${a>1?'s':''} ensuite.`)}
+  if(X.prime)add(1,'La prime promise a motivé le groupe.');
+  const red=X.ev.find(e=>e.k==='r');if(red)add(-1,`À quatre dès la ${red.m}e minute après l’expulsion de ${red.n}.`);
+  if(X.opRed){const e=X.ev.find(x=>x.k==='R');add(1,`${X.opp} a fini à quatre (${e?e.n+', ':''}${e?e.m:''}e).`)}
+  const hs=X.me.concat(X.out).find(p=>p.hurt&&p.stay);if(hs)add(-1,`${mxSn(hs.name)} a joué blessé.`);
+  const xf=X.xf.toFixed(1).replace('.',','),xa=X.xa.toFixed(1).replace('.',',');
+  if(X.gf-X.xf>=1)add(1,`Réalisme : ${X.gf} but${X.gf>1?'s':''} pour ${xf} attendus.`);else if(X.xf-X.gf>=1.2)add(-1,`Maladresse : ${X.gf} but${X.gf>1?'s':''} pour ${xf} attendus.`);
+  if(X.xa-X.ga>=1.2)add(1,`${mxSn(X.me[0].name)} a sorti les arrêts qu’il fallait.`);else if(X.ga-X.xa>=1)add(-1,`${X.opp} a tout mis au fond : ${X.ga} but${X.ga>1?'s':''} pour ${xa} attendus.`);
+  add(0,`Qualité des occasions : ${xf} pour nous, ${xa} pour eux.`);
+  return L}
+function mxEnd(X,watched){clearInterval(mxT);mxT=null;mxPos(X);mxRate(X);
+  const C=S.club,M=C.match;if(!M||M.done){X.phase='end';return}
+  finishMatch([X.gf,X.ga],!watched);
+  X.paid=0;if(X.prime&&X.gf>X.ga){X.paid=Math.max(0,Math.min(S.cash,X.primeAmt||0));if(X.paid)spend(X.paid)}
+  mxApply(X);X.why=mxWhy(X);X.phase='end'}
+
+/* --- Résolution automatique (match non regardé) --- */
+function autoScore(){const C=S.club;if(!C.match)return [0,0];const X=mxNew();X.quiet=1;mxKick(X);mxSim(X);mxPos(X);mxApply(X);return [X.gf,X.ga]}
+function mxAbandon(){const X=MX;if(!X)return;clearInterval(mxT);mxT=null;
+  if(X.phase==='pre'){MX=null;return}
+  if(X.phase==='live'){X.quiet=1;mxSim(X)}
+  if(X.phase==='done'){mxEnd(X,false);}MX=null;if($('#mx'))closeModal()}
+
+/* --- Vues --- */
+function mxBand(X,label){const k=ecoKit(),C=S.club;
+  return `<div class="mx-band"><span class="mx-min" id="mx-min">${label}</span>
+    <div class="mx-t"><i class="mx-kit" style="background:${k[0]};border-color:${k[1]}"></i>${esc(C.name)}</div>
+    <div class="mx-sc${X.phase==='pre'?' vs':''}" id="mx-sc">${X.phase==='pre'?'contre':X.gf+' - '+X.ga}</div>
+    <div class="mx-t r">${esc(X.opp)}</div></div>`}
+function mxPreHTML(X){const C=S.club,st=MX_STY[X.style],[w,d,l]=mxOdds(X),s=Math.round(mxStr(X)),o=Math.round(mxOp(X));
+  const prime=X.primeAmt;
+  return `<div id="mx" class="mx"><p class="mx-ctx">${DIVS[C.div]}, journée ${X.day}, ${X.home?'à domicile':'à l’extérieur'}</p>${mxBand(X,'Avant-match')}
+  <h3 class="mx-h">L’adversaire</h3>
+  <div class="mx-opp"><p><b>${esc(X.opp)}</b> joue un ${st.n}. ${st.d}</p>
+    <p class="mx-plus">Leur point faible : ${st.pw}</p><p class="mx-minus">Ce qui les arrange : ${st.mw}</p></div>
+  <h3 class="mx-h">Ton équipe <span>forme ${mxFit(X)}</span></h3>
+  <div class="mx-lu">${X.me.map((p,i)=>`<div class="mx-pl"><span class="mx-po" title="${esc(X.pos[i])}">${mxIc(X.pos[i])}</span><span class="mx-nm">${esc(p.name)}<small>Note ${p.note}${p.ref<0?', jeune du club':''}</small></span>${mxFitBar(p.fit)}<button class="btn ghost small" data-a="match_swap" data-v="${i}" ${X.bench.some(b=>!b.abs)?'':'disabled'}>${p.ref>=0?'Faire souffler':'Changer'}</button></div>`).join('')}
+    <p class="mx-bench">Sur le banc : ${X.bench.map(b=>`${esc(b.name)} (${b.abs?b.abs:'note '+b.note+', forme '+Math.round(b.fit)})`).join(', ')||'personne'}.</p>
+    <p class="hint">Un joueur fatigué pèse moins et se blesse plus. Celui qui souffle revient en forme le mois prochain.</p></div>
+  <h3 class="mx-h">Plan de jeu</h3>
+  <div class="mx-tacs">${Object.entries(MX_TAC).map(([k,t])=>`<button class="mx-tac ${X.tac===k?'on':''}" aria-pressed="${X.tac===k}" data-a="match_tac" data-v="${k}"><b>${t.n}</b><span>${t.d}</span></button>`).join('')}</div>
+  <button class="mx-prime ${X.prime?'on':''}" aria-pressed="${X.prime}" data-a="match_prime"><b>${X.prime?'Prime promise':'Promettre une prime de victoire'}</b><span>${fmt(prime)} versés seulement si on gagne. Le groupe se surpasse un peu.</span></button>
+  <div class="mx-odds" aria-label="Pronostic du staff"><p>Pronostic du staff, niveau ${s} contre ${o}</p>
+    <div class="mx-ob"><i class="w" style="width:${w}%"></i><i class="d" style="width:${d}%"></i><i class="l" style="width:${l}%"></i></div>
+    <div class="mx-ol"><span>Victoire ${w} %</span><span>Nul ${d} %</span><span>Défaite ${l} %</span></div></div>
+  <button class="btn big go" style="margin-top:14px" data-a="match_go">Coup d’envoi</button>
+  <button class="btn ghost big" style="margin-top:8px" data-a="match_later">Plus tard</button>
+  <p class="hint" style="text-align:center;margin-top:6px">Sans toi, le staff joue le match en fin de mois.</p></div>`}
+function mxFitBar(f){f=Math.round(f);return `<i class="mx-fit ${f<40?'lo':f<60?'mid':''}" title="Forme ${f}"><b style="width:${f}%"></b><em>${f}</em></i>`}
+function mxLiveHTML(X){return `<div id="mx" class="mx"><p class="mx-ctx">${DIVS[S.club.div]}, ${X.home?'à domicile':'à l’extérieur'}, ${MX_TAC[X.tac].n.toLowerCase()}</p>${mxBand(X,X.min+'′')}
+  <div class="mx-pitch" aria-hidden="true"><span class="mx-box l"></span><span class="mx-box r"></span><span class="mx-ball" id="mx-ball"></span></div>
+  <div class="mx-frise" id="mx-frise"></div>
+  <div id="mx-ctl"></div>
+  <div class="mx-feed" id="mx-feed" aria-live="polite"></div></div>`}
+function mxFrise(X){return `<i class="mx-ax"></i><i class="mx-ht"></i><i class="mx-now" style="left:${X.min/90*100}%"></i>`+X.ev.map(e=>`<span class="mx-ev ${e.k}" style="left:${e.m/90*100}%" title="${e.m}e ${esc(e.n)}"></span>`).join('')}
+function mxCtl(X){const C=mxCanSub(X),left=Math.min(3-X.subs,X.bench.filter(b=>!b.abs).length);
+  if(X.phase==='done')return `<button class="btn big go" data-a="match_report">Voir le bilan</button>`;
+  if(X.subsOpen)return `<div class="mx-ask"><h3>Changements <span>${left} possible${left>1?'s':''}</span></h3>
+    ${X.me.map((p,i)=>`<div class="mx-pl"><span class="mx-po">${mxIc(X.pos[i])}</span><span class="mx-nm">${esc(p.name)}<small>${p.red?'Expulsé':p.hurt?'Blessé':p.y?'Averti':'Note '+p.note}</small></span>${mxFitBar(p.fit)}<button class="btn small ${p.hurt||p.fit<40?'pinkb':'ghost'}" data-a="match_sub" data-v="${i}" ${C&&!p.red?'':'disabled'}>Sortir</button></div>`).join('')}
+    <p class="mx-bench">Sur le banc : ${X.bench.filter(b=>!b.abs).map(b=>esc(b.name)+' (note '+b.note+')').join(', ')||'personne'}.</p>
+    <button class="btn big" data-a="match_resume">Reprendre le match</button></div>`;
+  const a=X.ask;
+  if(a){const p=X.me[a.i],b=X.bench.filter(x=>!x.abs).sort((x,y)=>mxEff(y)-mxEff(x))[0],bn=b?esc(b.name):'';let h,t,o;
+    if(a.k==='half'){h=`Mi-temps, ${X.gf}-${X.ga}.`;t=X.gf>X.ga?'Vous menez. Que dis-tu dans le vestiaire ?':X.gf<X.ga?'Vous êtes menés. Que dis-tu dans le vestiaire ?':'Tout reste ouvert. Que dis-tu dans le vestiaire ?';
+      o=Object.entries(MX_HALF).map(([k,x])=>[k,x.n,x.d]);}
+    else if(a.k==='inj'){h=`${esc(p.name)} est touché.`;t='Il peut continuer diminué, au risque d’aggraver la blessure.';o=[['sub',`Faire entrer ${bn}`,'Il sort, on reste au complet.'],['stay','Il reste sur le terrain','Il jouera à 60 % et ratera plus de matchs.']]}
+    else if(a.k==='yel'){h=`${esc(p.name)} est averti.`;t='Un deuxième jaune et vous finissez à quatre.';o=[['sub',`Le remplacer par ${bn}`,'Plus de risque, mais un changement en moins.'],['calm','Lui demander de lever le pied','Moins de fautes, mais il pèse moins.'],['none','Ne rien changer','Il garde son agressivité. À ses risques.']]}
+    else {h=`${esc(p.name)} est à bout.`;t=`Forme ${Math.round(p.fit)} : il pèse de moins en moins dans le jeu.`;o=[['sub',`Faire entrer ${bn}`,'Des jambes fraîches pour la fin.'],['stay','Il finit le match','On garde le changement pour plus tard.']]}
+    if(!b)o=o.filter(x=>x[0]!=='sub');
+    return `<div class="mx-ask" role="group" aria-label="Décision"><h3>${h}</h3><p>${t}</p><div class="mx-opts">${o.map(([k,n,d])=>`<button class="mx-opt" data-a="match_ans" data-v="${k}"><b>${n}</b><span>${d}</span></button>`).join('')}</div>
+      ${a.k==='half'&&C?`<button class="btn ghost small" style="margin-top:8px" data-a="match_subs">Faire un changement d’abord</button>`:''}</div>`}
+  return `<div class="mx-ctlrow"><button class="btn ghost" data-a="match_subs" ${C?'':'disabled'}>Changements (${left})</button><button class="btn ghost" data-a="match_fast">${X.fast?'Vitesse normale':'Accélérer'}</button><button class="btn ghost" data-a="match_skip">Aller au coup de sifflet</button></div>`}
+function mxUpd(){const X=MX;if(!X||!$('#mx'))return;
+  const sc=$('#mx-sc'),mn=$('#mx-min'),ball=$('#mx-ball'),fr=$('#mx-frise'),ctl=$('#mx-ctl'),feed=$('#mx-feed');
+  if(sc){const v=X.gf+' - '+X.ga;if(sc.textContent!==v){sc.textContent=v;sc.classList.remove('pop');void sc.offsetWidth;sc.classList.add('pop')}}
+  if(mn)mn.textContent=X.phase==='done'?'Terminé':X.ask&&X.ask.k==='half'?'Mi-temps':X.min+'′';
+  if(ball){ball.style.left=X.bx+'%';ball.style.top=X.by+'%'}
+  if(fr)fr.innerHTML=mxFrise(X);
+  const key=JSON.stringify([X.ask,X.subsOpen,X.fast,X.subs,X.phase,X.bench.length,X.ask||X.subsOpen?X.me.map(p=>[p.red,p.hurt,p.y,Math.round(p.fit/5)]):0]);
+  if(ctl&&ctl.dataset.k!==key){ctl.dataset.k=key;ctl.innerHTML=mxCtl(X)}
+  if(feed&&feed.dataset.k!=X.lid){const last=+feed.dataset.k||0;feed.dataset.k=X.lid;
+    feed.innerHTML=X.lines.slice(0,14).map(l=>`<p class="${l.k?'mx-'+l.k:''}${l.id>last?' nw':''}"><b>${l.m}′</b><span>${esc(l.t)}</span></p>`).join('')}}
+function mxTick(){const X=MX;if(!X){clearInterval(mxT);mxT=null;return}
+  if(!$('#mx')){mxAbandon();render();return}
+  if(X.phase!=='live')return;mxStep(X);
+  if(X.phase==='done'&&!X.endSnd){X.endSnd=1;sfx(X.gf>X.ga?'rank':X.gf<X.ga?'bad':'tap')}
+  else if(X.ev.length!==X.evn){const e=X.ev[X.ev.length-1];X.evn=X.ev.length;if(e&&e.m===X.min)sfx(e.k==='g'||e.k==='R'?'rank':e.k==='G'||e.k==='r'?'bad':'tap')}
+  if(X.ask&&!X.askSnd){X.askSnd=1;sfx('event')}if(!X.ask)X.askSnd=0;
+  mxUpd();if(X.phase==='done'){clearInterval(mxT);mxT=null}}
+function mxRun(){clearInterval(mxT);mxT=setInterval(mxTick,MX&&MX.fast?110:330)}
+function mxReport(X){const C=S.club,g=C.lastGate,res=X.gf>X.ga?['good','Victoire']:X.gf===X.ga?['mid','Match nul']:['bad','Défaite'];
+  const all=X.me.concat(X.out).sort((a,b)=>b.rt-a.rt),motm=all[0];
+  const sc=(k)=>{const m={};X.ev.filter(e=>e.k===k).forEach(e=>{(m[e.n]=m[e.n]||[]).push(e.m+'e')});return Object.entries(m).map(([n,v])=>`${esc(n)} ${v.join(', ')}`).join(' ; ')};
+  const us=sc('g'),them=sc('G');
+  return `<div id="mx" class="mx mx-end"><p class="mx-ctx">${DIVS[C.div]}, journée ${X.day}, ${X.home?'à domicile':'à l’extérieur'}</p>${mxBand(X,'Terminé')}
+    <div class="verdict ${res[0]} mx-verd">${res[1]}</div>
+    ${us||them?`<p class="mx-goals">${us?`Nos buts : ${us}.`:''}${us&&them?'<br>':''}${them?`Leurs buts : ${them}.`:''}</p>`:'<p class="mx-goals">Aucun but.</p>'}
+    <h3 class="mx-h">Pourquoi ce résultat</h3>
+    <ul class="mx-why">${(X.why||[]).map(w=>`<li class="${w.s>0?'p':w.s<0?'n':'z'}"><b>${w.s>0?'+':w.s<0?'−':'='}</b><span>${esc(w.t)}</span></li>`).join('')}</ul>
+    <h3 class="mx-h">Notes des joueurs</h3>
+    <div class="mx-rates">${all.map(p=>`<div class="mx-rt"><span class="mx-po">${mxIc(p.pp||p.poste)}</span><span class="mx-nm">${esc(p.name)}${p===motm?' <em>Homme du match</em>':''}<small>${p.mins<90?(p.on?`Entré à la ${p.on}e`:`Sorti à la ${p.off}e`):'90 minutes'}${p.g?`, ${p.g} but${p.g>1?'s':''}`:''}${p.as?`, ${p.as} passe${p.as>1?'s':''} décisive${p.as>1?'s':''}`:''}${p.red?', expulsé':p.y?', averti':''}${p.hurt?', blessé':''}</small></span><b class="mx-note ${p.rt>=7.5?'hi':p.rt<5.5?'lo':''}">${String(p.rt.toFixed(1)).replace('.',',')}</b></div>`).join('')}</div>
+    <h3 class="mx-h">Recette du jour</h3>
+    <div class="panel mx-gate">${g?ecoGateHTML(g):''}${X.paid?`<div class="kv"><span>Prime de victoire versée</span><b class="neg">−${fmt(X.paid)}</b></div>`:''}</div>
+    <button class="btn big" style="margin-top:14px" data-a="match_done">Retour au club</button></div>`}
+
+/* --- Entrées publiques (redéfinitions) --- */
+function watchMatch(){const C=S.club;if(!C||!C.own||!C.match||C.match.done)return;
+  if(MX&&$('#mx')){mxUpd();return}
+  if(MX)mxAbandon();if(C.match.done){render();return}
+  MX=mxNew();const est=ecoGate(MX.home,'W');MX.primeAmt=Math.max(500,Math.round(est.tot*ecoPM()*.25/100)*100);
+  modal(mxPreHTML(MX));sfx('event')}
+function lmStep(){}function lmRender(){}function lmTactic(){}
+const _mxNewDay=newDay;
+newDay=function(auto){if(MX){if(auto&&$('#mx')&&MX.phase!=='end'){S.dayProg=.97;return}if(MX.phase!=='end')mxAbandon();else MX=null}return _mxNewDay.apply(this,arguments)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="match_"]');if(!b)return;e.stopPropagation();e.preventDefault();if(b.disabled)return;
+  const a=b.dataset.a.slice(6),v=b.dataset.v,X=MX;
+  if(!X){if(a==='done'||a==='later'){closeModal();render()}return}
+  if(typeof AC!=='undefined'&&AC&&AC.state==='suspended')AC.resume();
+  if(X.phase==='pre'){
+    if(a==='tac'&&MX_TAC[v])X.tac=v;else if(a==='prime')X.prime=!X.prime;else if(a==='swap')mxSub(X,+v);
+    else if(a==='later'){MX=null;closeModal();render();return}
+    else if(a==='go'){mxKick(X);modal(mxLiveHTML(X));mxUpd();mxRun();sfx('tap');return}
+    const y=$('.sheet')?$('.sheet').scrollTop:0;modal(mxPreHTML(X));const sh=$('.sheet');if(sh)sh.scrollTop=y;sfx('tap');return}
+  if(a==='ans'&&X.ask){mxAnswer(X,v);sfx('tap')}
+  else if(a==='subs'&&mxCanSub(X))X.subsOpen=true;
+  else if(a==='resume')X.subsOpen=false;
+  else if(a==='sub'){if(mxSub(X,+v)){sfx('tap');if(!mxCanSub(X))X.subsOpen=false}}
+  else if(a==='fast'){X.fast=!X.fast;mxRun()}
+  else if(a==='skip'){X.ask=null;X.q=null;X.subsOpen=false;mxLine(X,'Tu laisses le staff gérer la fin du match.','h');mxSim(X);X.auto=0;clearInterval(mxT);mxT=null}
+  else if(a==='report'||a==='done'){
+    if(X.phase==='done')mxEnd(X,true);
+    if(a==='report'&&X.phase==='end'){modal(mxReport(X));return}
+    MX=null;clearInterval(mxT);mxT=null;closeModal();render();return}
+  mxUpd()},true);
+document.head.insertAdjacentHTML('beforeend',`<style>
+.mx{text-align:left}
+.mx .btn{min-height:44px}
+.mx-ctx{font-size:.82rem;color:var(--muted);margin:0 0 14px!important}
+.mx-band{position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;background:var(--ink);color:var(--surface);border-radius:14px;padding:16px 12px 12px}
+.mx-t{font-weight:700;font-size:.9rem;line-height:1.15;overflow-wrap:anywhere}.mx-t.r{text-align:right}
+.mx-kit{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;border:2px solid;vertical-align:-1px}
+.mx-sc{font-family:"Permanent Marker","Marker Felt",cursive;font-size:2.3rem;line-height:1;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mx-sc.vs{font-family:inherit;font-size:.85rem;font-weight:600;opacity:.75}
+.mx-sc.pop{animation:mxpop .5s ease-out}
+@keyframes mxpop{0%{transform:scale(1.5);color:var(--sticker)}100%{transform:none}}
+.mx-min{position:absolute;top:-11px;left:50%;transform:translateX(-50%) rotate(-3deg);background:var(--sticker);color:var(--sticker-ink);font-family:"Permanent Marker","Marker Felt",cursive;font-size:.95rem;padding:2px 10px 0;border-radius:3px;box-shadow:1px 2px 0 rgba(0,0,0,.2);white-space:nowrap}
+.mx-h{font-size:1rem;margin:18px 0 6px;display:flex;justify-content:space-between;align-items:baseline}
+.mx-h span{font-size:.82rem;font-weight:600;color:var(--muted)}
+.mx-opp{background:var(--surface2);border-radius:12px;padding:10px 12px;font-size:.9rem}
+.mx-opp p{margin:0!important}.mx-opp p+p{margin-top:6px!important}
+.mx-plus{color:var(--money)}.mx-minus{color:var(--loss)}
+.mx-pl,.mx-rt{display:grid;grid-template-columns:26px 1fr 64px auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.mx-rt{grid-template-columns:26px 1fr auto}
+.mx-po{font-size:1.1rem;text-align:center}
+.mx-nm{font-weight:600;font-size:.92rem;line-height:1.2;min-width:0}.mx-nm small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+.mx-nm em{font-style:normal;font-size:.72rem;background:var(--sticker);color:var(--sticker-ink);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap}
+.mx-fit{position:relative;display:block;height:16px;border-radius:8px;background:var(--surface2);overflow:hidden}
+.mx-fit b{display:block;height:100%;background:var(--money)}.mx-fit.mid b{background:#E0A526}.mx-fit.lo b{background:var(--loss)}
+.mx-fit em{position:absolute;inset:0;font-style:normal;font-size:.7rem;font-weight:700;text-align:center;line-height:16px;color:var(--ink)}
+.mx-pl .btn{padding:6px 10px;font-size:.8rem}
+.mx-bench{font-size:.84rem;margin:8px 0 2px!important;color:var(--muted)}
+.mx-tacs,.mx-opts{display:grid;gap:8px}
+.mx-tac,.mx-opt,.mx-prime{font:inherit;text-align:left;display:block;width:100%;min-height:48px;background:var(--surface);color:var(--ink);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;cursor:pointer}
+.mx-tac b,.mx-opt b,.mx-prime b{display:block;font-size:.95rem}
+.mx-tac span,.mx-opt span,.mx-prime span{display:block;font-size:.8rem;color:var(--muted);margin-top:2px}
+.mx-tac.on,.mx-prime.on{border-color:var(--ink);box-shadow:3px 3px 0 var(--sticker)}
+.mx-prime{margin-top:8px;border-style:dashed}.mx-prime.on{border-style:solid}
+.mx-opt:active,.mx-tac:active{transform:translateY(1px)}
+.mx-odds{margin-top:14px}.mx-odds p{font-size:.84rem;color:var(--muted);margin:0 0 6px!important}
+.mx-ob{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--surface2)}
+.mx-ob i{display:block;height:100%}.mx-ob .w{background:var(--money)}.mx-ob .d{background:var(--line)}.mx-ob .l{background:var(--loss)}
+.mx-ol{display:flex;justify-content:space-between;font-size:.8rem;font-weight:700;margin-top:4px}
+.mx-pitch{position:relative;height:112px;margin-top:12px;border-radius:10px;overflow:hidden;background:repeating-linear-gradient(90deg,#2E8B4C 0 12.5%,#287F45 12.5% 25%);border:2px solid #2E8B4C}
+.mx-pitch::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:2px solid rgba(255,255,255,.7)}
+.mx-pitch::after{content:"";position:absolute;left:50%;top:50%;width:34px;height:34px;border:2px solid rgba(255,255,255,.7);border-radius:50%;transform:translate(-50%,-50%)}
+.mx-box{position:absolute;top:28%;bottom:28%;width:11%;border:2px solid rgba(255,255,255,.7)}.mx-box.l{left:-2px;border-left:0}.mx-box.r{right:-2px;border-right:0}
+.mx-ball{position:absolute;left:50%;top:50%;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 2px 3px rgba(0,0,0,.45);transform:translate(-50%,-50%);transition:left .32s ease-out,top .32s ease-out;z-index:2}
+.mx-frise{position:relative;height:34px;margin:8px 0 4px}
+.mx-ax{position:absolute;left:0;right:0;top:50%;border-top:2px solid var(--line)}
+.mx-ht{position:absolute;left:50%;top:30%;bottom:30%;border-left:2px dashed var(--line)}
+.mx-now{position:absolute;top:22%;bottom:22%;width:3px;margin-left:-1px;background:var(--ink);border-radius:2px;transition:left .3s linear}
+.mx-ev{position:absolute;width:10px;height:10px;margin-left:-5px;border-radius:50%}
+.mx-ev.g,.mx-ev.y,.mx-ev.r,.mx-ev.i,.mx-ev.R{top:2px}.mx-ev.G{bottom:2px}
+.mx-ev.g{background:var(--money)}.mx-ev.G{background:var(--loss)}.mx-ev.y{background:#F2C200;border-radius:2px;width:8px}.mx-ev.r,.mx-ev.R{background:var(--loss);border-radius:2px;width:8px}.mx-ev.R{top:auto;bottom:2px}.mx-ev.i{background:var(--pink)}
+.mx-ctlrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mx-ctlrow .btn{padding:8px;font-size:.86rem}.mx-ctlrow .btn:last-child{grid-column:1/-1}
+.mx-ask{border:2px solid var(--ink);border-radius:14px;padding:12px;box-shadow:4px 4px 0 var(--sticker);background:var(--surface)}
+.mx-ask h3{font-size:1rem;display:flex;justify-content:space-between;align-items:baseline}.mx-ask h3 span{font-size:.8rem;color:var(--muted)}
+.mx-ask>p{font-size:.88rem;margin:4px 0 10px!important;color:var(--muted)}
+.mx-ask .btn.big{margin-top:10px}
+.mx-feed{margin-top:12px;display:grid;gap:0;font-size:.9rem}
+.mx-feed p{display:grid;grid-template-columns:34px 1fr;gap:6px;margin:0!important;padding:6px 0;border-top:1px solid var(--line)}
+.mx-feed p b{color:var(--muted);font-variant-numeric:tabular-nums}
+.mx-feed p.nw{animation:fadeup .3s ease-out}
+.mx-feed .mx-g span{font-weight:800;color:var(--money)}.mx-feed .mx-b span{font-weight:700;color:var(--loss)}.mx-feed .mx-h span{font-weight:700}.mx-feed .mx-y span{font-style:italic}
+.mx-verd{margin-top:14px}
+.mx-goals{font-size:.9rem;margin-top:8px!important}
+.mx-why{list-style:none;padding:0;margin:0;display:grid;gap:6px}
+.mx-why li{display:grid;grid-template-columns:22px 1fr;gap:6px;font-size:.9rem;align-items:start}
+.mx-why b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;font-size:.85rem;background:var(--surface2)}
+.mx-why .p b{background:var(--money);color:#fff}.mx-why .n b{background:var(--loss);color:#fff}
+.mx-note{font-family:"Permanent Marker","Marker Felt",cursive;font-size:1.15rem;min-width:44px;text-align:center;border-radius:6px;padding:2px 6px 0;background:var(--surface2)}
+.mx-note.hi{background:var(--sticker);color:var(--sticker-ink)}.mx-note.lo{color:var(--loss)}
+.mx-gate{text-align:left}
+@media (prefers-reduced-motion: reduce){.mx-ball,.mx-now{transition:none}}
+</style>`);
+/* ===== FIN AGENT MATCH ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
