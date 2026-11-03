@@ -517,6 +517,80 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 .gfx-dots button.cur{border-color:var(--ink);background:var(--sticker)}
 .route .city{cursor:pointer}
 #gfx-vig{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(ellipse 75% 70% at 50% 45%,rgba(10,15,30,0) 55%,rgba(10,15,30,1) 140%)}
+/* ===== AGENT UI ===== */
+/* Cibles tactiles : 44 px minimum */
+.btn{min-height:44px}
+.btn.small{min-height:44px;padding:8px 12px}
+.seg button{min-height:44px}
+.modes button{min-height:36px;position:relative}
+.modes button::after,.hud-ev::after,.chip::after{content:"";position:absolute;inset:-5px -2px}
+.chip{position:relative}
+.bs-x{width:44px;height:44px}
+.map-ctrl button{width:44px;height:44px}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+/* Bandeau du haut */
+.hud-r{flex-direction:row;align-items:center;gap:8px}
+.btn.boost{min-width:104px}
+.hud-sp{min-width:44px;padding:0 10px;font-variant-numeric:tabular-nums}
+.meta{gap:4px 12px;margin-top:10px;font-size:.86rem}
+.hud-date{color:var(--ink);font-weight:700;text-transform:capitalize}
+.hud-ev{position:relative;font:inherit;font-size:.82rem;font-weight:700;border:0;border-radius:999px;background:var(--pink);color:#1E2B2A;padding:4px 11px;cursor:pointer}
+.hgauges{display:flex;flex-wrap:wrap;gap:2px 14px;margin-top:6px;font-size:.84rem;color:var(--muted)}
+.hgauges b{color:var(--ink);font-variant-numeric:tabular-nums}
+/* Barre d’onglets */
+.tab svg.e{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tab.on svg.e{stroke-width:2.4}
+.tab{min-height:56px}
+/* Objectif sur la carte */
+.qt{grid-template-columns:1fr;width:100%;text-align:left;font:inherit;font-size:.84rem;cursor:pointer;padding:9px 12px}
+.qt-t{display:block;font-weight:700}
+.qt-s{display:flex;justify-content:space-between;color:#566663;font-size:.78rem}
+.qt-p{font-weight:800;color:#1E2B2A}
+.qt.done{grid-template-columns:1fr auto;animation:none;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.qt.done span span{font-size:.8rem;opacity:.9}
+/* Onglet Objectifs */
+.claimbar{margin-top:16px;background:var(--money);color:#fff;border-radius:14px;padding:14px;display:grid;gap:10px}
+.claimbar b{display:block;font-size:1.05rem}
+.claimbar span{font-size:.84rem;opacity:.9}
+.btn.claim{background:var(--sticker);color:var(--sticker-ink);font-weight:800}
+.obj-main{margin-top:16px;background:var(--sticker);color:var(--sticker-ink);border-radius:6px 18px 6px 18px;padding:16px 16px 14px;box-shadow:3px 4px 0 var(--ink)}
+.obj-k{font-family:"Permanent Marker","Marker Felt",cursive;font-size:1rem;transform:rotate(-2deg);display:inline-block}
+.obj-main h2{font-size:1.55rem;line-height:1.1;font-weight:800;letter-spacing:-.015em;margin-top:4px}
+.obj-h{font-size:.9rem;margin-top:6px;opacity:.85}
+.obj-bar{height:10px;border-radius:5px;background:rgba(30,43,42,.15);margin-top:12px;overflow:hidden}
+.obj-bar i{display:block;height:100%;background:var(--sticker-ink)}
+.obj-f{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums}
+.tagp{display:inline-block;white-space:nowrap;font-weight:800;font-size:.82rem;padding:2px 8px 2px 12px;border-radius:3px 6px 6px 3px;background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%)}
+.obj-main .tagp{background:var(--ink);color:var(--sticker)}
+.obj-sub{margin:18px 0 4px;font-size:.95rem;color:var(--muted);font-weight:700}
+.obj-list{list-style:none;margin:0;padding:0}
+.obj-list li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:.95rem}
+.conq-meter{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:12px}
+.conq-meter i{height:8px;border-radius:2px;background:var(--surface2);border:1px solid var(--line)}
+.conq-meter i.on{background:var(--money);border-color:var(--money)}
+.conq-list{list-style:none;margin:0;padding:0}
+.conq-list li{display:grid;grid-template-columns:22px 1fr;gap:10px;padding:7px 0;font-size:.93rem;align-items:start}
+.conq-list .hint{display:block;font-variant-numeric:tabular-nums}
+.conq-list .ck{width:18px;height:18px;border:2px solid var(--muted);border-radius:4px;margin-top:2px}
+.conq-list li.ok{color:var(--muted)}
+.conq-list li.ok>span:last-child{text-decoration:line-through;text-decoration-thickness:1.5px}
+.conq-list li.ok .ck{background:var(--money);border-color:var(--money);box-shadow:inset 0 0 0 3px var(--surface)}
+.route{display:flex;gap:6px;overflow-x:auto;padding:12px 2px 4px;scrollbar-width:none}
+.route .city{flex:none;min-width:72px;min-height:44px;cursor:pointer}
+.gfx-open{margin-top:6px}
+.vitrine{grid-template-columns:repeat(6,1fr)!important;gap:6px!important}
+.vitrine>div{font-size:1.3rem!important;min-height:0!important;height:auto!important;aspect-ratio:1}
+.route .city{display:flex;flex-direction:column;align-items:center;gap:4px;margin-left:0;padding:0;text-align:center}
+.route .city::before{display:none}
+.route .city .pin{width:44px;height:44px;font-size:20px;border-width:2px}
+.route .city.cur .pin{box-shadow:none}
+.route .city h3{font-size:.74rem;font-weight:700}
+/* Divers */
+details.more{margin-top:12px}
+details.more summary{cursor:pointer;font-weight:700;font-size:.9rem;min-height:44px;display:flex;align-items:center}
+.ui-gain{position:fixed;z-index:70;pointer-events:none;transform:translate(-50%,-50%);font-weight:800;font-size:1.3rem;color:var(--money);background:var(--surface);border:2px solid var(--money);border-radius:8px;padding:2px 10px;animation:uigain .85s ease-out forwards}
+@keyframes uigain{0%{opacity:0;transform:translate(-50%,-30%)}20%{opacity:1;transform:translate(-50%,-60%)}100%{opacity:0;transform:translate(-50%,-160%)}}
+
 .hgauges span[title],.gfx-conq{cursor:pointer}
 .gfx-conq{text-decoration:underline dotted;text-underline-offset:3px}
 </style>
@@ -535,12 +609,12 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 <canvas id="fx" aria-hidden="true"></canvas>
 <nav class="tabs" aria-label="Navigation du jeu">
   <div class="tabs-in">
-    <button class="tab" data-a="tab" data-t="ville"><span class="e">🏙️</span>Ville</button>
-    <button class="tab" data-a="tab" data-t="gestion"><span class="e">📈</span>Gestion<span class="badge" id="b-gestion" hidden>!</span></button>
-    <button class="tab" data-a="tab" data-t="marche"><span class="e">📊</span>Marché</button>
-    <button class="tab" data-a="tab" data-t="vie"><span class="e">❤️</span>Vie<span class="badge" id="b-vie" hidden>1</span></button>
-    <button class="tab" data-a="tab" data-t="quetes"><span class="e">🎯</span>Quêtes<span class="badge" id="b-quetes" hidden></span></button>
-    <button class="tab" data-a="tab" data-t="empire"><span class="e">👑</span>Empire<span class="badge" id="b-empire" hidden>!</span></button>
+    <button class="tab" data-a="tab" data-t="ville"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V10l5-3v14M8 21V4l8 4v13M16 21v-9l5 2v7M2 21h20"/></svg>Ville</button>
+    <button class="tab" data-a="tab" data-t="gestion"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1.5 11h-13zM8 9V7a4 4 0 0 1 8 0v2"/></svg>Affaires<span class="badge" id="b-gestion" hidden></span></button>
+    <button class="tab" data-a="tab" data-t="marche"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 3 6-8 3 3M3 21h18"/></svg>Bourse</button>
+    <button class="tab" data-a="tab" data-t="vie"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"/></svg>Vie<span class="badge" id="b-vie" hidden></span></button>
+    <button class="tab" data-a="tab" data-t="objectifs"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Objectifs<span class="badge" id="b-objectifs" hidden></span></button>
+    <button class="tab" data-a="tab" data-t="empire"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10zM3 21h18"/></svg>Empire<span class="badge" id="b-empire" hidden></span></button>
   </div>
 </nav>
 <div id="layer"></div>
@@ -643,7 +717,7 @@ function freshBiz(){const o={};BIZ.forEach(b=>o[b.id]={lvl:b.id==='sneak'?1:0,mg
 function newGame(){return{cash:200,lifetime:0,lifetimeAll:0,day:1,dayProg:0,stage:0,rep:50,energy:80,tab:'ville',gTab:'affaires',
   stats:{decisions:0,reviews5:0,reviews:0},mkt:null,counts:{collect:0,vip:0,actions:0,propsBought:0},biz:freshBiz(),upg:[],stars:0,city:0,trophies:[],claimed:[],
   xp:0,streak:0,lastDaily:null,sound:true,buyMode:1,ugFilter:'all',boostUntil:0,boostReadyAt:0,frenzyUntil:0,started:false,hintSeen:false,lastSeen:Date.now(),
-  evSeen:{},propUp:{},qTab:'obj',hero:{name:'',av:AVATARS[0],age:20,origin:'metro',sit:'etudiant',health:100,passions:[],place:'',fam:'',born:2006,study:''},event:null,nextEv:3,flags:{},sched:[],journal:[],mods:[],debt:null,share:0,reviews:[],props:{},
+  evSeen:{},propUp:{},qTab:'obj',eTab:'mairie',vTab:'moi',hero:{name:'',av:AVATARS[0],age:20,origin:'metro',sit:'etudiant',health:100,passions:[],place:'',fam:'',born:2006,study:''},event:null,nextEv:3,flags:{},sched:[],journal:[],mods:[],debt:null,share:0,reviews:[],props:{},
   partner:null,kids:[],gen:1,dynasty:[],sitBonus:1,notified:[],dead:false,speed:1,cohort:[],grandkids:0,yearsMarried:0,
   pol:{office:null,cand:false,pop:0,prog:[],acts:{},nextElec:19,budget:0,projects:[],mood:null,poll:null,wins:0,terms:0},
   club:{own:false,name:'',div:0,str:30,stade:0,fans:120,coach:0,acad:0,pts:0,played:0,last:null,seasons:[],acts:{}}}}
@@ -1323,6 +1397,22 @@ const MISSIONS=[
 MISSIONS.forEach(m=>{m.c=()=>{const [a,b]=m.p();return a>=b}});
 const mt=m=>typeof m.t==='function'?m.t():m.t;
 MISSIONS.splice(MISSIONS.findIndex(m=>m.id==='m15'),0,{id:'m14b',t:'Fais un bénéfice sur le marché local (onglet Marché)',p:()=>[S.mkt&&S.mkt.profit>0?1:0,1],r:2e4,c:null});MISSIONS.forEach(m=>{if(!m.c)m.c=()=>{const [a,b]=m.p();return a>=b}});
+/* Textes courts : une action, un indice (h) pour savoir où aller */
+const bn=id=>BIZ_BY[id].n;
+const MTXT={m1:[()=>`Encaisse 5 ventes`,'Touche la bulle au-dessus de ta boutique.'],m2:[()=>`${bn('sneak')} au niveau 10`,'Fiche de la boutique, bouton Agrandir.'],
+  m3:[()=>`Ouvre ${bn('trott')}`,'Touche le terrain à vendre sur la carte.'],m4:['Prends 2 décisions','Une enveloppe rose apparaît de temps en temps. Ouvre-la.'],
+  m5:['Attrape un client pressé','Il traverse la rue avec un billet au-dessus de la tête.'],m6:['Embauche ton premier gérant','Il encaisse à ta place, même appli fermée.'],
+  m7:['Fais un ménage ou une rénovation','Fiche d’une boutique, partie Clients.'],m8:['Achète une maison','Touche un panneau « À vendre » sur la carte.'],
+  m9:['Quitte ta chambre pour un studio','Touche ton QG sur la carte.'],m10:['Trouve l’amour','Ça se passe dans l’onglet Vie.'],
+  m11:[()=>`Ouvre ${bn('vide')}`,''],m12:['Achète une amélioration','Affaires, puis Améliorations.'],m13:['Possède 5 bâtiments',''],
+  m14:['Rachète le club de foot','Touche le stade sur la carte.'],m14b:['Revends avec bénéfice à la bourse','Achète bas, revends plus haut.'],
+  m15:['Cumule 100 000 € de gains',''],m16:[()=>`Ouvre ${bn('depot')}`,''],m17:['Fonde une famille',''],
+  m18:['80 % de clients contents','Avec au moins 3 boutiques ouvertes.'],m19:['Présente-toi aux municipales','On te le proposera quelques mois avant le vote.'],
+  m20:['Cumule 1 million de gains',''],m21:['Fais monter ton club d’une division',''],m22:['Ouvre ta première franchise','Coche les 7 étapes de conquête de la ville.'],
+  m23:[()=>`Ouvre ${bn('auto')}`,''],m24:['Gagne 6 trophées',''],m25:['Passe le flambeau à tes enfants',''],m26:['Gagne les 12 trophées','']};
+MISSIONS.forEach(m=>{const x=MTXT[m.id];if(x){m.t=x[0];m.h=x[1]}});
+/* m19 ne double plus l’étape « Deviens maire » de la conquête */
+{const m=MISSIONS.find(x=>x.id==='m19');m.p=()=>[S.pol.cand||S.pol.office||S.pol.terms?1:0,1]}
 const missionReward=m=>Math.max(m.r,autoIncome()*60);
 const openMissions=()=>MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,3);
 
@@ -2355,24 +2445,38 @@ function clubAct(k){
 
 /* ================= QUEST TRACKER ================= */
 function curMission(){const ms=MISSIONS.filter(m=>!S.claimed.includes(m.id));return ms.find(m=>m.c())||ms[0]}
+/* Objectifs prêts à récupérer, sans doublon */
+const readyMissions=()=>MISSIONS.filter(m=>!S.claimed.includes(m.id)&&m.c());
+const shortN=(n,b)=>b>=1000?fmt(n).replace('\u00a0€',''):String(Math.round(n));
+function progTxt(a,b){return shortN(Math.min(a,b),b)+' / '+shortN(b,b)}
 function trackerHTML(){
-  const m=curMission();if(!m)return '';const [a,b]=m.p(),done=m.c(),pct=Math.min(100,a/b*100);
-  const fa=b>=1000?fmt(Math.min(a,b)).replace('\u00a0€',''):Math.min(a,b),fb=b>=1000?fmt(b).replace('\u00a0€',''):b;
-  return done?`<button class="qt done" data-a="claim" data-id="${m.id}"><span class="qt-ic">🎁</span><span><b>Objectif rempli !</b><span>${mt(m)}</span></span><span class="qt-r">Réclamer<br>+${fmt(missionReward(m))}</span></button>`
-    :`<div class="qt"><span class="qt-ic">🎯</span><span><span>${mt(m)}</span><span class="qt-bar"><i style="width:${pct}%"></i></span><span class="hint">${fa} / ${fb} · récompense ${fmt(missionReward(m))}</span></span></div>`;
+  const rd=readyMissions();
+  if(rd.length){const r=rd.reduce((t,m)=>t+missionReward(m),0);
+    return `<button class="qt done" data-a="claimall"><span><b>${rd.length>1?rd.length+' objectifs remplis':'Objectif rempli'}</b><span>${rd.length>1?'Tout récupérer d’un coup':mt(rd[0])}</span></span><span class="qt-r">Récupérer<br>+${fmt(r)}</span></button>`}
+  const m=curMission();if(!m)return '';const [a,b]=m.p(),pct=Math.min(100,a/b*100);
+  return `<button class="qt" data-a="tab" data-t="objectifs" aria-label="Objectif : ${esc(mt(m))}. Ouvrir les objectifs"><span><span class="qt-t">${mt(m)}</span><span class="qt-bar"><i style="width:${pct}%"></i></span><span class="qt-s">${progTxt(a,b)}<span class="qt-p">+${fmt(missionReward(m))}</span></span></span></button>`;
 }
 let lastTrackerKey='';
 function updateTracker(){
-  const el=$('#qtrack');if(!el)return;const m=curMission();
-  const key=m?m.id+':'+m.p().join('/')+':'+m.c():'';if(key!==lastTrackerKey){lastTrackerKey=key;el.innerHTML=trackerHTML()}
-  MISSIONS.forEach(x=>{if(!S.claimed.includes(x.id)&&x.c()&&!S.notified.includes(x.id)){S.notified.push(x.id);sfx('rank');toast(`🎯 Objectif rempli : ${mt(x)} ! Va réclamer ta récompense.`)}});
+  const el=$('#qtrack');if(!el)return;const m=curMission(),rd=readyMissions();
+  const key=rd.map(x=>x.id).join(',')+'|'+(m?m.id+':'+m.p().join('/'):'');if(key!==lastTrackerKey){lastTrackerKey=key;el.innerHTML=trackerHTML()}
+  rd.forEach(x=>{if(!S.notified.includes(x.id)){S.notified.push(x.id);sfx('rank');toast(`Objectif rempli : ${mt(x)}. Ta récompense t’attend.`)}});
 }
-function claimMission(id,btn){
-  const m=MISSIONS.find(x=>x.id===id);if(!m||!m.c()||S.claimed.includes(id))return;const r=missionReward(m);S.claimed.push(id);addXP(20);sfx('open');
-  modal(`<div class="reveal-box shake" id="chest">🎁</div><h2 id="cht">Ouverture…</h2><div id="chd"></div>`);
-  setTimeout(()=>{const c=$('#chest');if(!c)return;c.classList.remove('shake');c.classList.add('pop');c.textContent='💰';$('#cht').textContent='Objectif accompli !';earn(r);sfx('sale');burstAt(innerWidth/2,innerHeight*.42,16,null);
-    const nx=curMission();$('#chd').innerHTML=`<p>${mt(m)}</p><div class="big-num">+${fmt(r)}</div><p class="hint">+20 XP</p>${nx?`<p class="follow">Prochain objectif : ${mt(nx)}</p>`:''}<button class="btn big go" style="margin-top:14px" data-a="close">Super !</button>`},800);
+/* Récupération : l’argent est versé tout de suite (plus rien ne dépend d’une animation ou d’une fenêtre) */
+let CLAIM_T=0;
+function claimMission(id,btn){claimMissions([id],btn)}
+function claimMissions(ids,btn){
+  let tot=0,n=0;
+  CLAIM_T=performance.now();
+  ids.forEach(id=>{const m=MISSIONS.find(x=>x.id===id);if(!m||!m.c()||S.claimed.includes(id))return;const r=missionReward(m);S.claimed.push(id);earn(r);addXP(20);tot+=r;n++});
+  if(!n)return 0;
+  sfx('sale');let x=innerWidth/2,y=innerHeight*.4;
+  if(btn&&btn.getBoundingClientRect){const r=btn.getBoundingClientRect();if(r.width){x=r.left+r.width/2;y=r.top+r.height/2}}
+  uiGain(x,y,'+'+fmt(tot));
+  const c=$('#cash');if(c){c.classList.remove('bump');void c.offsetWidth;c.classList.add('bump');setTimeout(()=>c.classList.remove('bump'),300)}
+  lastTrackerKey='';return tot;
 }
+function uiGain(x,y,txt){if(RM)return toast(txt);const d=document.createElement('div');d.className='ui-gain';d.textContent=txt;d.style.left=x+'px';d.style.top=y+'px';document.body.appendChild(d);setTimeout(()=>d.remove(),900)}
 
 /* ================= SHEET (map panel) ================= */
 function gaugeHTML(label,v,id){const c=v<35?'#C2362B':v<60?'#E59C3B':'#17834A';return `<div class="gauge"><span>${label}</span><div class="gbar"><i ${id?`id="${id}"`:''} style="width:${clamp(v,0,100)}%;background:${c}"></i></div><b>${Math.round(v)}</b></div>`}
@@ -2433,33 +2537,33 @@ function modesHTML(){return `<div class="modes" role="group" aria-label="Quantit
 function renderHud(){
   const ev=dayEvent(S.day);
   $('#hud').innerHTML=`<div class="hud-top"><div><div class="cash" id="cash">${fmt(dispCash)}</div><div class="ips" id="ips"></div></div>
-    <div class="hud-r"><button class="btn boost" id="boost" data-a="boost">⚡ Rush ×2</button><div class="bs-row"><button class="btn small ghost speedb" data-a="speed" aria-label="Vitesse du temps">⏩ ×${S.speed||1}</button>${S.event?'<button class="btn small pinkb" data-a="openev">✉️</button>':''}</div></div></div>
-    <div class="meta"><span class="datechip">📅 ${dateLabel(S.day)}</span><span class="datechip">${S.hero.av} ${S.hero.age} ans</span>${ev?`<span class="evchip">${ev.n}</span>`:''}<span class="frz" id="frz"></span></div>
-    <div class="hgauges"><span title="Satisfaction des clients">😊 <b id="hg-sat"></b></span><span title="Ton énergie">⚡ <b id="hg-nrg"></b></span><span title="Ta réputation">📣 <b id="hg-rep"></b></span>${S.partner?'<span title="Ton couple">❤️ <b id="hg-rel"></b></span>':''}<span>${CITIES[S.city].e} ${CITIES[S.city].n} · 🏙️ <b id="hg-conq">${conqDone()}</b>/7</span></div>
+    <div class="hud-r"><button class="btn boost" id="boost" data-a="boost">Rush ×2</button><button class="btn ghost hud-sp" data-a="speed" aria-label="Vitesse du temps, actuellement ×${S.speed||1}">×${S.speed||1}</button></div></div>
+    <div class="meta"><span class="hud-date">${dateLabel(S.day)}</span><span>${S.hero.age} ans</span>${ev?`<span class="evchip">${ev.n.replace(/^\S+\s/,'')}</span>`:''}<span class="frz" id="frz"></span>${S.event?'<button class="hud-ev" data-a="openev">Décision à prendre</button>':''}</div>
+    <div class="hgauges"><span title="Clients satisfaits">Clients <b id="hg-sat"></b></span><span title="Ton énergie">Énergie <b id="hg-nrg"></b></span><span title="Ta réputation">Réput. <b id="hg-rep"></b></span>${S.partner?'<span title="Ton couple">Couple <b id="hg-rel"></b></span>':''}</div>
     <div class="daybar" title="Avancement du mois"><i id="daybar"></i></div>`;
 }
 function vGestion(){
-  const seg=`<div class="seg" role="tablist">${[['affaires','Affaires'],['avis','Avis clients'],['patrimoine','Patrimoine'],['upg','Améliorations']].map(([k,l])=>`<button class="${S.gTab===k?'on':''}" data-a="gtab" data-f="${k}">${l}</button>`).join('')}</div>`;
+  const seg=`<div class="seg" role="tablist">${[['affaires','Boutiques'],['avis','Clients'],['patrimoine','Immobilier'],['upg','Améliorations']].map(([k,l])=>`<button class="${S.gTab===k?'on':''}" data-a="gtab" data-f="${k}">${l}</button>`).join('')}</div>`;
   return seg+({affaires:vAffaires,avis:vAvis,patrimoine:vPatrimoine,upg:vUpg}[S.gTab]||vAffaires)();
 }
 function vAffaires(){
   const rows=BIZ.map(b=>{const st=S.biz[b.id];
-    if(!st.lvl)return `<div class="gl"><div class="gl-ic" style="filter:grayscale(1)">${b.e}</div><div><h3>${b.n}</h3><p class="hint">Terrain à vendre</p><div class="bs-row" style="margin-top:6px"><button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${S.cash>=b.cost?'':'disabled'}>Ouvrir pour ${fmt(b.cost)}</button></div></div></div>`;
+    if(!st.lvl)return `<div class="gl"><div class="gl-ic" style="filter:grayscale(1)">${b.e}</div><div><h3>${b.n}</h3><p class="hint">Pas encore ouvert</p><div class="bs-row" style="margin-top:6px"><button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${S.cash>=b.cost?'':'disabled'}>Ouvrir pour ${fmt(b.cost)}</button></div></div></div>`;
     const q=quote(b),s=satOf(b.id);
     return `<div class="gl"><div class="gl-ic">${b.e}</div><div><h3>${b.n} <span id="g-rev-${b.id}">${fmt(revenue(b))}</span></h3>
-      <div class="minibar"><i id="g-bar-${b.id}"></i></div><p class="hint">🏷️ ${tierOf(st.lvl)} · niv. ${st.lvl}${st.mgr?', 🤵 géré':''}, 😊 <b style="color:${s<35?'var(--loss)':s<60?'#B8860B':'var(--money)'}">${Math.round(s)} %</b>${modMult(b.id)!==1?`, effets en cours ×${fmtM(modMult(b.id))}`:''}</p>
-      <div class="bs-row" style="margin-top:6px">${st.mgr?'':`<button class="btn small" data-a="run" data-id="${b.id}">💰</button>`}<button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>
-      ${st.mgr?'':`<button class="btn small ghost" id="g-mgr-${b.id}" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>🤵 ${fmt(MGR[b.id])}</button>`}
-      <button class="btn small ghost" data-a="locate" data-id="${b.id}">Voir sur la carte</button></div></div></div>`}).join('');
-  return `<div class="sec-head"><h2>Tes affaires</h2>${modesHTML()}</div><div class="panel">${rows}</div>`;
+      <div class="minibar"><i id="g-bar-${b.id}"></i></div><p class="hint">${tierOf(st.lvl)}, niveau ${st.lvl}${st.mgr?', avec gérant':''}. Clients <b style="color:${s<35?'var(--loss)':s<60?'#B8860B':'var(--money)'}">${Math.round(s)} %</b>${modMult(b.id)!==1?`, effets en cours ×${fmtM(modMult(b.id))}`:''}</p>
+      <div class="bs-row" style="margin-top:6px">${st.mgr?'':`<button class="btn small" data-a="run" data-id="${b.id}">Encaisser</button>`}<button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>
+      ${st.mgr?'':`<button class="btn small ghost" id="g-mgr-${b.id}" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>Gérant ${fmt(MGR[b.id])}</button>`}
+      <button class="btn small ghost" data-a="locate" data-id="${b.id}">Carte</button></div></div></div>`}).join('');
+  return `<div class="sec-head"><h2>Tes boutiques</h2>${modesHTML()}</div><div class="panel">${rows}</div>`;
 }
 function vAvis(){
   const o=openIds(),s=avgSat();
   return `<div class="sec-head"><h2>Satisfaction</h2><p>${S.stats.reviews} avis reçus</p></div>
-  <div class="panel">${gaugeHTML('😊 Moyenne',s)}<p class="hint" style="margin-top:6px">Une boutique à 100 % rapporte ×1,6, à 50 % ×1, à 0 % ×0,4. La propreté baisse vite, le service se dégrade quand tu grandis, la qualité s’use avec le temps.</p></div>
+  <div class="panel">${gaugeHTML('Moyenne',s)}<p class="hint" style="margin-top:6px">À 100 %, une boutique rapporte ×1,6. À 0 %, ×0,4. La propreté file vite, le service craque quand tu grossis, la qualité s’use.</p></div>
   ${o.map(id=>{const b=BIZ_BY[id];return `<div class="panel"><div class="ug-h"><h3>${b.e} ${b.n}</h3><button class="btn small ghost" data-a="locate" data-id="${id}">Carte</button></div>${bizQualityHTML(b)}</div>`}).join('')}
   <div class="sec-head"><h2>Derniers avis</h2></div>
-  <div class="panel">${S.reviews.length?S.reviews.slice(0,14).map(r=>`<div class="review"><div><b class="${r.stars>=4?'st-good':r.stars<=2?'st-bad':'st-mid'}">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</b> <span class="hint">${r.who}, ${BIZ_BY[r.id].e} ${dateLabel(r.day)}</span></div><p>« ${r.text} »</p></div>`).join(''):'<p class="hint">Pas encore d’avis. Ils arrivent chaque mois.</p>'}</div>`;
+  <div class="panel">${S.reviews.length?S.reviews.slice(0,14).map(r=>`<div class="review"><div><b class="${r.stars>=4?'st-good':r.stars<=2?'st-bad':'st-mid'}">${'★'.repeat(r.stars)}${'☆'.repeat(5-r.stars)}</b> <span class="hint">${r.who}, ${BIZ_BY[r.id].e} ${dateLabel(r.day)}</span></div><p>« ${r.text} »</p></div>`).join(''):'<p class="hint">Aucun avis pour l’instant. Les clients finiront par parler.</p>'}</div>`;
 }
 function vPatrimoine(){
   const all=propsList(),own=all.filter(o=>S.props[o.pid]),pct=all.length?Math.round(own.length/all.length*100):0,free=all.filter(o=>!S.props[o.pid]);
@@ -2478,24 +2582,40 @@ function vUpg(){
     <div class="seg" role="group"><button class="${S.ugFilter==='all'?'on':''}" data-a="ugf" data-f="all">Toutes</button><button class="${S.ugFilter==='buy'?'on':''}" data-a="ugf" data-f="buy">Achetables maintenant</button></div>
     ${ug||'<div class="empty">Rien d’achetable pour l’instant. Encaisse encore un peu !</div>'}`;
 }
+function segHTML(act,cur,items){return `<div class="seg" role="tablist">${items.map(([k,l,n])=>`<button role="tab" aria-selected="${cur===k}" class="${cur===k?'on':''}" data-a="${act}" data-f="${k}">${l}${n?`<span class="cnt">${n}</span>`:''}</button>`).join('')}</div>`}
 function vVie(){
-  const h=S.hero,act=S.mods.filter(m=>m.until>=S.day),o=ORIGINS.find(x=>x.id===h.origin)||ORIGINS[0],P=S.partner;
-  return `<div class="herocard"><div class="hero-av">${h.av}</div><div><h2>${esc(h.name)}, ${h.age} ans</h2><p class="hint">${o.e} ${o.n} · génération ${S.gen} · ${RANKS[rankIdx()][1]}</p><p class="hint">${S.city?'À '+CITIES[S.city].n:'Dans ta ville'}, logement : ${STAGES[S.stage].name.toLowerCase()}${S.pol.office?' · 🏛️ Maire':''}</p></div></div>
-  <div class="panel">${gaugeHTML('⚡ Énergie',S.energy)}${gaugeHTML('❤️‍🩹 Santé',h.health)}${gaugeHTML('📣 Réputation',S.rep)}${gaugeHTML('😊 Clients',avgSat())}
-    <p class="hint" style="margin-top:6px">Sous 20 d’énergie, tes revenus baissent de 20 % et ta santé s’use. Chaque boutique sans gérant te coûte 2 d’énergie par mois.</p>
-    ${S.debt?`<div class="kv" style="margin-top:8px"><span>🏦 Dette à rembourser</span><b>${fmt(S.debt.amt)} en ${dateLabel(S.debt.due)}</b></div>`:''}
-    ${S.share?`<div class="kv"><span>🤝 Part des bénéfices reversée</span><b>${Math.round(S.share*100)} %</b></div>`:''}
-    ${act.length?`<div class="fxchips" style="margin-top:8px;justify-content:flex-start">${act.map(m=>`<span class="fxchip ${m.m<1?'neg':''}">${m.biz?BIZ_BY[m.biz].e:'📈'} ×${fmtM(m.m)} jusqu’en ${dateLabel(m.until)}</span>`).join('')}</div>`:''}</div>
-  <div class="panel"><div class="kv"><span>🕰️ Espérance de vie estimée</span><b>~${lifeExp()} ans</b></div><div class="kv"><span>💶 Ton patrimoine</span><b>${fmt(fortune())}</b></div><p class="hint" style="margin-top:4px">Tu es ${wealthRank(fortune())}. Comme dans la vraie vie, l’argent et la santé jouent sur la longévité : en France, les 5 % d’hommes les plus aisés vivent en moyenne 13 ans de plus que les 5 % les plus modestes (Insee).</p>
-    ${(h.passions||[]).length?`<div class="fxchips" style="justify-content:flex-start">${h.passions.map(k=>`<span class="fxchip">${PASSIONS[k].e} ${PASSIONS[k].n} : ${PASSIONS[k].fx}</span>`).join('')}</div>`:''}</div>
-  ${vieHTML()}
-  <div class="sec-head"><h2>Décision en cours</h2></div>
-  ${S.event?eventHTML(true):`<div class="empty">Rien à décider pour l’instant. La vie suit son cours… mais ça ne va pas durer.</div>`}
-  ${(S.cohort||[]).length?`<div class="sec-head"><h2>🌍 Nés à la même seconde que toi</h2><p>3 autres bébés, ailleurs</p></div>
-  <div class="panel">${S.cohort.map((c,i)=>{const ev=cohortAt(c,h.age),last=ev[ev.length-1],dead=c.death<=h.age;return `<details class="coh"><summary><span class="fam-av">${c.f}</span><span><strong>${esc(c.name)}</strong> <span class="hint">${esc(c.city)}, ${esc(c.c)}</span><span class="hint" style="display:block">${dead?`✝️ Mort${c.death<5?' en bas âge':` à ${c.death} ans`}`:`${h.age} ans · ${esc(last.t)}`}</span></span></summary><ul>${ev.map(e=>`<li><b>${e.a} ans</b> ${esc(e.t)}</li>`).join('')}</ul></details>`}).join('')}
-  <p class="hint" style="margin-top:6px">Leurs vies avancent au même rythme que la tienne.</p></div>`:''}
-  <div class="sec-head"><h2>Ton histoire</h2><p>${S.stats.decisions} décisions</p></div>
-  ${S.journal.length?S.journal.map(j=>`<div class="jentry"><div class="j-who">${j.who}</div><div><p class="hint">${dateLabel(j.day)}, ${esc(j.name)}</p><h3>${j.title}</h3><p class="j-choice">${esc(j.choice)}</p><p>${j.res}</p>${j.fx.length?`<div class="fxchips">${j.fx.map(f=>`<span class="fxchip ${/−|×0|💔/.test(f)?'neg':''}">${f}</span>`).join('')}</div>`:''}</div></div>`).join(''):'<div class="empty">Ton histoire commence à peine.</div>'}`;
+  const t=['moi','famille','journal'].includes(S.vTab)?S.vTab:'moi';
+  const seg=segHTML('vtab',t,[['moi','Moi',S.event?'1':''],['famille','Famille'],['journal','Journal']]);
+  return seg+(t==='famille'?vieFamille():t==='journal'?vieJournal():vieMoi());
+}
+function vieMoi(){
+  const h=S.hero,act=S.mods.filter(m=>m.until>=S.day),o=ORIGINS.find(x=>x.id===h.origin)||ORIGINS[0],n=STAGES[S.stage+1];
+  return `<div class="herocard"><div class="hero-av">${h.av}</div><div><h2>${esc(h.name)}, ${h.age} ans</h2><p class="hint">${o.n}, génération ${S.gen}. ${RANKS[rankIdx()][1]}${S.pol.office?', maire':''}.</p><p class="hint">${S.city?'À '+CITIES[S.city].n:'Dans ta ville'}, ${STAGES[S.stage].name.toLowerCase()}.</p></div></div>
+  ${S.event?`<div class="sec-head"><h2>À décider</h2></div>${eventHTML(true)}`:''}
+  <div class="panel">${gaugeHTML('Énergie',S.energy)}${gaugeHTML('Santé',h.health)}${gaugeHTML('Réputation',S.rep)}${gaugeHTML('Clients',avgSat())}
+    <p class="hint" style="margin-top:6px">Sous 20 d’énergie, tu gagnes 20 % de moins et ta santé trinque. Chaque boutique sans gérant te pompe 2 d’énergie par mois.</p>
+    ${S.debt?`<div class="kv" style="margin-top:8px"><span>Dette à rembourser</span><b>${fmt(S.debt.amt)} en ${dateLabel(S.debt.due)}</b></div>`:''}
+    ${S.share?`<div class="kv"><span>Part des bénéfices reversée</span><b>${Math.round(S.share*100)} %</b></div>`:''}
+    ${act.length?`<div class="fxchips" style="margin-top:8px;justify-content:flex-start">${act.map(m=>`<span class="fxchip ${m.m<1?'neg':''}">${m.biz?BIZ_BY[m.biz].e+' ':''}×${fmtM(m.m)} jusqu’en ${dateLabel(m.until)}</span>`).join('')}</div>`:''}</div>
+  <div class="sec-head"><h2>Chez toi</h2><p>${STAGES[S.stage].name}</p></div>
+  <div class="panel">${n?`<div class="kv"><span>Prochain logement</span><b>${n.name}</b></div><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:10px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button>`:'<p>La tour dorée. Difficile de viser plus haut.</p>'}
+    <details class="more"><summary>Tous les logements</summary><ol class="steps">${STAGES.map((x,i)=>`<li class="${i>S.stage+1?'locked':''}"><div class="ic">${x.icon}</div><div><h3>${x.name}${i<=S.stage?' <span class="tag">Atteint</span>':''}</h3><p class="sub">${x.perk}${i>S.stage?' '+fmt(x.cost)+'.':''}</p></div></li>`).join('')}</ol></details></div>
+  <div class="sec-head"><h2>Ta fortune</h2><p>${fmt(fortune())}</p></div>
+  <div class="panel"><div class="kv"><span>Espérance de vie</span><b>~${lifeExp()} ans</b></div><p class="hint" style="margin-top:4px">Tu es ${wealthRank(fortune())}. L’argent et la santé jouent sur la longévité : en France, les 5 % les plus aisés vivent 13 ans de plus que les 5 % les plus modestes (Insee).</p>
+    ${(h.passions||[]).length?`<div class="fxchips" style="justify-content:flex-start">${h.passions.map(k=>`<span class="fxchip">${PASSIONS[k].n} : ${PASSIONS[k].fx}</span>`).join('')}</div>`:''}</div>`;
+}
+function vieFamille(){
+  const h=S.hero;
+  return `${vieHTML()}
+  <div class="sec-head"><h2>Ta lignée</h2><p>Génération ${S.gen}</p></div>
+  <div class="panel">${S.dynasty.map(g=>`<div class="famrow"><span class="fam-av">${g.av}</span><div><strong>${esc(g.name)}</strong> <span class="hint">mort à ${g.age} ans à ${g.city}</span><p class="hint">${fmt(g.fortune)}, ${g.open} affaires, ${g.props} bâtiments${g.mayor?', maire':''}, ${g.kids} enfant${g.kids>1?'s':''}</p></div></div>`).join('')}
+    <div class="famrow"><span class="fam-av">${h.av}</span><div><strong>${esc(h.name)}</strong> <span class="hint">${h.age} ans, toujours là</span></div></div></div>
+  ${(S.cohort||[]).length?`<div class="sec-head"><h2>Nés la même seconde</h2><p>Trois autres vies</p></div>
+  <div class="panel">${S.cohort.map(c=>{const ev=cohortAt(c,h.age),last=ev[ev.length-1],dead=c.death<=h.age;return `<details class="coh"><summary><span class="fam-av">${c.f}</span><span><strong>${esc(c.name)}</strong> <span class="hint">${esc(c.city)}, ${esc(c.c)}</span><span class="hint" style="display:block">${dead?`Mort${c.death<5?' en bas âge':` à ${c.death} ans`}`:`${h.age} ans. ${esc(last.t)}`}</span></span></summary><ul>${ev.map(e=>`<li><b>${e.a} ans</b> ${esc(e.t)}</li>`).join('')}</ul></details>`}).join('')}</div>`:''}`;
+}
+function vieJournal(){
+  return `<div class="sec-head"><h2>Ton histoire</h2><p>${S.stats.decisions} décisions</p></div>
+  ${S.journal.length?S.journal.map(j=>`<div class="jentry"><div class="j-who">${j.who}</div><div><p class="hint">${dateLabel(j.day)}, ${esc(j.name)}</p><h3>${j.title}</h3><p class="j-choice">${esc(j.choice)}</p><p>${j.res}</p>${j.fx.length?`<div class="fxchips">${j.fx.map(f=>`<span class="fxchip ${/−|×0|💔/.test(f)?'neg':''}">${f}</span>`).join('')}</div>`:''}</div></div>`).join(''):'<div class="empty">Rien d’écrit pour l’instant. Ta première décision ouvrira le carnet.</div>'}`;
 }
 function vQuetes(){
   const ms=MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,4),P=S.pol,C=S.club;
@@ -2523,34 +2643,46 @@ function vQuetes(){
   club+='</div>';
   return missions+pol+club;
 }
-function vEmpire(){
-  const ns=newStars(),nextStarAt=Math.pow(S.stars+ns+1,2)*1e6,nc=CITIES[Math.min(S.city+1,CITIES.length-1)],ri=rankIdx(),nr=RANKS[ri+1],xpPct=nr?((S.xp-RANKS[ri][0])/(nr[0]-RANKS[ri][0]))*100:100;
-  return `<div class="sec-head"><h2>Ton tour du monde</h2><p>⭐ ${S.stars} étoile${S.stars>1?'s':''}<br>+${S.stars*10} % de revenus</p></div>
-  <div class="franchise"><p><strong>${CITIES[S.city].e} ${CITIES[S.city].n}</strong> : ta ville actuelle.</p>
-    <p class="hint" style="margin-top:6px">Pour partir vers ${nc.n}, il faut d’abord conquérir ${S.city?CITIES[S.city].n:'ta ville'} : les 7 objectifs ci-dessous.</p>
-    ${conqDone()>=7&&ns>=1&&S.city<CITIES.length-1?`<p style="margin-top:6px">Ville conquise ! Tu peux ouvrir une franchise à <strong>${nc.n}</strong> et gagner <strong>${ns} étoile${ns>1?'s':''}</strong>. Nouveaux marchés, nouvelle bourse, nouveaux défis.</p><button class="btn big" data-a="franchise">Franchiser à ${nc.n} (+${ns} ⭐)</button>`
-    :conqDone()>=7&&ns<1?`<p class="hint" style="margin-top:6px">Ville conquise ! Il te manque juste une étoile : gagne ${fmt(nextStarAt)} au total (actuellement ${fmt(S.lifetimeAll)}).</p>`:''}</div>
-  <div class="sec-head"><h2>🏙️ Conquête de ${S.city?CITIES[S.city].n:'ta ville'}</h2><p>${conqDone()}/7</p></div>
-  <div class="panel">${conqGoals().map(g=>{const [a,b]=g.p(),ok=a>=b;return `<div class="mq ${ok?'done':''}"><div style="flex:1"><span>${ok?'✅ ':''}${g.t}</span><div class="qt-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div><span class="hint">${b>=1000?fmt(Math.min(a,b)).replace('\u00a0€','')+' / '+fmt(b).replace('\u00a0€',''):Math.min(a,b)+' / '+b}</span></div></div>`}).join('')}</div>
-  <div class="route">${CITIES.map((c,i)=>`<div class="city ${i<S.city?'done':i===S.city?'cur':'lock'}"><div class="pin">${i>S.city?'🔒':c.e}</div><div><h3>${c.n}</h3><p class="hint">${i<S.city?'✓ Franchise ouverte':i===S.city?'📍 Tu es ici':c.t}</p></div></div>`).join('')}</div>
-  <div class="sec-head"><h2>Ta dynastie</h2><p>Génération ${S.gen}</p></div>
-  <div class="panel">${S.dynasty.map(g=>`<div class="famrow"><span class="fam-av">${g.av}</span><div><strong>${esc(g.name)}</strong> <span class="hint">génération ${g.gen}, mort à ${g.age} ans à ${g.city}</span><p class="hint">${fmt(g.fortune)} · ${g.open} affaires · ${g.props} propriétés${g.mayor?' · 🏛️ maire':''} · ${g.kids} enfant${g.kids>1?'s':''}</p></div></div>`).join('')}
-    <div class="famrow"><span class="fam-av">${S.hero.av}</span><div><strong>${esc(S.hero.name)}</strong> <span class="hint">génération ${S.gen}, ${S.hero.age} ans, en vie</span></div></div></div>
+/* Objectifs : un objectif principal, deux à côté, la conquête vers la ville suivante, puis la collection */
+function vObjectifs(){
+  const rd=readyMissions(),tot=rd.reduce((t,m)=>t+missionReward(m),0),open=MISSIONS.filter(m=>!S.claimed.includes(m.id)),main=open.find(m=>!m.c()),side=open.filter(m=>m!==main&&!m.c()).slice(0,2);
+  const ns=newStars(),c=S.city,last=c>=CITIES.length-1,nc=CITIES[Math.min(c+1,CITIES.length-1)],cd=conqDone(),need=Math.pow(S.stars+1,2)*1e6,ri=rankIdx(),nr=RANKS[ri+1];
+  const ready=cd>=7&&ns>=1&&!last;
+  let h='';
+  if(rd.length)h+=`<div class="claimbar"><div><b>${rd.length>1?rd.length+' récompenses':'1 récompense'} à récupérer</b><span>${rd.map(m=>mt(m)).join(', ')}</span></div><button class="btn big claim" data-a="claimall">Récupérer +${fmt(tot)}</button></div>`;
+  if(main){const [a,b]=main.p();h+=`<section class="obj-main"><p class="obj-k">En ce moment</p><h2>${mt(main)}</h2>${main.h?`<p class="obj-h">${main.h}</p>`:''}
+    <div class="obj-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div><div class="obj-f"><span>${progTxt(a,b)}</span><span class="tagp">+${fmt(missionReward(main))}</span></div>
+    ${main.id==='m22'?`<p class="obj-h">Conquête : ${cd} étape${cd>1?'s':''} sur 7.</p>`:''}</section>`}
+  else if(!rd.length)h+=`<section class="obj-main"><p class="obj-k">Fini</p><h2>Tu as tout coché.</h2><p class="obj-h">Il reste les villes, les trophées et ta descendance.</p></section>`;
+  if(side.length)h+=`<h3 class="obj-sub">Ensuite</h3><ul class="obj-list">${side.map(m=>{const [a,b]=m.p();return `<li><span>${mt(m)}</span><span class="hint">${progTxt(a,b)}</span><span class="tagp">+${fmt(missionReward(m))}</span></li>`}).join('')}</ul>`;
+  h+=`<div class="sec-head"><h2>${last?'Conquête de '+CITIES[c].n:'Cap sur '+nc.n}</h2><p>${cd}/7</p></div>
+  <div class="panel conq"><div class="conq-meter">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<cd?'on':''}"></i>`).join('')}</div>
+    <ul class="conq-list">${conqGoals().map(g=>{const [a,b]=g.p(),ok=a>=b;return `<li class="${ok?'ok':''}"><span class="ck" aria-hidden="true"></span><span>${g.t}${ok?'':`<span class="hint">${progTxt(a,b)}</span>`}</span></li>`}).join('')}
+    ${last?'':`<li class="${ns>=1?'ok':''}"><span class="ck" aria-hidden="true"></span><span>Une étoile de franchise : ${fmt(need)} gagnés au total${ns>=1?'':`<span class="hint">${progTxt(S.lifetimeAll,need)}</span>`}</span></li>`}</ul>
+    ${ready?`<button class="btn big go" style="margin-top:12px" data-a="franchise">Partir pour ${nc.n} (+${ns} étoile${ns>1?'s':''})</button><p class="hint" style="margin-top:6px">Tu repars de zéro dans la nouvelle ville. Famille, trophées et étoiles te suivent.</p>`:`<p class="hint" style="margin-top:8px">${last?'Dernière étape du voyage.':`Les 7 étapes et l’étoile cochées, tu pourras ouvrir une franchise à ${nc.n}.`} Chaque étoile ajoute 10 % à tous tes revenus.</p>`}</div>
+  <div class="route">${CITIES.map((x,i)=>`<div class="city ${i<c?'done':i===c?'cur':'lock'}" role="button" tabindex="0" aria-label="Aperçu : ${x.n}"><div class="pin">${i>c?'':x.e}</div><div><h3>${x.n}</h3></div></div>`).join('')}</div>
+  <button class="btn ghost small gfx-open" data-a="gfx_gallery">Voir les villes à venir</button>
   <div class="sec-head"><h2>Trophées</h2><p>${S.trophies.length}/${TROPHIES.length}</p></div>
-  <div class="panel"><div class="vitrine">${TROPHIES.map(t=>S.trophies.includes(t.id)?`<div class="got" title="${t.n}">${t.e}</div>`:`<div title="Trophée à découvrir">?</div>`).join('')}</div>
-  <p class="hint" style="margin-top:10px">Chaque trophée : +5 % sur tous tes revenus, pour toujours et pour toutes les générations. Les 12 : ×2.</p>
-  ${S.trophies.length?`<ul class="ug" style="margin-top:8px">${S.trophies.map(id=>{const t=TROPHIES.find(x=>x.id===id);return `<li><span>${t.e} ${t.n}</span></li>`}).join('')}</ul>`:''}</div>
-  <div class="sec-head"><h2>Rang et logement</h2><p>${S.xp} XP</p></div>
-  <div class="panel"><p><strong>🏅 ${RANKS[ri][1]}</strong>, +${ri*5} % de revenus.</p><div class="xpbar"><i style="width:${xpPct}%"></i></div><p class="hint" style="margin-top:6px">${nr?`Prochain rang : ${nr[1]} à ${nr[0]} XP.`:'Rang maximum atteint.'} 🎁 Série du coffre : ${S.streak} jour${S.streak>1?'s':''}.</p></div>
-  <ol class="steps">${STAGES.map((x,i)=>`<li class="${i>S.stage+1?'locked':''}"><div class="ic">${x.icon}</div><div><h3>${x.name}${i<=S.stage?' <span class="tag">Atteint</span>':''}</h3><p class="sub">${x.perk}</p>
-    ${i===S.stage+1?`<button class="btn ${S.cash>=x.cost?'go':''}" data-a="stage" ${S.cash>=x.cost?'':'disabled'}>Emménager pour ${fmt(x.cost)}</button>`:''}${i>S.stage+1?`<p class="sub" style="margin-top:4px">Coût : ${fmt(x.cost)}</p>`:''}</div></li>`).join('')}</ol>
-  <div class="stats"><div class="stat"><strong>${fmt(S.lifetimeAll)}</strong><span>Gagné au total</span></div><div class="stat"><strong>${S.day}</strong><span>Mois d’aventure</span></div>
-    <div class="stat"><strong>${S.stats.decisions}</strong><span>Décisions prises</span></div><div class="stat"><strong>${S.stats.reviews5}</strong><span>Avis 5 étoiles</span></div></div>
-  <div class="panel" style="margin-top:14px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'🔊 Activés':'🔇 Coupés'}</button></div></div>
-  <div class="foot"><p>Prototype jouable de Flip Empire. Ta partie est enregistrée dans ce navigateur.</p><button class="btn ghost small" data-a="reset">Recommencer une nouvelle vie</button></div>
-  <div class="panel" style="margin-top:14px"><h3 style="margin:0 0 6px">💾 Ma sauvegarde</h3><p class="hint">Ta partie s’enregistre toute seule toutes les 5 secondes. Pour la passer sur un autre appareil, copie ton code puis colle-le là-bas.</p>
-    <div class="bs-row" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" data-a="savexp">📤 Copier mon code</button><button class="btn small ghost" data-a="saveimp">📥 Coller un code</button>${installable()?`<button class="btn small go" data-a="install">📲 Installer l’appli</button>`:''}</div>
-    ${isIOS()&&!isStandalone()?`<p class="hint" style="margin-top:8px">📲 Sur iPhone : touche <b>Partager</b> ⬆️ dans Safari, puis <b>Sur l’écran d’accueil</b>.</p>`:''}</div>`;
+  <div class="panel"><div class="vitrine">${TROPHIES.map(t=>S.trophies.includes(t.id)?`<div class="got" title="${t.n}">${t.e}</div>`:`<div title="À découvrir">?</div>`).join('')}</div>
+  <p class="hint" style="margin-top:10px">+5 % de revenus par trophée, pour toutes les générations. Les 12 : ×2.</p>
+  ${S.trophies.length?`<ul class="ug" style="margin-top:8px">${S.trophies.map(id=>{const t=TROPHIES.find(x=>x.id===id);return `<li><span>${t.n}</span></li>`}).join('')}</ul>`:''}</div>
+  <div class="sec-head"><h2>Rang</h2><p>${S.xp} XP</p></div>
+  <div class="panel"><p><strong>${RANKS[ri][1]}</strong>, +${ri*5} % de revenus.</p><div class="xpbar"><i style="width:${nr?((S.xp-RANKS[ri][0])/(nr[0]-RANKS[ri][0]))*100:100}%"></i></div><p class="hint" style="margin-top:6px">${nr?`${nr[1]} à ${nr[0]} XP.`:'Rang maximum.'} Série du coffre : ${S.streak} jour${S.streak>1?'s':''}.</p></div>`;
+  return h;
+}
+/* Empire : le pouvoir en ville (mairie, club) et les réglages */
+function vEmpire(){
+  const t=['mairie','club','plus'].includes(S.eTab)?S.eTab:'mairie',mt_=S.club.match&&!S.club.match.done;
+  const seg=segHTML('etab',t,[['mairie','Mairie',S.pol.cand&&Object.keys(S.pol.acts).length<CAMP.length?'!':''],['club','Club',mt_?'!':''],['plus','Compte',(()=>{try{return metaInit().votes[metaWeek()]?'':'1'}catch(e){return ''}})()]]);
+  if(t==='club')return seg+vClub();
+  if(t==='mairie')return seg+vMairie();
+  return seg+`<div class="stats"><div class="stat"><strong>${fmt(S.lifetimeAll)}</strong><span>Gagné au total</span></div><div class="stat"><strong>${S.day}</strong><span>Mois joués</span></div>
+    <div class="stat"><strong>${S.stats.decisions}</strong><span>Décisions</span></div><div class="stat"><strong>${S.stats.reviews5}</strong><span>Avis 5 étoiles</span></div></div>
+  <div class="panel" style="margin-top:14px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'Activés':'Coupés'}</button></div></div>
+  <div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Sauvegarde</h3><p class="hint">Enregistrée toute seule dans ce navigateur. Pour changer d’appareil, copie ton code et colle-le là-bas.</p>
+    <div class="bs-row" style="margin-top:8px"><button class="btn small" data-a="savexp">Copier mon code</button><button class="btn small ghost" data-a="saveimp">Coller un code</button>${installable()?`<button class="btn small go" data-a="install">Installer l’appli</button>`:''}</div>
+    ${isIOS()&&!isStandalone()?`<p class="hint" style="margin-top:8px">Sur iPhone : Partager dans Safari, puis « Sur l’écran d’accueil ».</p>`:''}</div>
+  <div class="foot"><p>Flip Empire, prototype jouable.</p><button class="btn ghost small" data-a="reset">Recommencer une nouvelle vie</button></div>`;
 }
 function chartSVG(){
   const h=S.mkt.hist,mn=Math.min(...h),mx=Math.max(...h),W=320,H=130,r=mx-mn||1;
@@ -2578,8 +2710,10 @@ function vMarche(){
   <div class="sec-head"><h2>📰 Actualités du marché</h2></div>
   <div class="panel">${M.news.length?M.news.map(n=>`<p class="mnews">${n.up?'📈':'📉'} ${n.t} <span class="hint">${dateLabel(n.day)}</span></p>`).join(''):'<p class="hint">Les nouvelles arrivent… Une bonne nouvelle fait monter les prix, une mauvaise les fait chuter. Mais le marché ne réagit pas toujours comme prévu.</p>'}</div>`;
 }
+function normTab(){if(S.tab==='quetes'){if(S.qTab==='club'||S.qTab==='mairie'){S.tab='empire';S.eTab=S.qTab}else S.tab='objectifs';S.qTab='obj'}}
 function renderMain(){
-  const v={gestion:vGestion,vie:vVie,quetes:vQuetes,empire:vEmpire,marche:vMarche}[S.tab];
+  normTab();
+  const v={gestion:vGestion,vie:vVie,objectifs:vObjectifs,empire:vEmpire,marche:vMarche}[S.tab];
   $('#main').innerHTML=v?v():'';
   document.querySelectorAll('.tab').forEach(t=>{const on=t.dataset.t===S.tab;t.classList.toggle('on',on);t.setAttribute('aria-current',on?'page':'false')});
 }
@@ -2591,23 +2725,25 @@ function layout(){
 }
 function render(){renderHud();renderMain();updateLive();layout();renderSheet();lastTrackerKey='';updateTracker();save()}
 function badges(){
-  const cl=MISSIONS.filter(m=>!S.claimed.includes(m.id)&&m.c()).length,bq=$('#b-quetes');bq.hidden=!(cl||(S.pol.cand&&Object.keys(S.pol.acts).length<CAMP.length));bq.textContent=cl||'!';
-  $('#b-vie').hidden=!S.event;
-  $('#b-empire').hidden=!(newStars()>=1&&conqDone()>=7&&S.city<CITIES.length-1);
-  $('#b-gestion').hidden=!(openIds().some(id=>satOf(id)<40)||UPG.some(u=>!S.upg.includes(u.id)&&S.cash>=u.cost&&(!u.biz||S.biz[u.biz].lvl)));
+  const set=(id,show,txt)=>{const e=$(id);if(!e)return;e.hidden=!show;if(show&&e.textContent!==String(txt))e.textContent=txt};
+  const cl=readyMissions().length,fr=newStars()>=1&&conqDone()>=7&&S.city<CITIES.length-1;
+  set('#b-objectifs',cl||fr,cl||'!');
+  set('#b-vie',!!S.event,'1');
+  set('#b-empire',(S.pol.cand&&Object.keys(S.pol.acts).length<CAMP.length)||(S.club.match&&!S.club.match.done),'!');
+  set('#b-gestion',openIds().some(id=>satOf(id)<40)||UPG.some(u=>!S.upg.includes(u.id)&&S.cash>=u.cost&&(!u.biz||S.biz[u.biz].lvl)),'!');
 }
 function updateLive(){
   if(Math.abs(S.cash-dispCash)<1)dispCash=S.cash;else dispCash+=(S.cash-dispCash)*.3;
   const c=$('#cash');if(c)c.textContent=fmt(dispCash);
-  const ips=$('#ips');if(ips)ips.textContent=`+${fmt(autoIncome())}/s en automatique`;
+  const ips=$('#ips');if(ips)ips.textContent=autoIncome()>0?`+${fmt(autoIncome())}/s avec tes gérants`:'Pas encore de gérant';
   const db=$('#daybar');if(db)db.style.width=(S.dayProg*100)+'%';
   const set=(id,v,warn)=>{const e=document.getElementById(id);if(e){e.textContent=v;e.style.color=warn?'var(--loss)':''}};
-  const s=avgSat();set('hg-sat',Math.round(s)+' %',s<40);set('hg-nrg',Math.round(S.energy)+(S.energy<20?' 😴 revenus −20 %':''),S.energy<25);set('hg-rep',Math.round(S.rep),S.rep<30);if(S.partner)set('hg-rel',Math.round(S.partner.rel),S.partner.rel<35);
+  const s=avgSat();set('hg-sat',Math.round(s)+' %',s<40);set('hg-nrg',Math.round(S.energy)+(S.energy<20?', épuisé':''),S.energy<25);set('hg-rep',Math.round(S.rep),S.rep<30);if(S.partner)set('hg-rel',Math.round(S.partner.rel),S.partner.rel<35);
   const now=Date.now(),bb=$('#boost');
-  if(bb){if(now<S.boostUntil){bb.textContent=`⚡ ×2 encore ${Math.ceil((S.boostUntil-now)/1000)} s`;bb.disabled=true;bb.classList.add('on')}
-    else if(now<S.boostReadyAt){bb.textContent=`⚡ Rush dans ${mmss(S.boostReadyAt-now)}`;bb.disabled=true;bb.classList.remove('on')}
-    else{bb.textContent='⚡ Rush ×2';bb.disabled=false;bb.classList.remove('on')}}
-  const fz=$('#frz');if(fz)fz.textContent=now<S.frenzyUntil?`🔥 Frénésie ×5, ${Math.ceil((S.frenzyUntil-now)/1000)} s`:'';
+  if(bb){if(now<S.boostUntil){bb.textContent=`×2 : ${Math.ceil((S.boostUntil-now)/1000)} s`;bb.disabled=true;bb.classList.add('on')}
+    else if(now<S.boostReadyAt){bb.textContent=`Rush ${mmss(S.boostReadyAt-now)}`;bb.disabled=true;bb.classList.remove('on')}
+    else{bb.textContent='Rush ×2';bb.disabled=false;bb.classList.remove('on')}}
+  const fz=$('#frz');if(fz)fz.textContent=now<S.frenzyUntil?`Frénésie ×5, ${Math.ceil((S.frenzyUntil-now)/1000)} s`:'';
   if(S.tab==='gestion'&&S.gTab==='affaires')BIZ.forEach(b=>{const st=S.biz[b.id];
     const bar=document.getElementById('g-bar-'+b.id);if(bar)bar.style.width=(st.running?Math.min(1,st.prog)*100:0)+'%';
     const bt=document.getElementById('g-buy-'+b.id);if(bt){if(st.lvl){const q=quote(b);if(bt.textContent!==q.label)bt.textContent=q.label;bt.disabled=!q.ok}else bt.disabled=S.cash<b.cost}
@@ -2621,6 +2757,11 @@ function updateLive(){
 
 /* ================= GAME TICK ================= */
 let lastTick=performance.now(),saveT=0,revT=8,trackT=0;
+/* Pas de re-rendu sous le doigt : sinon le bouton visé disparaît entre l’appui et le relâchement */
+let PDOWN=false,MAIN_LATE=false;
+addEventListener('pointerdown',()=>{PDOWN=true},true);
+const pUp=()=>{PDOWN=false;if(MAIN_LATE){MAIN_LATE=false;setTimeout(()=>{if(S.tab!=='ville'&&!modalOpen)renderMain()},60)}};
+addEventListener('pointerup',pUp,true);addEventListener('pointercancel',pUp,true);
 function tick(){
   const now=performance.now(),dt=Math.min((now-lastTick)/1000,3600);lastTick=now;
   if(!S.started||S.dead){updateLive();return}
@@ -2637,7 +2778,7 @@ function tick(){
   S.dayProg+=dt/DAY_SEC*(S.speed||1);
   if(S.dayProg>=1){
     newDay(true);renderHud();updateLive();layout();
-    if(S.tab!=='ville'&&!modalOpen)renderMain();
+    if(S.tab!=='ville'&&!modalOpen){if(PDOWN)MAIN_LATE=true;else renderMain()}
     renderSheet();
   }
   trackT-=dt;if(trackT<=0){trackT=.5;updateTracker()}
@@ -2666,11 +2807,14 @@ document.addEventListener('click',e=>{
     case 'close':closeModal();break;
     case 'heirs':modal(heirsHTML());full=false;break;
     case 'inherit':inherit(b.dataset.v);break;
-    case 'daily':{const r=+b.dataset.r;S.streak=+b.dataset.s;S.lastDaily=today();earn(r);addXP(10);sfx('rank');closeModal();burstAt(innerWidth/2,innerHeight/2,14,'+'+fmt(r));break}
+    case 'daily':{if(S.lastDaily===today()){closeModal();break}const r=+b.dataset.r;S.streak=+b.dataset.s;S.lastDaily=today();earn(r);addXP(10);sfx('rank');closeModal();uiGain(innerWidth/2,innerHeight/2,'+'+fmt(r));break}
     case 'reset':modal(`<h2>Recommencer une nouvelle vie ?</h2><p>Tout sera effacé : argent, affaires, famille, dynastie et trophées.</p><div style="display:grid;gap:8px;margin-top:18px"><button class="btn big" data-a="reset2">Oui, tout recommencer</button><button class="btn ghost" data-a="close">Annuler</button></div>`);full=false;break;
     case 'reset2':S=newGame();applyCityBiz(0);S.mkt=freshMkt();dispCash=S.cash;MQ.length=0;sel=null;genCity(0);closeModal();camTo(11,10,true);intro();top=true;break;
     case 'tab':S.tab=b.dataset.t;if(S.tab!=='ville')sel=null;top=true;break;
-    case 'goquest':S.tab='quetes';sel=null;S.qTab=b.dataset.f==='pol'?'mairie':'club';top=true;break;
+    case 'goquest':S.tab='empire';sel=null;S.eTab=b.dataset.f==='pol'?'mairie':'club';top=true;break;
+    case 'etab':S.eTab=b.dataset.f;top=true;break;
+    case 'vtab':S.vTab=b.dataset.f;top=true;break;
+    case 'claimall':claimMissions(readyMissions().map(m=>m.id),b);break;
     case 'gtab':S.gTab=b.dataset.f;top=true;break;
     case 'ugf':S.ugFilter=b.dataset.f;break;
     case 'unsel':sel=null;break;
@@ -2696,8 +2840,8 @@ document.addEventListener('click',e=>{
     case 'openev':if(S.tab==='vie'){full=false;break}showEvent();full=false;break;
     case 'decide':decide(+b.dataset.i,false);full=false;setTimeout(render,1000);break;
     case 'stage':upgradeStage();break;
-    case 'claim':claimMission(id,b);break;
-    case 'franchise':franchise();S.tab='ville';top=true;break;
+    case 'claim':claimMissions([id],b);break;
+    case 'franchise':{const c0=S.city;franchise();if(S.city!==c0){S.tab='ville'}top=true;break}
     case 'camp':campAct(id);break;
     case 'prog':setProg(id);break;
     case 'proj':buildProject(id);break;
@@ -3077,17 +3221,8 @@ Object.assign(EV,{
       {t:'Faire rire la salle',go:()=>{const g=chance(.45)?randInt(7,12):-randInt(3,6);DISTRICTS.forEach(d=>S.pol.dist[d.id].pop=clamp(S.pol.dist[d.id].pop+g,0,100));FXC.push(`📊 Intentions ${g>=0?'+':''}${g} partout`);return g>0?'Ta blague fait le tour des réseaux.':'Silence gêné.'}}]}
 });
 
-/* ---------- Quests tab with segments ---------- */
-function vQuetes(){
-  const seg=`<div class="seg" role="tablist">${[['obj','🎯 Objectifs'],['club','⚽ Club'],['mairie','🏛️ Mairie']].map(([k,l])=>`<button class="${S.qTab===k?'on':''}" data-a="qtab" data-f="${k}">${l}${k==='club'&&S.club.match&&!S.club.match.done?'<span class="cnt">!</span>':''}</button>`).join('')}</div>`;
-  if(S.qTab==='club')return seg+vClub();
-  if(S.qTab==='mairie')return seg+vMairie();
-  const ms=MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,5);
-  return seg+`<div class="sec-head"><h2>🎯 Objectifs</h2><p>${S.claimed.length}/${MISSIONS.length}</p></div>
-  <div class="panel">${ms.length?ms.map(m=>{const [a,b]=m.p(),done=m.c();return `<div class="mq ${done?'done':''}"><div style="flex:1"><span>${mt(m)}</span><div class="qt-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div></div>${done?`<button class="btn go" data-a="claim" data-id="${m.id}">🎁 +${fmt(missionReward(m))}</button>`:`<span class="hint">+${fmt(missionReward(m))}</span>`}</div>`}).join(''):'<p>Tous les objectifs sont remplis. Respect.</p>'}</div>
-  <div class="sec-head"><h2>🏙️ Conquête de ${S.city?CITIES[S.city].n:'ta ville'}</h2><p>${conqDone()}/7</p></div>
-  <div class="panel">${conqGoals().map(g=>{const [a,b]=g.p(),ok=a>=b;return `<div class="mq ${ok?'done':''}"><div style="flex:1"><span>${ok?'✅ ':''}${g.t}</span><div class="qt-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div></div></div>`}).join('')}</div>`;
-}
+/* ---------- Ancien onglet Quêtes : le club et la mairie vivent dans Empire, les objectifs dans Objectifs ---------- */
+function vQuetes(){return vEmpire()}
 
 /* ---------- Extra actions router ---------- */
 function extraAct(a,b,id){
@@ -3956,7 +4091,7 @@ function metaTrophyPay(){const m=metaInit(),n=S.trophies.length;if(n>m.trophyPai
 function metaHud(force){const r=document.querySelector('#hud .hud-r .bs-row');if(!r)return;let x=r.querySelector('.meta-hud');
   if(x&&!force)return;if(x)x.remove();const voted=!!metaInit().votes[metaWeek()];
   r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn small ghost" data-a="meta_shop" aria-label="Boutique">🛍️</button><button class="btn small ghost" data-a="meta_poll" aria-label="Sondage de la semaine">🗳️${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
-function metaEmp(){if(S.tab!=='empire')return;const mn=$('#main');if(!mn||$('#meta-emp'))return;const m=metaInit(),act=META_POLL_BY[metaActiveId()];
+function metaEmp(){if(S.tab!=='empire'||S.eTab!=='plus')return;const mn=$('#main');if(!mn||$('#meta-emp'))return;const m=metaInit(),act=META_POLL_BY[metaActiveId()];
   mn.insertAdjacentHTML('afterbegin',`<div class="panel" id="meta-emp"><div class="bs-row" style="justify-content:space-between"><b>🎟️ ${m.jetons} jetons</b>${metaHasPass()?'<span class="tag">👑 Pass Empire</span>':''}</div>
   <p class="hint" style="margin-top:6px">${metaStreakLine()}</p>${act?`<p class="hint">🗳️ En vigueur : ${act.e} ${act.t}</p>`:''}
   ${INACTIVITY_RESET?`<p class="hint">⏳ Règle d’inactivité active : sans connexion pendant ${INACTIVITY_DAYS} jours, ton niveau repart à zéro.</p>`:''}
@@ -4735,6 +4870,21 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
   if(a==='dec_war'&&P.cand&&P.camp.warN<3){const c=costSec(100*(P.camp.warN+1));if(S.cash<c){sfx('no');return}spend(c);P.camp.warN++;P.camp.war+=2;toast('💰 Budget de campagne renforcé : +2 partout.');sfx('good')}
   render()});
 /* ===== FIN AGENT DECISIONS ===== */
+/* ===== AGENT UI ===== */
+/* Le re-rendu garde la position de lecture : défilement de la fiche, sections dépliées */
+renderSheet=(f=>function(){const el=$('#bsheet'),sc=el?el.scrollTop:0,same=el&&el.dataset.sel===String(sel);f();if(el){if(same)el.scrollTop=sc;el.dataset.sel=String(sel)}})(renderSheet);
+renderMain=(f=>function(){const m=$('#main'),k=S.tab+(S.tab==='vie'?S.vTab:S.tab==='empire'?S.eTab:S.tab==='gestion'?S.gTab:''),same=m&&m.dataset.k===k;
+  const open=same?[...m.querySelectorAll('details')].map(d=>d.open):[];f();
+  if(m){m.dataset.k=k;if(same)m.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true})}})(renderMain);
+/* Un seul achat par appui : un double appui rapide ne déclenche pas deux fois les actions uniques */
+const ONCE=new Set(['buyprop','renov','sellprop','stage','claim','claimall','franchise','clubname','clubbuy','mgr','upg','proj','daily','start','decide','reset2','inherit','buyblock','rebuild','mcap','staff']);
+let lastHit={el:null,t:0};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const n=performance.now();
+  /* juste après une récupération, le même endroit change de bouton : on ignore le second appui */
+  if(n-CLAIM_T<450&&b.closest('#qtrack,.claimbar,.obj-main')){e.stopImmediatePropagation();e.preventDefault();return}
+  if(!ONCE.has(b.dataset.a))return;
+  if(lastHit.el===b&&n-lastHit.t<400){e.stopImmediatePropagation();e.preventDefault();return}lastHit={el:b,t:n}},true);
+/* ===== FIN AGENT UI ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
@@ -4742,7 +4892,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
   let off=0,rentOff=0;
   if(away>30){BIZ.forEach(b=>{const st=S.biz[b.id];if(st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*away});rentOff=dailyRent()*away/DAY_SEC}
   if(off+rentOff>0)earn(off+rentOff);
-  dispCash=S.cash;S.tab=S.tab||'ville';if(!['ville','gestion','vie','quetes','empire','marche'].includes(S.tab))S.tab='ville';
+  dispCash=S.cash;S.tab=S.tab||'ville';normTab();if(!['ville','gestion','vie','objectifs','empire','marche'].includes(S.tab))S.tab='ville';
   render();camTo(11,10,true);
   for(let i=0;i<14;i++){spawnPed();const e=ENTS[ENTS.length-1],a=e.pts[0],b=e.pts[1],k=Math.random();e.x=a[0]+(b[0]-a[0])*k;e.y=a[1]+(b[1]-a[1])*k}
   setInterval(tick,100);requestAnimationFrame(frame);
