@@ -434,6 +434,61 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 .matchbtn{position:absolute;left:12px;bottom:14px;z-index:7;border:0;border-radius:14px;padding:12px 16px;background:#FF5FA2;color:#1E2B2A;font:inherit;font-weight:800;box-shadow:0 4px 12px rgba(0,0,0,.25);cursor:pointer;animation:qtpulse 1.2s infinite}
 .dists{display:grid;gap:8px;margin-top:10px}
 .dist{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:4px}
+/* AGENT META */
+:root[data-skin="ocean"]{--sticker:#5EC8F2;--pink:#4F7CFF;--bg:#D3E3EA;--surface2:#E6F0F4}
+:root[data-skin="sunset"]{--sticker:#FFB067;--pink:#FF6F7D;--bg:#EEDCD3;--surface2:#F6EAE3}
+:root[data-skin="forest"]{--sticker:#A8DB7A;--pink:#E7A93B;--bg:#D5E2D1;--surface2:#E7F0E3}
+:root[data-skin="neon"]{--sticker:#D38CFF;--pink:#2EF2C9;--bg:#E2DAEE;--surface2:#EEE8F6}
+:root[data-skin="gold"]{--sticker:#E8BD4A;--pink:#B8862B;--bg:#E6E0D0;--surface2:#F1ECDF}
+@media (prefers-color-scheme: dark){
+  :root[data-skin="ocean"]:not([data-theme="light"]){--bg:#0F1C24;--surface2:#1B2C36}
+  :root[data-skin="sunset"]:not([data-theme="light"]){--bg:#22171A;--surface2:#352427}
+  :root[data-skin="forest"]:not([data-theme="light"]){--bg:#111D14;--surface2:#203023}
+  :root[data-skin="neon"]:not([data-theme="light"]){--bg:#160F22;--surface2:#271C38}
+  :root[data-skin="gold"]:not([data-theme="light"]){--bg:#1C1912;--surface2:#2E291D}
+}
+:root[data-theme="dark"][data-skin="ocean"]{--bg:#0F1C24;--surface2:#1B2C36}
+:root[data-theme="dark"][data-skin="sunset"]{--bg:#22171A;--surface2:#352427}
+:root[data-theme="dark"][data-skin="forest"]{--bg:#111D14;--surface2:#203023}
+:root[data-theme="dark"][data-skin="neon"]{--bg:#160F22;--surface2:#271C38}
+:root[data-theme="dark"][data-skin="gold"]{--bg:#1C1912;--surface2:#2E291D}
+.meta-hud{display:inline-flex;gap:6px}
+.meta-hud .btn{position:relative}
+.meta-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--surface)}
+.meta-shop{text-align:left}.meta-shop h2{text-align:center}.meta-shop>.hint:first-of-type{text-align:center}
+.meta-seg{grid-auto-flow:row;grid-template-columns:repeat(3,1fr)}
+.meta-note{min-height:1.2em;margin:8px 0 0;font-size:.86rem;font-weight:600;color:var(--ink)}
+.meta-note:empty{min-height:0;margin:0}
+.meta-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:10px}
+.meta-it{background:var(--surface2);border:1.5px solid transparent;border-radius:12px;padding:10px;display:grid;gap:4px;justify-items:start;align-content:start}
+.meta-it.on{border-color:var(--ink);background:var(--surface)}
+.meta-it b{font-size:.92rem}.meta-it .hint{font-size:.76rem;line-height:1.3}
+.meta-sw{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:24px;background:var(--surface);border:3px solid #fff;box-shadow:0 2px 0 rgba(0,0,0,.18)}
+.meta-bt{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.meta-bt .btn.small{padding:6px 9px;font-size:.8rem}
+.meta-pass{margin-top:12px;background:var(--sticker);color:var(--sticker-ink);border-radius:14px;padding:16px 16px 14px;transform:rotate(-1.2deg);box-shadow:0 3px 0 rgba(0,0,0,.2)}
+.meta-pass h3{margin:0;font-size:1.25rem;font-weight:800}
+.meta-price{font-family:"Permanent Marker",cursive;font-size:1.7rem;margin:2px 0 8px}
+.meta-pass ul{margin:0 0 12px;padding-left:2px;list-style:none;display:grid;gap:4px;font-size:.92rem}
+.meta-pass .hint{color:var(--sticker-ink);opacity:.8}
+.meta-pass .btn.go{background:var(--sticker-ink);color:#fff}
+.meta-slot{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line);font-size:.9rem}
+.meta-win{background:var(--surface2);border-radius:12px;padding:10px 12px;margin-top:10px;text-align:left}
+.meta-win p{margin:2px 0 0}
+.meta-opts{display:grid;gap:8px}
+.meta-opt{font:inherit;text-align:left;border:1.5px solid var(--ink);background:var(--surface);color:var(--ink);border-radius:12px;padding:10px 12px;display:grid;gap:2px;cursor:pointer}
+.meta-opt:hover,.meta-opt:focus-visible{background:var(--sticker);color:var(--sticker-ink)}
+.meta-res{position:relative;overflow:hidden;display:flex;justify-content:space-between;gap:8px;padding:9px 12px;border-radius:10px;background:var(--surface2);font-size:.9rem;text-align:left}
+.meta-res span,.meta-res b{position:relative;z-index:1}
+.meta-res i{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--sticker) 55%,transparent)}
+.meta-res.me{box-shadow:inset 0 0 0 2px var(--ink);font-weight:700}
+.meta-early{margin-top:12px;font-size:.84rem;text-align:left;border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;color:var(--muted)}
+#meta-deco{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;pointer-events:none;font-size:26px;letter-spacing:4px;white-space:nowrap;animation:metasway 3s ease-in-out infinite;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+@keyframes metasway{50%{transform:translateX(-50%) translateY(-5px) rotate(-2deg)}}
+.meta-rain{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.meta-rain span{position:absolute;top:-40px;animation:metafall linear forwards}
+@keyframes metafall{to{transform:translateY(calc(100vh + 80px)) rotate(320deg)}}
+@media (prefers-reduced-motion: reduce){#meta-deco{animation:none}}
 </style>
 </head>
 <body>
@@ -1848,7 +1903,7 @@ function drawMairie(){
   HITS.push({hex:quadHex(M,70),kind:'mairie',id:'mairie',top:[top[0],top[1]-20]});
 }
 function drawStade(){
-  const P=STADE,c=S.club,lvl=c.own?c.stade:-1,col=c.own?'#F7C82F':'#9AA3AD';
+  const P=STADE,c=S.club,lvl=c.own?c.stade:-1,col=c.own?(typeof metaClubCol==='function'?metaClubCol():'#F7C82F'):'#9AA3AD';
   poly(ctx,quadT(P.x,P.y,P.x+P.w,P.y+P.d),shade(TH_.moon?'#9C9C9C':'#9FB89A',1));
   for(let k=0;k<6;k++)poly(ctx,quadT(P.x+.45,P.y+.45+k*(3.1/6),P.x+P.w-.45,P.y+.45+(k+1)*(3.1/6)),shade(k%2?'#4CAF50':'#43A047',1));
   ctx.strokeStyle='rgba(255,255,255,.85)';ctx.lineWidth=1.2;const L=quadT(P.x+.55,P.y+.55,P.x+P.w-.55,P.y+P.d-.55);ctx.beginPath();L.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();
@@ -3627,6 +3682,308 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 document.addEventListener('input',e=>{if(e.target.id==='vie-kname')vieDraft=e.target.value});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="vie_"]');if(!b||b.disabled)return;FXC=[];vieAct(b.dataset.a.slice(4),b.dataset);FXC=[];render()});
 /* ===== FIN AGENT VIE ===== */
+/* ===== AGENT META ===== */
+/* Boutique (Pass Empire + objets esthétiques), sondage hebdomadaire, séries, retour et inactivité.
+   Tout ce qui demande un serveur ou un paiement passe par BACKEND (implémentation locale aujourd'hui,
+   à brancher sur Supabase/Stripe : voir supabase-schema.sql). Aucun paiement n'est jamais simulé. */
+const META_LS={acc:'flipEmpire_account',votes:'flipEmpire_votes',pid:'flipEmpire_pid',arch:'flipEmpire_archive',slot:'flipEmpire_slot_',flag:'flipEmpire_flag_inactivity'};
+function metaGet(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch(e){return null}}
+function metaSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}
+/* Drapeau : partie remise à zéro après 14 jours d'absence (avec rachat à 2 €).
+   Désactivé tant que le paiement n'existe pas. Test : localStorage.setItem('flipEmpire_flag_inactivity','1') */
+const INACTIVITY_RESET=(()=>{try{return localStorage.getItem(META_LS.flag)==='1'}catch(e){return false}})();
+const INACTIVITY_DAYS=14;
+const META_PRICE={pass_month:'4,99 € / mois',recover_empire:'2 €',premium:'1,99 €'};
+
+const BACKEND={
+  mode:'local',
+  playerId(){let id=metaGet(META_LS.pid);if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'p'+Date.now().toString(36)+Math.random().toString(36).slice(2);metaSet(META_LS.pid,id)}return id},
+  /* Serveur : insert into votes(week,player_id,option) ; la contrainte unique refuse un 2e vote */
+  async vote(week,option){const all=metaGet(META_LS.votes)||{},pid=this.playerId();all[week]=all[week]||{};
+    if(all[week][pid])return{ok:false,reason:'already_voted',option:all[week][pid]};
+    all[week][pid]=option;metaSet(META_LS.votes,all);return{ok:true,option}},
+  /* Serveur : select option,count(*) from votes where week=? group by option */
+  async results(week){return metaCounts(week)},
+  /* Serveur : abonnements et achats validés par Stripe (webhook) */
+  async entitlements(){return{pass:null,premium:[]}},
+  async purchase(sku){return{ok:false,reason:'payment_unavailable',sku}},
+  async saveSlot(n,code){return metaSet(META_LS.slot+n,{code,at:Date.now()})},
+  async loadSlot(n){return metaGet(META_LS.slot+n)},
+  async archiveSave(data){const a=metaGet(META_LS.arch)||[];a.unshift({at:Date.now(),data});return metaSet(META_LS.arch,a.slice(0,2))||metaSet(META_LS.arch,a.slice(0,1))},
+  async listArchives(){return metaGet(META_LS.arch)||[]}
+};
+
+/* ---------- Dates ---------- */
+const metaNow=()=>Date.now();
+function metaWeek(t){const d=new Date(t==null?metaNow():t),u=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())),wd=u.getUTCDay()||7;u.setUTCDate(u.getUTCDate()+4-wd);const y=u.getUTCFullYear();return y+'-W'+String(Math.ceil(((u-Date.UTC(y,0,1))/864e5+1)/7)).padStart(2,'0')}
+const metaWeekOff=n=>metaWeek(metaNow()+n*7*864e5);
+function metaDayNum(t){const d=new Date(t);return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)}
+function metaParseDay(s){if(!s)return null;const p=String(s).split('-').map(Number);return p.length<3?null:Math.round(Date.UTC(p[0],p[1]-1,p[2])/864e5)}
+function metaDayLabel(n){return new Date(n*864e5).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',timeZone:'UTC'})}
+function metaHash(s){let h=2166136261;for(const c of String(s))h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0}
+
+/* ---------- État (S.meta) + copie « compte » qui survit à une nouvelle vie ---------- */
+function META_DEF(){return{v:1,jetons:0,owned:[],eq:{theme:'th_classic',avatar:'av_none',club:'cl_jaune',deco:'dc_none',rain:'fx_or'},
+  baseAv:null,votes:{},winners:{},pollDone:null,jokers:0,trophyPaid:0,pending:null,welcomeDay:null,ent:{pass:null,premium:[]},shopTab:'pass'}}
+const META_ACC_KEYS=['jetons','owned','eq','votes','winners','pollDone','jokers','ent'];
+function metaInit(){
+  if(!S.meta||typeof S.meta!=='object'||Array.isArray(S.meta)){const acc=metaGet(META_LS.acc)||{},m={};META_ACC_KEYS.forEach(k=>{if(acc[k]!==undefined)m[k]=acc[k]});S.meta=m}
+  fillDefaults(META_DEF(),S.meta);const m=S.meta;
+  if(!Array.isArray(m.owned))m.owned=[];if(!isFinite(m.jetons)||m.jetons<0)m.jetons=0;if(!isFinite(m.jokers))m.jokers=0;
+  if(!m.ent||!Array.isArray(m.ent.premium))m.ent={pass:null,premium:[]};
+  return m;
+}
+function metaSave(){const m=metaInit(),a={};META_ACC_KEYS.forEach(k=>a[k]=m[k]);metaSet(META_LS.acc,a)}
+const metaHasPass=()=>{const p=metaInit().ent.pass;return !!(p&&p.until>metaNow())};
+function metaGain(n,why){if(metaActiveId()==='jetons')n*=2;const m=metaInit();m.jetons+=n;metaSave();if(why)toast(`🎟️ +${n} jetons : ${why}`);return n}
+
+/* ---------- Catalogue ---------- */
+const META_ITEMS=[
+  {id:'th_classic',k:'theme',n:'Classique',sw:'#F7E733',free:1},
+  {id:'th_ocean',k:'theme',n:'Océan',sw:'#5EC8F2',ach:{t:'Gagne un trophée',ok:()=>S.trophies.length>=1}},
+  {id:'th_sunset',k:'theme',n:'Coucher de soleil',sw:'#FF9A5A',cost:60},
+  {id:'th_forest',k:'theme',n:'Forêt',sw:'#7BC67E',cost:120},
+  {id:'th_neon',k:'theme',n:'Néon',sw:'#B45CFF',prem:1,poll:'neon'},
+  {id:'th_gold',k:'theme',n:'Or impérial',sw:'#E2B33C',pass:1},
+  {id:'av_none',k:'avatar',n:'Mon perso',e:'🙂',free:1},
+  {id:'av_spy',k:'avatar',n:'Détective',e:'🕵️',cost:80},
+  {id:'av_hero',k:'avatar',n:'Super-héros',e:'🦸',cost:150},
+  {id:'av_astro',k:'avatar',n:'Astronaute',e:'🧑‍🚀',ach:{t:'Rang Marchand',ok:()=>rankIdx()>=3}},
+  {id:'av_robot',k:'avatar',n:'Robot',e:'🤖',ach:{t:'Série de 7 jours',ok:()=>S.streak>=7}},
+  {id:'av_king',k:'avatar',n:'Monarque',e:'🤴',prem:1},
+  {id:'av_vamp',k:'avatar',n:'Vampire',e:'🧛',prem:1},
+  {id:'cl_jaune',k:'club',n:'Jaune soleil',sw:'#F7C82F',free:1},
+  {id:'cl_rouge',k:'club',n:'Rouge passion',sw:'#E53935',ach:{t:'Possède un club',ok:()=>!!(S.club&&S.club.own)}},
+  {id:'cl_bleu',k:'club',n:'Bleu nuit',sw:'#1E5BD8',cost:50},
+  {id:'cl_vert',k:'club',n:'Vert pelouse',sw:'#2E9E5B',cost:50},
+  {id:'cl_rose',k:'club',n:'Rose flash',sw:'#FF5FA2',ach:{t:'3 trophées',ok:()=>S.trophies.length>=3}},
+  {id:'cl_noir',k:'club',n:'Noir et or',sw:'#2A2722',prem:1},
+  {id:'dc_none',k:'deco',n:'Aucune',e:'·',free:1},
+  {id:'dc_ballons',k:'deco',n:'Ballons',e:'🎈',ach:{t:'Série de 3 jours',ok:()=>S.streak>=3}},
+  {id:'dc_guirl',k:'deco',n:'Guirlandes',e:'🎉',cost:80},
+  {id:'dc_carnaval',k:'deco',n:'Carnaval',e:'🎭',prem:1,poll:'carnaval'},
+  {id:'dc_sapins',k:'deco',n:'Sapins d’hiver',e:'🎄',prem:1},
+  {id:'fx_or',k:'rain',n:'Pièces',e:'🪙',free:1},
+  {id:'fx_billets',k:'rain',n:'Pluie de billets',e:'💶',cost:40},
+  {id:'fx_confetti',k:'rain',n:'Confettis',e:'🎊',ach:{t:'Vote à un sondage',ok:()=>Object.keys(metaInit().votes).length>=1},poll:'neon'},
+  {id:'fx_diam',k:'rain',n:'Diamants',e:'💎',prem:1}
+];
+const META_BY=Object.fromEntries(META_ITEMS.map(i=>[i.id,i]));
+const META_TABS=[['pass','👑 Pass'],['theme','Thèmes'],['avatar','Avatars'],['club','Club'],['deco','Ville'],['rain','Effets']];
+const META_DECO={dc_ballons:'🎈 🎈 🎈',dc_guirl:'🎉 🎊 🎉 🎊',dc_carnaval:'🎭 🎉 🎭 🎉',dc_sapins:'🎄 ❄️ 🎄 ❄️ 🎄'};
+/* Renvoie pourquoi l'objet est disponible ('' = verrouillé) */
+function metaOwn(it){const m=metaInit();
+  if(it.free||m.owned.includes(it.id))return 'own';
+  if(it.ach&&it.ach.ok())return 'ach';
+  if(it.prem&&m.ent.premium.includes(it.id))return 'prem';
+  if(it.pass&&metaHasPass())return 'pass';
+  if(it.poll&&metaActiveId()===it.poll)return 'poll';
+  return '';
+}
+let META_PREVIEW=null,META_PREV_T=0;
+function metaEq(k){if(META_PREVIEW&&META_PREVIEW.k===k)return META_BY[META_PREVIEW.id];
+  const it=META_BY[metaInit().eq[k]];return it&&it.k===k&&metaOwn(it)?it:META_ITEMS.find(i=>i.k===k&&i.free)}
+function metaClubCol(){return metaEq('club').sw}
+function metaApply(){
+  const m=metaInit(),th=metaEq('theme'),root=document.documentElement;
+  if(th.id==='th_classic')root.removeAttribute('data-skin');else root.setAttribute('data-skin',th.id.slice(3));
+  const av=metaEq('avatar');
+  if(av.id!=='av_none'){if(!m.baseAv||m.baseAv.name!==S.hero.name)m.baseAv={av:S.hero.av,name:S.hero.name};S.hero.av=av.e}
+  else if(m.baseAv){if(m.baseAv.name===S.hero.name)S.hero.av=m.baseAv.av;m.baseAv=null}
+  const wrap=$('#mapwrap');if(wrap){let d=$('#meta-deco');const dc=metaEq('deco'),txt=META_DECO[dc.id]||'';
+    if(!d){d=document.createElement('div');d.id='meta-deco';d.setAttribute('aria-hidden','true');wrap.appendChild(d)}
+    d.textContent=txt;d.hidden=!txt}
+}
+function metaRain(){
+  if(typeof RM!=='undefined'&&RM)return;const e=metaEq('rain').e,box=document.createElement('div');box.className='meta-rain';box.setAttribute('aria-hidden','true');
+  for(let i=0;i<22;i++){const s=document.createElement('span');s.textContent=e;s.style.left=(Math.random()*96)+'%';s.style.animationDelay=(Math.random()*.9).toFixed(2)+'s';s.style.animationDuration=(1.6+Math.random()*1.2).toFixed(2)+'s';s.style.fontSize=(18+Math.random()*16)+'px';box.appendChild(s)}
+  document.body.appendChild(box);setTimeout(()=>box.remove(),3400);
+}
+
+/* ---------- Sondage hebdomadaire ---------- */
+const META_POLL=[
+  {id:'coffre',e:'🎁',t:'Coffre XXL',d:'Le coffre du jour rapporte ×2 toute la semaine.'},
+  {id:'jetons',e:'🎟️',t:'Semaine des jetons',d:'Tous les jetons gagnés sont doublés.'},
+  {id:'neon',e:'🌈',t:'Festival néon',d:'Thème Néon et effet Confettis offerts toute la semaine.'},
+  {id:'carnaval',e:'🎭',t:'Carnaval en ville',d:'Décoration Carnaval offerte sur la carte toute la semaine.'},
+  {id:'prime',e:'🏛️',t:'Prime du maire',d:'Revenus ×1,5 pendant 3 mois de jeu.',once:()=>mod(1.5,3)},
+  {id:'puces',e:'🧺',t:'Grand marché aux puces',d:'Un chèque égal à 30 minutes de revenus.',once:()=>{const v=Math.max(1000,autoIncome()*1800);earn(v);return '+'+fmt(v)}},
+  {id:'mercato',e:'⚽',t:'Mercato express',d:'Ton club gagne +5 de niveau (sinon 15 jetons).',once:()=>{if(S.club&&S.club.own){S.club.str=Math.min(100,(S.club.str||0)+5);return '⚽ +5 de niveau'}metaGain(15);return '🎟️ +15 jetons'}},
+  {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
+];
+const META_POLL_BY=Object.fromEntries(META_POLL.map(o=>[o.id,o]));
+function metaPoll(week){const out=[];let h=metaHash('poll'+week);while(out.length<4){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}return{week,opts:out}}
+const metaSimVotes=(week,o)=>3+metaHash(week+'|'+o)%12;
+function metaCounts(week){const p=metaPoll(week),all=(metaGet(META_LS.votes)||{})[week]||{},counts={};
+  p.opts.forEach(o=>counts[o]=metaSimVotes(week,o));Object.values(all).forEach(o=>{if(o in counts)counts[o]++});
+  return{week,counts,total:Object.values(counts).reduce((a,b)=>a+b,0),mine:all[BACKEND.playerId()]||null}}
+function metaWinnerOf(r){const p=metaPoll(r.week);return p.opts.reduce((best,o)=>r.counts[o]>r.counts[best]?o:best,p.opts[0])}
+function metaActiveId(){if(!S||!S.meta)return null;const w=metaWeekOff(-1);return S.meta.winners[w]||metaWinnerOf(metaCounts(w))}
+async function metaPollCheck(){
+  if(!S.started||S.dead)return;const m=metaInit(),w=metaWeek();if(m.pollDone===w)return;
+  m.pollDone=w;const prev=metaWeekOff(-1),r=await BACKEND.results(prev),win=metaWinnerOf(r),o=META_POLL_BY[win];
+  m.winners[prev]=win;Object.keys(m.winners).sort().slice(0,-8).forEach(k=>delete m.winners[k]);
+  const extra=o.once?o.once():'';metaSave();metaApply();render();
+  queueModal(`<div class="reveal-box pop">🗳️</div><h2>Le vote a parlé !</h2><p>La semaine dernière, les joueurs ont choisi :</p><div class="meta-win">${o.e} <b>${o.t}</b><p class="hint">${o.d}</p>${extra?`<div class="big-num">${extra}</div>`:''}</div><p class="hint">Un nouveau sondage t’attend cette semaine.</p><div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="meta_poll">Voter pour la semaine prochaine</button><button class="btn ghost" data-a="close">Plus tard</button></div>`);
+}
+async function metaPollHTML(){
+  const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=m.votes[w]||r.mine,act=META_POLL_BY[metaActiveId()];
+  const end=7-((new Date(metaNow()).getDay()+6)%7);
+  const opts=mine?p.opts.map(o=>{const x=META_POLL_BY[o],pc=Math.round(r.counts[o]/r.total*100);return `<div class="meta-res ${o===mine?'me':''}"><span>${x.e} ${x.t}${o===mine?' · ton vote':''}</span><b>${pc} %</b><i style="width:${pc}%"></i></div>`}).join('')
+    :p.opts.map(o=>{const x=META_POLL_BY[o];return `<button class="meta-opt" data-a="meta_vote" data-id="${o}"><b>${x.e} ${x.t}</b><span class="hint">${x.d}</span></button>`}).join('');
+  const nx=metaPoll(metaWeekOff(1));
+  return `<div class="reveal-box pop">🗳️</div><h2>Sondage de la semaine</h2><p class="hint">Semaine ${w.split('-W')[1]} · fin dans ${end} jour${end>1?'s':''} · 1 vote par joueur</p>
+  ${act?`<div class="meta-win"><span class="hint">En vigueur cette semaine (choix de la semaine dernière)</span><br>${act.e} <b>${act.t}</b><p class="hint">${act.d}</p></div>`:''}
+  <h3 style="margin:14px 0 6px;text-align:left">${mine?'Résultats provisoires':'Que veux-tu la semaine prochaine ?'}</h3><div class="meta-opts">${opts}</div>
+  ${mine?'<p class="hint" style="margin-top:8px">Merci ! Le choix gagnant s’appliquera la semaine prochaine.</p>':'<p class="hint" style="margin-top:8px">🎟️ Voter rapporte 10 jetons.</p>'}
+  <div class="meta-early">${metaHasPass()?`<b>👑 En avant-première, la semaine prochaine :</b> ${nx.opts.map(o=>META_POLL_BY[o].e+' '+META_POLL_BY[o].t).join(' · ')}`:`👑 Avec le Pass Empire, découvre le sondage de la semaine prochaine en avance.`}</div>
+  <button class="btn big" style="margin-top:14px" data-a="close">Fermer</button>`;
+}
+async function metaOpenPoll(){metaPollCheck();modal(await metaPollHTML())}
+async function metaVote(o){
+  const w=metaWeek(),m=metaInit();if(m.votes[w]){toast('Tu as déjà voté cette semaine.');return metaOpenPoll()}
+  if(!metaPoll(w).opts.includes(o))return;
+  const r=await BACKEND.vote(w,o);m.votes[w]=r.ok?o:r.option||o;
+  if(r.ok){metaGain(10,'merci pour ton vote');metaRain();sfx('rank')}else toast('Tu as déjà voté cette semaine.');
+  metaSave();metaHud(true);modal(await metaPollHTML());
+}
+
+/* ---------- Série, jokers, coffre du jour (complète l'original) ---------- */
+const metaJokerMax=()=>metaHasPass()?3:2;
+let META_JOKER_USE=0;
+function metaStreakLeft(){const last=metaParseDay(S.lastDaily);if(last==null||!S.streak)return null;const dl=last+1+metaInit().jokers;return{left:dl-metaDayNum(metaNow()),dl}}
+function metaStreakLine(){const s=metaStreakLeft(),j=metaInit().jokers;if(!s)return 'Ouvre ton coffre du jour pour lancer une série.';
+  if(s.left<0)return 'Ta série s’est arrêtée. Ouvre le coffre pour en lancer une nouvelle !';
+  const jk=j?` · 🃏 ${j} joker${j>1?'s':''}`:'';
+  if(s.left===0)return `🔥 Série de ${S.streak} jour${S.streak>1?'s':''}${jk}. Dernier jour pour la garder : ouvre ton coffre aujourd’hui !`;
+  return `🔥 Série de ${S.streak} jour${S.streak>1?'s':''}${jk}. Il te reste ${s.left} jour${s.left>1?'s':''} avant de perdre ta série (jusqu’au ${metaDayLabel(s.dl)} soir).`}
+function dailyModal(){
+  metaInit();const last=metaParseDay(S.lastDaily),gap=last==null?99:metaDayNum(metaNow())-last;let cont=S.lastDaily===yesterday();META_JOKER_USE=0;
+  if(!cont&&S.streak>0&&gap>=2&&gap-1<=S.meta.jokers){cont=true;META_JOKER_USE=gap-1}
+  const next=cont?S.streak+1:1,pos=((next-1)%7)+1,mult=(pos===7?3:1)*(metaActiveId()==='coffre'?2:1);
+  const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
+  queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
+    <p>Reviens chaque jour pour faire grimper ta série. Le 7e jour, la récompense est triplée.</p>
+    <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
+    <div class="big-num">+${fmt(reward)}</div><p class="hint">Série : ${next} jour${next>1?'s':''} · 🎟️ +${pos===7?10:5} jetons${metaActiveId()==='coffre'?' · 🎁 Coffre XXL ×2':''}</p>
+    ${META_JOKER_USE?`<p class="hint">🃏 ${META_JOKER_USE} joker${META_JOKER_USE>1?'s':''} utilisé${META_JOKER_USE>1?'s':''} : ta série est sauvée !</p>`:''}
+    ${!cont&&S.streak>1?`<p class="hint">Ta série de ${S.streak} jours s’est arrêtée. Astuce : chaque 7e jour te donne un joker qui pardonne un jour manqué.</p>`:''}
+    <button class="btn big go" style="margin-top:16px" data-a="daily" data-r="${reward}" data-s="${next}">Ouvrir le coffre</button>`);
+}
+function metaOnDaily(){const m=metaInit();
+  if(META_JOKER_USE){m.jokers=Math.max(0,m.jokers-META_JOKER_USE);META_JOKER_USE=0}
+  const pos=((S.streak-1)%7)+1;let g=pos===7?10:5;if(metaHasPass())g=Math.ceil(g*1.25);metaGain(g);
+  if(pos===7&&m.jokers<metaJokerMax()){m.jokers++;toast('🃏 Joker de série gagné : un jour manqué te sera pardonné.')}
+  metaSave();metaRain();
+}
+
+/* ---------- Boutique ---------- */
+function metaItemHTML(it){
+  const m=metaInit(),own=metaOwn(it),on=metaEq(it.k).id===it.id&&!(META_PREVIEW&&META_PREVIEW.id===it.id),pv=META_PREVIEW&&META_PREVIEW.id===it.id;
+  const vis=`<div class="meta-sw" style="${it.sw?'background:'+it.sw:''}">${it.e||''}</div>`;
+  let st='',bt='';
+  if(own){st=own==='poll'?'Offert cette semaine':own==='ach'?'Débloqué par un succès':own==='pass'?'Pass Empire':'Possédé';bt=on?'<span class="tag">✓ Équipé</span>':`<button class="btn small go" data-a="meta_eq" data-id="${it.id}">Équiper</button>`}
+  else{const tr=pv?'<span class="tag">👀 Essai</span>':`<button class="btn small ghost" data-a="meta_try" data-id="${it.id}">Essayer</button>`;
+    if(it.cost){st=`🎟️ ${it.cost} jetons`;bt=tr+`<button class="btn small ${m.jetons>=it.cost?'go':''}" data-a="meta_buy" data-id="${it.id}" ${m.jetons>=it.cost?'':'disabled'}>Acheter</button>`}
+    else if(it.ach){st='🔒 Succès : '+it.ach.t;bt=tr}
+    else if(it.pass){st='👑 Inclus dans le Pass';bt=tr}
+    else{st=`💎 Premium · ${META_PRICE.premium}`;bt=tr+`<button class="btn small" data-a="meta_pay" data-sku="${it.id}">${META_PRICE.premium}</button>`}}
+  return `<div class="meta-it ${on?'on':''}">${vis}<b>${it.n}</b><span class="hint">${st}</span><div class="meta-bt">${bt}</div></div>`;
+}
+function metaPassHTML(){
+  const pass=metaHasPass(),slots=[1,2,3].map(n=>{const d=metaGet(META_LS.slot+n),lock=n>1&&!pass;
+    return `<div class="meta-slot"><span>💾 Emplacement ${n}${n>1?' <span class="tag">👑 Pass</span>':''}<br><span class="hint">${d?'Enregistré le '+new Date(d.at).toLocaleDateString('fr-FR'):'Vide'}</span></span>${lock?'<span class="hint">🔒</span>':`<span class="bs-row"><button class="btn small" data-a="meta_slotsave" data-id="${n}">Enregistrer</button>${d?`<button class="btn small ghost" data-a="meta_slotload" data-id="${n}">Charger</button>`:''}</span>`}</div>`}).join('');
+  return `<div class="meta-pass"><h3>👑 Pass Empire</h3><p class="meta-price">${META_PRICE.pass_month}</p>
+    <ul><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ Thème exclusif « Or impérial »</li></ul>
+    ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner</button>`}
+    <p class="hint" style="margin-top:8px">Que du confort : le Pass ne donne pas d’argent ni de puissance dans la partie.</p></div>
+    <h3 style="margin:16px 0 6px;text-align:left">Emplacements de sauvegarde</h3>${slots}`;
+}
+function metaShopHTML(note){
+  const m=metaInit(),tab=META_TABS.some(t=>t[0]===m.shopTab)?m.shopTab:'pass';
+  return `<div class="meta-shop"><h2>🛍️ Boutique</h2><p class="hint">🎟️ <b id="meta-jet">${m.jetons} jetons</b> · gagnés en jouant : coffre du jour, sondages, trophées</p>
+  <div class="seg meta-seg" role="tablist">${META_TABS.map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="meta_tab" data-f="${k}">${l}</button>`).join('')}</div>
+  <p class="meta-note" id="meta-note" role="status">${note||''}</p>
+  ${tab==='pass'?metaPassHTML():`<div class="meta-grid">${META_ITEMS.filter(i=>i.k===tab).map(metaItemHTML).join('')}</div>`}
+  <button class="btn big" style="margin-top:14px" data-a="close">Fermer</button></div>`;
+}
+function metaOpenShop(note){metaTrophyPay();modal(metaShopHTML(note))}
+function metaTry(id){const it=META_BY[id];if(!it)return;clearTimeout(META_PREV_T);META_PREVIEW={k:it.k,id};metaApply();render();
+  if(it.k==='rain')metaRain();
+  META_PREV_T=setTimeout(()=>{META_PREVIEW=null;metaApply();render();if(modalOpen&&$('.meta-shop'))metaOpenShop()},15000);
+  metaOpenShop(`👀 Essai de « ${it.n} » pendant 15 secondes${it.k==='club'?' : regarde le stade sur la carte':it.k==='deco'?' : regarde la carte':''}.`)}
+function metaEquip(id){const it=META_BY[id];if(!it||!metaOwn(it))return;clearTimeout(META_PREV_T);META_PREVIEW=null;metaInit().eq[it.k]=id;metaSave();metaApply();render();metaOpenShop(`✓ « ${it.n} » équipé.`)}
+function metaBuy(id){const it=META_BY[id],m=metaInit();if(!it||!it.cost||m.owned.includes(id))return;
+  if(m.jetons<it.cost)return metaOpenShop('Pas assez de jetons pour l’instant.');
+  m.jetons-=it.cost;m.owned.push(id);m.eq[it.k]=id;META_PREVIEW=null;metaSave();metaApply();render();sfx('rank');if(it.k==='rain')metaRain();metaOpenShop(`🎉 « ${it.n} » acheté et équipé !`)}
+async function metaPay(sku){const r=await BACKEND.purchase(sku);
+  if(r&&r.ok){const e=await BACKEND.entitlements();metaInit().ent=e;metaSave();metaApply();return metaOpenShop('Merci !')}
+  toast('💳 Paiement bientôt disponible.');if($('.meta-shop'))metaOpenShop('💳 Paiement bientôt disponible. Rien n’a été débité.');return r}
+function metaTrophyPay(){const m=metaInit(),n=S.trophies.length;if(n>m.trophyPaid){const k=n-m.trophyPaid;m.trophyPaid=n;metaGain(20*k,k>1?`${k} trophées`:'nouveau trophée')}else if(n<m.trophyPaid)m.trophyPaid=n}
+
+/* ---------- Entrées de navigation : HUD + onglet Empire (injectées, sans toucher au rendu existant) ---------- */
+function metaHud(force){const r=document.querySelector('#hud .hud-r .bs-row');if(!r)return;let x=r.querySelector('.meta-hud');
+  if(x&&!force)return;if(x)x.remove();const voted=!!metaInit().votes[metaWeek()];
+  r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn small ghost" data-a="meta_shop" aria-label="Boutique">🛍️</button><button class="btn small ghost" data-a="meta_poll" aria-label="Sondage de la semaine">🗳️${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
+function metaEmp(){if(S.tab!=='empire')return;const mn=$('#main');if(!mn||$('#meta-emp'))return;const m=metaInit(),act=META_POLL_BY[metaActiveId()];
+  mn.insertAdjacentHTML('afterbegin',`<div class="panel" id="meta-emp"><div class="bs-row" style="justify-content:space-between"><b>🎟️ ${m.jetons} jetons</b>${metaHasPass()?'<span class="tag">👑 Pass Empire</span>':''}</div>
+  <p class="hint" style="margin-top:6px">${metaStreakLine()}</p>${act?`<p class="hint">🗳️ En vigueur : ${act.e} ${act.t}</p>`:''}
+  ${INACTIVITY_RESET?`<p class="hint">⏳ Règle d’inactivité active : sans connexion pendant ${INACTIVITY_DAYS} jours, ton niveau repart à zéro.</p>`:''}
+  <div class="bs-row" style="margin-top:8px"><button class="btn small go" data-a="meta_shop">🛍️ Boutique et Pass</button><button class="btn small ghost" data-a="meta_poll">🗳️ Sondage${m.votes[metaWeek()]?'':' (à voter)'}</button></div></div>`)}
+
+/* ---------- Retour après absence et inactivité ---------- */
+const META_AWAY_DAYS=S&&S.lastSeen?(metaNow()-S.lastSeen)/864e5:0;
+function metaResetHTML(note){const p=metaInit().pending||{};
+  return `<div class="reveal-box pop">⏳</div><h2>Ton empire s’est endormi</h2><p>Tu n’es pas venu depuis ${Math.floor(p.days||INACTIVITY_DAYS)} jours. La règle d’inactivité remet ton niveau à zéro.</p>
+  <p class="hint" style="margin-top:6px">Rien n’est effacé : ta partie est archivée et peut être récupérée.</p><p class="meta-note" role="status">${note||''}</p>
+  <div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="meta_recover">Récupérer mon empire · ${META_PRICE.recover_empire} (bientôt)</button><button class="btn ghost" data-a="meta_restart">Recommencer</button></div>`}
+function metaRestart(){const acc={},m=metaInit();META_ACC_KEYS.forEach(k=>acc[k]=m[k]);const n=newGame();n.meta=fillDefaults(META_DEF(),acc);n.meta.pending=null;S=n;save();metaSave();location.reload()}
+async function metaRecover(){const r=await BACKEND.purchase('recover_empire');
+  if(r&&r.ok){const a=(await BACKEND.listArchives())[0];if(a){S=repair(a.data);metaInit().pending=null;S.lastSeen=Date.now();save();location.reload()}return}
+  toast('💳 Paiement bientôt disponible.');modal(metaResetHTML('💳 Paiement bientôt disponible. Ton empire reste archivé en attendant.'))}
+function metaWelcome(){const m=metaInit(),td=today();if(m.welcomeDay===td)return;m.welcomeDay=td;
+  const d=Math.floor(META_AWAY_DAYS),cash=Math.max(1000,autoIncome()*1800);earn(cash);const j=metaGain(15);metaSave();
+  queueModal(`<div class="reveal-box pop">🤗</div><h2>Content de te revoir !</h2><p>Ça faisait ${d} jours. Ta ville t’a attendu et t’offre un cadeau de retour.</p><div class="big-num">+${fmt(cash)}</div><p class="hint">🎟️ +${j} jetons</p><button class="btn big go" style="margin-top:16px" data-a="close">Merci !</button>`)}
+
+/* ---------- Clics (data-a préfixés meta_) ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a,id=b.dataset.id;
+  if(a==='daily'){metaOnDaily();return}
+  if(!a.startsWith('meta_'))return;
+  switch(a){
+    case 'meta_shop':metaOpenShop();break;
+    case 'meta_tab':metaInit().shopTab=b.dataset.f;metaOpenShop();break;
+    case 'meta_try':metaTry(id);break;
+    case 'meta_eq':metaEquip(id);break;
+    case 'meta_buy':metaBuy(id);break;
+    case 'meta_pay':metaPay(b.dataset.sku);break;
+    case 'meta_poll':metaOpenPoll();break;
+    case 'meta_vote':metaVote(id);break;
+    case 'meta_slotsave':BACKEND.saveSlot(id,exportSave()).then(ok=>metaOpenShop(ok?`💾 Partie enregistrée dans l’emplacement ${id}.`:'Enregistrement impossible (stockage plein ?).'));break;
+    case 'meta_slotload':modal(`<h2>Charger l’emplacement ${id} ?</h2><p>Ta partie actuelle sera remplacée. Enregistre-la d’abord si tu veux la garder.</p><div style="display:grid;gap:8px;margin-top:18px"><button class="btn big" data-a="meta_slotload2" data-id="${id}">Oui, charger</button><button class="btn ghost" data-a="meta_shop">Annuler</button></div>`);break;
+    case 'meta_slotload2':BACKEND.loadSlot(id).then(d=>{if(d&&importSave(d.code)){metaInit();metaApply();closeModal();render();toast(`💾 Emplacement ${id} chargé.`)}else metaOpenShop('Cet emplacement est illisible.')});break;
+    case 'meta_recover':metaRecover();break;
+    case 'meta_restart':metaRestart();break;
+  }
+});
+
+/* ---------- Démarrage (avant le BOOT existant) ---------- */
+(function metaBoot(){
+  metaInit();
+  const m=S.meta,canReset=S.started&&!S.dead;
+  if(!INACTIVITY_RESET)m.pending=null;
+  else if(canReset&&!m.pending&&META_AWAY_DAYS>=INACTIVITY_DAYS){m.pending={since:S.lastSeen,days:META_AWAY_DAYS};BACKEND.archiveSave(JSON.parse(JSON.stringify(S)))}
+  if(m.pending&&canReset)modal(metaResetHTML());
+  BACKEND.entitlements().then(e=>{if(e&&(e.pass||e.premium&&e.premium.length)){m.ent=e;metaSave();metaApply()}});
+  setTimeout(()=>{
+    metaApply();metaHud();metaEmp();
+    const obs=new MutationObserver(()=>{metaHud();metaEmp()});obs.observe($('#hud'),{childList:true});obs.observe($('#main'),{childList:true});
+    if(S.meta.pending||!S.started)return;
+    if(META_AWAY_DAYS>=3&&!S.dead)metaWelcome();
+    metaPollCheck();metaTrophyPay();
+    setInterval(()=>{if(S.meta&&!S.meta.pending){metaTrophyPay();if(S.meta.pollDone!==metaWeek())metaPollCheck()}},30000);
+  },0);
+})();
+/* ===== FIN AGENT META ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
