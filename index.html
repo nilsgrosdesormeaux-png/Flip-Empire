@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
+<meta name="fe-build" content="2026-11-03b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5444,6 +5445,24 @@ document.head.insertAdjacentHTML('beforeend',`<style>
 @media (prefers-reduced-motion: reduce){.mx-ball,.mx-now{transition:none}}
 </style>`);
 /* ===== FIN AGENT MATCH ===== */
+/* ===== FILET DE SÉCURITÉ ===== */
+/* Toute erreur s'affiche dans un bandeau (à copier pour le support) au lieu de figer le jeu en silence. */
+const ERRLOG=[];
+function reportErr(e,where){const m=((e&&e.message)||String(e)).slice(0,160),st=((e&&e.stack)||'').split('\n').slice(1,3).map(x=>x.trim()).join(' < ').slice(0,220);
+  const line=`${where||'?'} : ${m} | ${st} | v${(document.querySelector('meta[name=fe-build]')||{}).content||''} | jour ${S&&S.day} ville ${S&&S.city} onglet ${S&&S.tab}`;
+  if(ERRLOG.includes(line))return;ERRLOG.push(line);if(ERRLOG.length>8)ERRLOG.shift();
+  let bar=document.getElementById('errbar');
+  if(!bar){bar=document.createElement('div');bar.id='errbar';bar.setAttribute('role','alert');
+    bar.style.cssText='position:fixed;left:8px;right:8px;bottom:calc(72px + env(safe-area-inset-bottom,0px));z-index:9999;background:#C2362B;color:#fff;border-radius:12px;padding:10px 12px;font:600 13px/1.35 system-ui,sans-serif;box-shadow:0 6px 20px rgba(0,0,0,.25)';
+    document.body.appendChild(bar)}
+  bar.innerHTML=`Un bug est survenu. Copie ce message et envoie-le.<pre id="errtxt" style="white-space:pre-wrap;font:12px/1.3 ui-monospace,monospace;margin:6px 0;max-height:120px;overflow:auto;user-select:all">${esc(ERRLOG.join('\n'))}</pre><button id="errcopy" style="min-height:40px;padding:0 14px;border-radius:10px;border:0;font-weight:700">Copier</button> <button id="errclose" style="min-height:40px;padding:0 14px;border-radius:10px;border:0">Fermer</button>`;
+  document.getElementById('errcopy').onclick=()=>{try{navigator.clipboard.writeText(ERRLOG.join('\n'))}catch(x){}};
+  document.getElementById('errclose').onclick=()=>bar.remove();
+}
+addEventListener('error',e=>reportErr(e.error||e.message,'page'));
+addEventListener('unhandledrejection',e=>reportErr(e.reason,'promesse'));
+tick=(f=>function(){try{f()}catch(e){reportErr(e,'temps')}})(tick);
+/* ===== FIN FILET DE SÉCURITÉ ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
