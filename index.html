@@ -2253,7 +2253,7 @@ function deltaRows(a,b){
   return rows;
 }
 function decide(i,auto){
-  const E=evDef();if(!E)return;const d=S.event.data,c=E.ch[i];
+  const E=evDef();if(!E)return;const d=S.event.data,c=E.ch[i]||E.ch[E.ch.length-1];if(!c){S.event=null;return}
   if(!auto&&c.need&&S.cash<costSec(c.need))return;
   const who=evWho(E,d),name=evName(E,d),ct=chT(c,d);
   const before=snap();FXC=[];const res=c.go(d)||'';const after=snap();
@@ -4512,7 +4512,7 @@ c0_noel:{cat:'business',w:6,ctx:1,cool:12,cond:()=>S.city===0&&monthOf(S.day)>=9
 c0_brocante:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===0,def:1,who:'🧺',name:'L’association du quartier',title:'La grande brocante',
   text:()=>'Toute la ville déballe dimanche. Les chineurs arrivent dès 5 h.',
   ch:[SK('Y aller à l’aube',{p:.35,s:[['nrg',1.2]],win:()=>{money(140);return 'Tu déniches trois pièces rares avant tout le monde.'},lose:()=>{nrg(-10);return 'Tu t’endors dans la voiture. Les bonnes affaires sont parties.'}}),OK('Y aller tranquillement à midi',()=>{money(30);return 'Quelques petites trouvailles.'}),OK('Faire la grasse matinée',()=>{nrg(10);return 'Repos bien mérité.'})]},
-c1_voyage:{cat:'business',w:6,ctx:1,cool:30,cond:()=>S.city===1,def:2,who:'🎨',name:'Le Voyage à Nantes',title:'Une œuvre sur ton toit',
+c1_voyage:{cat:'business',w:6,ctx:1,cool:30,cond:()=>S.city===1,def:1,who:'🎨',name:'Le Voyage à Nantes',title:'Une œuvre sur ton toit',
   text:()=>'Le parcours d’art estival veut installer une œuvre géante sur ton bâtiment.',
   clue:()=>'Le parcours attire des milliers de visiteurs… qui passent devant les boutiques les mieux notées.',
   ch:[SK('Accepter',{p:.25,s:[['sat',1],['rep',.6]],win:()=>{mod(1.35,3);repD(5);return 'La ligne verte passe devant chez toi. Foule tout l’été.'},lose:()=>{repD(2);return 'Les visiteurs prennent des photos… sans entrer.'}}),OK('Refuser',()=> 'L’œuvre ira ailleurs.')]},
@@ -4528,7 +4528,7 @@ c2_soie:{cat:'business',w:5,ctx:1,cool:40,cond:()=>S.city===2,def:1,who:'🧵',n
   text:()=>'Un atelier historique propose une collection exclusive en soie.',
   clue:()=>`Les clients de soie exigent un service irréprochable. Ta satisfaction : ${Math.round(avgSat())}.`,
   ch:[SK('Lancer la collection',{need:120,p:.15,s:[['sat',1.4]],win:()=>{mod(1.3,5);repD(4);return 'Rupture de stock en dix jours.'},lose:()=> 'Belle collection, clients pas au rendez-vous.'}),OK('Commander quelques pièces',()=>{money(50);return 'Petites ventes, zéro risque.'},20),OK('Décliner',()=> 'Une autre fois.')]},
-c3_fashion:{cat:'business',w:6,ctx:1,cool:24,cond:()=>S.city===3,def:2,who:'👠',name:'Une styliste',title:'La Fashion Week',
+c3_fashion:{cat:'business',w:6,ctx:1,cool:24,cond:()=>S.city===3,def:1,who:'👠',name:'Une styliste',title:'La Fashion Week',
   text:()=>'Une styliste veut tes produits dans son défilé.',
   clue:()=>bizOn('sneak')&&S.biz.sneak.lvl>=50?'Tes sneakers sont devenues une référence : elle a vu ta boutique sur les réseaux.':'Elle ne connaît pas encore ta marque.',
   ch:[SK('Prêter tes produits',{p:()=>bizOn('sneak')&&S.biz.sneak.lvl>=50?.75:.3,s:[['rep',.6]],win:()=>{mod(1.4,3);repD(6);return 'Vu sur tous les podiums. Ventes en folie.'},lose:()=> 'Défilé sans écho.'}),OK('Lui vendre au prix fort',()=>{money(80);return 'Une belle vente, sans plus.'})]},
