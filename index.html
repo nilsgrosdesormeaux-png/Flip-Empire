@@ -2571,7 +2571,7 @@ function updateLive(){
   const ips=$('#ips');if(ips)ips.textContent=`+${fmt(autoIncome())}/s en automatique`;
   const db=$('#daybar');if(db)db.style.width=(S.dayProg*100)+'%';
   const set=(id,v,warn)=>{const e=document.getElementById(id);if(e){e.textContent=v;e.style.color=warn?'var(--loss)':''}};
-  const s=avgSat();set('hg-sat',Math.round(s)+' %',s<40);set('hg-nrg',Math.round(S.energy),S.energy<25);set('hg-rep',Math.round(S.rep),S.rep<30);if(S.partner)set('hg-rel',Math.round(S.partner.rel),S.partner.rel<35);
+  const s=avgSat();set('hg-sat',Math.round(s)+' %',s<40);set('hg-nrg',Math.round(S.energy)+(S.energy<20?' 😴 revenus −20 %':''),S.energy<25);set('hg-rep',Math.round(S.rep),S.rep<30);if(S.partner)set('hg-rel',Math.round(S.partner.rel),S.partner.rel<35);
   const now=Date.now(),bb=$('#boost');
   if(bb){if(now<S.boostUntil){bb.textContent=`⚡ ×2 encore ${Math.ceil((S.boostUntil-now)/1000)} s`;bb.disabled=true;bb.classList.add('on')}
     else if(now<S.boostReadyAt){bb.textContent=`⚡ Rush dans ${mmss(S.boostReadyAt-now)}`;bb.disabled=true;bb.classList.remove('on')}
@@ -3175,7 +3175,7 @@ function ecoC(){const C=S.club;
   C.stade=clamp(C.stade|0,0,ECO_ST.length-1);C.coach=clamp(C.coach|0,0,ECO_CO.length-1);C.div=clamp(C.div|0,0,DIVS.length-1);
   (C.squad||[]).forEach(p=>{if(p.fit==null)p.fit=70;if(p.inj==null)p.inj=0});
   return C}
-function ecoKit(){const C=S.club;return ECO_KITS[(C.kit==null?ecoHash(C.name):C.kit)%ECO_KITS.length]}
+function ecoKit(){const C=S.club,k=ECO_KITS[(C.kit==null?ecoHash(C.name):C.kit)%ECO_KITS.length];const m=typeof metaEq==='function'?metaEq('club'):null;return m&&!m.free?[m.sw,k[1]]:k}
 function ecoEff(p){return p.inj>0?Math.round(p.note*.55):p.note+Math.round(((p.fit==null?70:p.fit)-70)/8)}
 function ecoStr(){const c=S.club;if(!c.squad||!c.squad.length)return c.str;return Math.round(c.squad.reduce((a,p)=>a+ecoEff(p),0)/c.squad.length+(c.coach|0)*2.5+((c.morale||50)-50)/10)}
 function ecoPrice(note,div){return Math.round(80*Math.pow(note/10,3.6)*Math.pow(1+div,1.6)*ecoM()*(hasP('foot')?.85:1))}
@@ -3313,7 +3313,7 @@ function vClub(){
   <div class="panel">${C.squad.map(p=>`<div class="pl"><span class="pl-p">${p.poste}</span><span class="pl-n">${esc(p.name)} ${p.inj?`<span class="hint">🚑 ${p.inj} mois</span>`:p.fit>=82?'🔥':p.fit<50?'🥶':''}</span><div class="gbar" style="flex:1"><i style="width:${p.note}%;background:${p.inj?'#C2362B':p.note>=70?'#C9A227':'#17834A'}"></i></div><b>${p.note}</b></div>`).join('')}
     <p class="hint" style="margin-top:6px">🔥 en forme, 🥶 en méforme, 🚑 blessé (joue à moitié de son niveau).</p></div>
   <div class="sec-head"><h2>✍️ Mercato</h2><p>${2-(C.signs||0)} signature${2-(C.signs||0)>1?'s':''} possible${2-(C.signs||0)>1?'s':''} ce mois-ci</p></div>
-  <div class="panel">${(C.offers||[]).map((o,i)=>{const rel=ecoReluct(o);return `<div class="pl" style="flex-wrap:wrap"><span class="pl-p">${o.poste}</span><span class="pl-n">${esc(o.name)} <b>${o.note}</b>${rel>.05?` <span class="hint">😒 hésite à venir en ${DIVS[C.div]}</span>`:''}</span>
+  <div class="panel">${(C.offers||[]).map((o,i)=>{const rel=ecoReluct(o);return `<div class="pl" style="flex-wrap:wrap"><span class="pl-p">${o.poste}</span><span class="pl-n">${esc(o.name)} <b>${o.note}</b>${rel>.05?` <span class="hint">😒 hésite à venir en ${DIVS[C.div]}</span>`:''}${(()=>{const old=(C.squad||[]).find(p=>p.poste===o.poste);if(!old)return '';const dw=Math.round(ecoWage(o,C.div)-ecoWage(old,C.div));return ` <span class="hint">💸 salaires ${dw>=0?'+':'−'}${fmt(Math.abs(dw))}/mois</span>`})()}</span>
       <div class="bs-row" style="width:100%">${[0,1,2].map(v=>{const p=Math.round(o.price*[.8,1,1.2][v]);return `<button class="btn small ${v===1?'go':'ghost'}" data-a="eco_nego" data-i="${i}" data-v="${v}" data-cost="${p}" ${S.cash>=p&&(C.signs||0)<2?'':'disabled'}>${['Proposer','Payer','Surenchérir'][v]} ${fmt(p)}</button>`}).join('')}</div></div>`}).join('')||'<p class="hint">Plus d’offres ce mois-ci.</p>'}
     <p class="hint" style="margin-top:6px">Une offre basse peut être refusée, une surenchère passe presque toujours. Les bons joueurs boudent les petites divisions. Le joueur remplacé est revendu à 35 % de sa valeur.</p></div>
   <div class="sec-head"><h2>🏟️ Infrastructures</h2><p>Coûts fixes ${fmt(k.tot)}/mois</p></div>
