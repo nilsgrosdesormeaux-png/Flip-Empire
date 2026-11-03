@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-03c">
+<meta name="fe-build" content="2026-11-03d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -641,7 +641,7 @@ const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platfo
 const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const installable=()=>!!DEFER_INSTALL;
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();DEFER_INSTALL=e});
-if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').then(r=>r.update()).catch(()=>{}));
 const DAY_SEC=40;
 const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 
