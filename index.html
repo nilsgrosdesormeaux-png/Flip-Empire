@@ -1413,6 +1413,8 @@ const MTXT={m1:[()=>`Encaisse 5 ventes`,'Touche la bulle au-dessus de ta boutiqu
 MISSIONS.forEach(m=>{const x=MTXT[m.id];if(x){m.t=x[0];m.h=x[1]}});
 /* m19 ne double plus l’étape « Deviens maire » de la conquête */
 {const m=MISSIONS.find(x=>x.id==='m19');m.p=()=>[S.pol.cand||S.pol.office||S.pol.terms?1:0,1]}
+/* Un objectif rempli reste acquis (S.notified survit aux franchises) : la récompense ne se perd plus si l’état change */
+MISSIONS.forEach(m=>{const c=m.c;m.c=()=>(S.notified||[]).includes(m.id)||c()});
 const missionReward=m=>Math.max(m.r,autoIncome()*60);
 const openMissions=()=>MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,3);
 
@@ -1461,7 +1463,7 @@ function dailyModal(){
   const next=S.lastDaily===yesterday()?S.streak+1:1,pos=((next-1)%7)+1,mult=pos===7?3:1;
   const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
-    <p>Reviens chaque jour pour faire grimper ta série. Le 7e jour, la récompense est triplée.</p>
+    <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
     <div class="big-num">+${fmt(reward)}</div><p class="hint">Série : ${next} jour${next>1?'s':''}</p>
     <button class="btn big go" style="margin-top:16px" data-a="daily" data-r="${reward}" data-s="${next}">Ouvrir le coffre</button>`);
@@ -1940,7 +1942,7 @@ cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);PTR.set(
 cv.addEventListener('pointermove',e=>{if(!PTR.has(e.pointerId))return;const prev=PTR.get(e.pointerId);PTR.set(e.pointerId,[e.clientX,e.clientY]);
   if(PTR.size===1&&drag){const dx=e.clientX-prev[0],dy=e.clientY-prev[1];drag.m+=Math.abs(dx)+Math.abs(dy);cam.x-=dx/cam.z;cam.y-=dy/cam.z;cam.tx=cam.x;cam.ty=cam.y;clampCam();cam.x=cam.tx;cam.y=cam.ty}
   else if(PTR.size===2&&pinch){const v=[...PTR.values()];zoomTo(pinch.z*Math.hypot(v[0][0]-v[1][0],v[0][1]-v[1][1])/pinch.d)}});
-function endPtr(e){if(drag&&drag.m<9&&PTR.size===1){const r=cv.getBoundingClientRect();tapAt(e.clientX-r.left,e.clientY-r.top)}PTR.delete(e.pointerId);if(PTR.size<2)pinch=null;if(PTR.size===0)drag=null}
+function endPtr(e){if(drag&&drag.m<(e.pointerType==='touch'?16:9)&&PTR.size===1){const r=cv.getBoundingClientRect();tapAt(e.clientX-r.left,e.clientY-r.top)}PTR.delete(e.pointerId);if(PTR.size<2)pinch=null;if(PTR.size===0)drag=null}
 cv.addEventListener('pointerup',endPtr);cv.addEventListener('pointercancel',e=>{PTR.delete(e.pointerId);drag=null;pinch=null});
 cv.addEventListener('wheel',e=>{e.preventDefault();zoomTo(cam.z*(e.deltaY<0?1.12:1/1.12))},{passive:false});
 function zoomTo(z){cam.z=Math.max(.4,Math.min(2.4,z))}
@@ -2140,26 +2142,26 @@ function buyBiz(id){
   const b=BIZ_BY[id],q=quote(b);if(!q.ok){sfx('no');return}
   const st=S.biz[id],before=palierMult(st.lvl);
   spend(q.cost);st.lvl+=q.n;sfx('buy');
-  if(st.lvl===q.n){st.q={clean:80,wait:80,qual:80};toast(`${b.n} ouvert ! Touche la bulle 💰 pour encaisser.`);addXP(20);burstWorld(b.p.x+b.p.w/2,b.p.y+b.p.d/2,30,0,'Ouvert !');computeNb()}
-  else{st.q.wait=clamp(st.q.wait-.12*q.n,0,100);if(palierMult(st.lvl)>before){toast(`📈 ${b.e} ${b.n} devient : ${tierOf(st.lvl)} ! Revenus ×2 et un étage de plus.`);sfx('rank');burstWorld(b.p.x+b.p.w/2,b.p.y+b.p.d/2,60,0,tierOf(st.lvl))}}
+  if(st.lvl===q.n){st.q={clean:80,wait:80,qual:80};toast(`${b.n} : ouvert. Touche la bulle pour encaisser.`);addXP(20);burstWorld(b.p.x+b.p.w/2,b.p.y+b.p.d/2,30,0,'Ouvert !');computeNb()}
+  else{st.q.wait=clamp(st.q.wait-.12*q.n,0,100);if(palierMult(st.lvl)>before){toast(`${b.n} passe ${tierOf(st.lvl).toLowerCase()} : revenus ×2, un étage de plus.`);sfx('rank');burstWorld(b.p.x+b.p.w/2,b.p.y+b.p.d/2,60,0,tierOf(st.lvl))}}
 }
-function hireMgr(id){const c=MGR[id],st=S.biz[id];if(st.mgr||S.cash<c)return;spend(c);st.mgr=true;st.running=true;sfx('buy');addXP(15);toast(`${MGR_NAMES[id]} gère maintenant ton affaire. Ça tourne tout seul, même jeu fermé.`)}
-function buyUpg(id){const u=UPG.find(x=>x.id===id);if(!u||S.upg.includes(id))return;if(S.cash<u.cost){sfx('no');return}spend(u.cost);S.upg.push(id);if(u.biz)S.biz[u.biz].q.qual=clamp(S.biz[u.biz].q.qual+20,0,100);sfx('buy');addXP(10);toast(u.biz?`${u.n} : ${BIZ_BY[u.biz].n} ×${u.x} !`:`${u.n} : toutes tes affaires ×${u.x} !`)}
+function hireMgr(id){const c=MGR[id],st=S.biz[id];if(st.mgr||S.cash<c)return;spend(c);st.mgr=true;st.running=true;sfx('buy');addXP(15);toast(`${MGR_NAMES[id]} prend la caisse. Ça tourne même appli fermée.`)}
+function buyUpg(id){const u=UPG.find(x=>x.id===id);if(!u||S.upg.includes(id))return;if(S.cash<u.cost){sfx('no');return}spend(u.cost);S.upg.push(id);if(u.biz)S.biz[u.biz].q.qual=clamp(S.biz[u.biz].q.qual+20,0,100);sfx('buy');addXP(10);toast(u.biz?`${u.n} : ${BIZ_BY[u.biz].n} ×${u.x}.`:`${u.n} : toutes tes affaires ×${u.x}.`)}
 function doAct(id,aid){
   const b=BIZ_BY[id],st=S.biz[id],a=ACTS.find(x=>x.id===aid),c=actCost(b,a);
   if(st.cd[aid]>S.day){toast(`Pas encore possible : disponible en ${dateLabel(st.cd[aid])}.`);sfx('no');return}
   if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
-  if(S.energy<a.nrg){toast('Tu es trop fatigué pour ça ce mois-ci.');sfx('no');return}
+  if(S.energy<a.nrg){toast('Trop crevé pour ça ce mois-ci.');sfx('no');return}
   spend(c);S.energy=clamp(S.energy-a.nrg,0,100);st.q[a.k]=clamp(st.q[a.k]+a.gain,0,100);st.cd[aid]=S.day+a.cd;S.counts.actions++;addXP(5);sfx('good');
-  toast(`${a.e} ${a.n} au ${b.n.toLowerCase()} : ${QK[a.k].n} +${a.gain}.`);
+  toast(`${a.n} : ${QK[a.k].n.toLowerCase()} +${a.gain}.`);
 }
-function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+60000;S.boostReadyAt=S.boostUntil+180000;sfx('vip');toast('Rush : tous tes revenus ×2 pendant 60 secondes !')}
+function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+60000;S.boostReadyAt=S.boostUntil+180000;sfx('vip');toast('Rush : revenus ×2 pendant une minute.')}
 function catchVip(e){
   const [X,Y]=worldToPage(e.x,e.y,14);const r=Math.random();S.counts.vip++;addXP(5);sfx('vip');e.dead=true;vipEnt=null;vipNext=performance.now()+rand(45000,100000)*(S.flags.vipPlus?.6:1);
   let txt='';
-  if(r<.55){const amt=Math.max(150,inc()*120);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout ce qu’il trouve, +${fmt(amt)} !`)}
-  else if(r<.9){S.frenzyUntil=Date.now()+20000;txt='×5';toast('Frénésie d’achats : tous tes revenus ×5 pendant 20 secondes !')}
-  else{S.rep=clamp(S.rep+3,0,100);txt='📣 +3';toast('Un client VIP chante tes louanges partout : réputation +3 !')}
+  if(r<.55){const amt=Math.max(150,inc()*120);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
+  else if(r<.9){S.frenzyUntil=Date.now()+20000;txt='×5';toast('Frénésie : revenus ×5 pendant 20 secondes.')}
+  else{S.rep=clamp(S.rep+3,0,100);txt='📣 +3';toast('Un client VIP parle de toi partout. Réputation +3.')}
   burstAt(X,Y,10,txt);
 }
 function buyProp(pid){
@@ -2171,7 +2173,7 @@ function buyProp(pid){
 }
 function renovProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l||l>=3)return;const c=renovCost(o,l);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);S.props[pid]=l+1;computeNb();sfx('good');addXP(5);toast(`Rénovée ! Loyer : +${fmt(propRent(o,l+1))} par mois.`)}
 function sellProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l)return;const v=Math.round(propBase(o)*(.7+.3*l));delete S.props[pid];earn(v);computeNb();sfx('sale');toast(`Vendue pour ${fmt(v)}.`)}
-function upgradeStage(){const n=STAGES[S.stage+1];if(!n)return;if(S.cash<n.cost){toast(`Il te manque ${fmt(n.cost-S.cash)}.`);sfx('no');return}spend(n.cost);S.stage++;sfx('rank');addXP(40);toast(`Tu emménages : ${n.name} ! ${n.perk}`)}
+function upgradeStage(){const n=STAGES[S.stage+1];if(!n)return;if(S.cash<n.cost){toast(`Il te manque ${fmt(n.cost-S.cash)}.`);sfx('no');return}spend(n.cost);S.stage++;sfx('rank');addXP(40);toast(`Nouveau chez-toi : ${n.name.toLowerCase()}. ${n.perk}`)}
 function checkTrophies(){FXC=[];if(S.stats.reviews5>=50)trophy('t_avis');if(ownedCount()>=10)trophy('t_proprio');if(S.city>=4)trophy('t_monde');if(S.kids.length>=3)trophy('t_famille');if(S.gen>=3)trophy('t_dynastie');if(FXC.length)toast(FXC.join(' '));FXC=[]}
 function franchise(){
   const ns=newStars();if(ns<1||conqDone()<7)return;
@@ -2482,8 +2484,8 @@ function uiGain(x,y,txt){if(RM)return toast(txt);const d=document.createElement(
 function gaugeHTML(label,v,id){const c=v<35?'#C2362B':v<60?'#E59C3B':'#17834A';return `<div class="gauge"><span>${label}</span><div class="gbar"><i ${id?`id="${id}"`:''} style="width:${clamp(v,0,100)}%;background:${c}"></i></div><b>${Math.round(v)}</b></div>`}
 function bizQualityHTML(b){
   const st=S.biz[b.id];
-  return `${gaugeHTML('😊 Satisfaction',satOf(b.id))}${Object.keys(QK).map(k=>gaugeHTML(QK[k].e+' '+QK[k].n,st.q[k])).join('')}
-    <div class="bs-row" style="margin-top:8px">${ACTS.map(a=>{const c=actCost(b,a),cd=st.cd[a.id]>S.day;return `<button class="btn small ${cd?'ghost':''}" data-a="act" data-id="${b.id}" data-x="${a.id}" data-cost="${c}" ${cd||S.cash<c||S.energy<a.nrg?'disabled':''}>${a.e} ${a.n}${cd?` (dispo en ${dateLabel(st.cd[a.id])})`:` ${fmt(c)}, ⚡${a.nrg}`}</button>`}).join('')}</div>`;
+  return `${gaugeHTML('Satisfaction',satOf(b.id))}${Object.keys(QK).map(k=>gaugeHTML(QK[k].n,st.q[k])).join('')}
+    <div class="bs-row" style="margin-top:8px">${ACTS.map(a=>{const c=actCost(b,a),cd=st.cd[a.id]>S.day;return `<button class="btn small ${cd?'ghost':''}" data-a="act" data-id="${b.id}" data-x="${a.id}" data-cost="${c}" ${cd||S.cash<c||S.energy<a.nrg?'disabled':''}>${a.n}${cd?` (en ${dateLabel(st.cd[a.id])})`:` ${fmt(c)}, ${a.nrg} énergie`}</button>`}).join('')}</div>`;
 }
 function renderSheet(){
   const el=$('#bsheet');
@@ -2492,31 +2494,31 @@ function renderSheet(){
   const x=`<button class="bs-x" data-a="unsel" aria-label="Fermer">✕</button>`;
   if(sel==='qg'){const st=STAGES[S.stage],n=STAGES[S.stage+1];
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">${S.hero.av}</div><div><h2>Chez ${esc(S.hero.name)} : ${st.name}</h2><p class="hint">${S.partner&&S.partner.stage!=='couple'?`Tu vis avec ${esc(S.partner.name)}`:'Tu vis seul'}${S.kids.length?` et ${S.kids.length} enfant${S.kids.length>1?'s':''}`:''}.</p></div>${x}</div>
-      <div class="bs-sec">${gaugeHTML('⚡ Énergie',S.energy)}${gaugeHTML('❤️‍🩹 Santé',S.hero.health)}${S.partner?gaugeHTML('❤️ Couple',S.partner.rel):''}</div>
-      <div class="bs-sec bs-row">${S.event?'<button class="btn pinkb" data-a="openev">✉️ Une décision t’attend</button>':''}<button class="btn ghost" data-a="tab" data-t="vie">📖 Ma vie</button></div>
-      ${n?`<div class="bs-sec"><h3>Déménager : ${n.icon} ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button></div>`:''}`;return}
+      <div class="bs-sec">${gaugeHTML('Énergie',S.energy)}${gaugeHTML('Santé',S.hero.health)}${S.partner?gaugeHTML('Couple',S.partner.rel):''}</div>
+      <div class="bs-sec bs-row">${S.event?'<button class="btn pinkb" data-a="openev">Une décision t’attend</button>':''}<button class="btn ghost" data-a="tab" data-t="vie">Ma vie</button></div>
+      ${n?`<div class="bs-sec"><h3>Déménager : ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button></div>`:''}`;return}
   if(sel==='mairie'){const P=S.pol;
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">🏛️</div><div><h2>Hôtel de ville</h2><p class="hint">${P.office==='maire'?`Tu es le maire, mandat n°${P.terms}`:P.cand?'Tu es candidat':`Prochaines élections : ${dateLabel(P.nextElec)}`}</p></div>${x}</div>
-      <div class="bs-sec">${P.office==='maire'?`<div class="kv"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Projets réalisés</span><b>${P.projects.length}/${PROJECTS.length-1}</b></div>`:P.cand?gaugeHTML('📊 Popularité',P.pop):'<p class="hint">Avec assez de réputation, tu pourras te présenter et changer ta ville de l’intérieur.</p>'}</div>
-      <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="pol">🏛️ Ouvrir la quête politique</button></div>`;return}
+      <div class="bs-sec">${P.office==='maire'?`<div class="kv"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Projets réalisés</span><b>${P.projects.length}/${PROJECTS.length-1}</b></div>`:P.cand?gaugeHTML('Popularité',P.pop):'<p class="hint">Avec assez de réputation, tu pourras te présenter.</p>'}</div>
+      <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="pol">Voir la mairie</button></div>`;return}
   if(sel==='stade'){const C=S.club;
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">⚽</div><div><h2>${C.own?esc(C.name):'Stade municipal'}</h2><p class="hint">${C.own?`${DIVS[C.div]}, ${C.pts} pts en ${C.played} matchs`:'Le club local cherche un repreneur.'}</p></div>${x}</div>
-      <div class="bs-sec">${C.own?`${gaugeHTML('⚽ Niveau',C.str)}${C.last?`<p class="review-mini">Dernier match : ${esc(C.name)} ${C.last.gf}-${C.last.ga} ${C.last.opp}</p>`:''}`:`<div class="kv"><span>Prix du club</span><b>${fmt(clubCost())}</b></div>`}</div>
-      <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="club">⚽ ${C.own?'Gérer le club':'Voir l’offre de rachat'}</button></div>`;return}
+      <div class="bs-sec">${C.own?`${gaugeHTML('Niveau',C.str)}${C.last?`<p class="review-mini">Dernier match : ${esc(C.name)} ${C.last.gf}-${C.last.ga} ${C.last.opp}</p>`:''}`:`<div class="kv"><span>Prix du club</span><b>${fmt(clubCost())}</b></div>`}</div>
+      <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="club">${C.own?'Gérer le club':'Voir l’offre de rachat'}</button></div>`;return}
   if(isProp(sel)){const o=DECOR.find(z=>z.pid===sel);if(!o){el.hidden=true;return}const l=S.props[sel],near=nearBiz(o);
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">${TH_.dome?'🫧':o.t==='apt'?'🏢':'🏠'}</div><div><h2>${propName(o)}</h2><p class="hint">${l?`À toi, niveau ${l}/3`:'À vendre'}</p></div>${x}</div>
       <div class="bs-sec"><div class="kv"><span>Loyer par mois</span><b>${fmt(propRent(o,l||1))}</b></div>
       <div class="kv"><span>Bonus de quartier</span><b>${near.length?near.map(b=>b.e).join(' ')+' +4 % chacun':'aucune boutique à proximité'}</b></div></div>
-      <div class="bs-sec">${l?(l<3?`<button class="btn go" data-a="renov" data-id="${sel}" data-cost="${renovCost(o,l)}" ${S.cash>=renovCost(o,l)?'':'disabled'}>🔨 Rénover pour ${fmt(renovCost(o,l))}</button> `:'<p class="hint">Rénovation maximale.</p>')+`<button class="btn ghost small" style="margin-top:8px" data-a="sellprop" data-id="${sel}">Revendre</button>`
-        :`<button class="btn big go" data-a="buyprop" data-id="${sel}" data-cost="${propPrice(o)}" ${S.cash>=propPrice(o)?'':'disabled'}>🔑 Acheter pour ${fmt(propPrice(o))}</button><p class="hint" style="margin-top:6px">Chaque propriété achetée fait monter le prix des suivantes.</p>`}</div>`;return}
+      <div class="bs-sec">${l?(l<3?`<button class="btn go" data-a="renov" data-id="${sel}" data-cost="${renovCost(o,l)}" ${S.cash>=renovCost(o,l)?'':'disabled'}>Rénover pour ${fmt(renovCost(o,l))}</button> `:'<p class="hint">Rénovation maximale.</p>')+`<button class="btn ghost small" style="margin-top:8px" data-a="sellprop" data-id="${sel}">Revendre</button>`
+        :`<button class="btn big go" data-a="buyprop" data-id="${sel}" data-cost="${propPrice(o)}" ${S.cash>=propPrice(o)?'':'disabled'}>Acheter pour ${fmt(propPrice(o))}</button><p class="hint" style="margin-top:6px">Chaque achat fait grimper le prix du suivant.</p>`}</div>`;return}
   const b=BIZ_BY[sel];if(!b){el.hidden=true;return}const st=S.biz[b.id];
   if(!st.lvl){el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>Terrain à vendre</h2><p class="hint">Futur ${b.n.toLowerCase()}</p></div>${x}</div>
       <div class="bs-sec"><div class="kv"><span>Revenus au niveau 1</span><b>${fmt(b.base*permMult())} toutes les ${b.time} s</b></div><div class="kv"><span>Gérant possible</span><b>${MGR_NAMES[b.id]}</b></div></div>
       <div class="bs-sec"><button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${S.cash>=b.cost?'':'disabled'}>Acheter et ouvrir pour ${fmt(b.cost)}</button></div>`;return}
   const q=quote(b),np=nextPalier(st.lvl),ups=UPG.filter(u=>u.biz===b.id),last=S.reviews.find(r=>r.id===b.id);
-  el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>${b.n}</h2><p class="hint">🏷️ ${tierOf(st.lvl)} · niveau ${st.lvl}, ${floorsOf(b)} étage${floorsOf(b)>1?'s':''}${nbCache[b.id]?`, quartier +${Math.round(nbCache[b.id]*100)} %`:''}</p></div>${x}</div>
+  el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>${b.n}</h2><p class="hint">${tierOf(st.lvl)}, niveau ${st.lvl}, ${floorsOf(b)} étage${floorsOf(b)>1?'s':''}${nbCache[b.id]?`, quartier +${Math.round(nbCache[b.id]*100)} %`:''}</p></div>${x}</div>
     <div class="bs-sec"><div class="kv"><span>Par vente</span><b id="sh-rev">${fmt(revenue(b))}</b></div><div class="kv"><span>Toutes les</span><b>${b.time} s</b></div><div class="minibar"><i id="sh-bar"></i></div>
-      ${st.mgr?`<p class="hint">🤵 ${MGR_NAMES[b.id]} encaisse pour toi.</p>`:`<div class="bs-row"><button class="btn go" data-a="run" data-id="${b.id}" id="sh-run">💰 Encaisser</button><button class="btn ghost" id="sh-mgr" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>🤵 Engager ${MGR_NAMES[b.id].split(',')[0]} pour ${fmt(MGR[b.id])}</button></div>`}</div>
+      ${st.mgr?`<p class="hint">${MGR_NAMES[b.id]} encaisse pour toi.</p>`:`<div class="bs-row"><button class="btn go" data-a="run" data-id="${b.id}" id="sh-run">Encaisser</button><button class="btn ghost" id="sh-mgr" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>Engager ${MGR_NAMES[b.id].split(',')[0]} pour ${fmt(MGR[b.id])}</button></div>`}</div>
     <div class="bs-sec"><h3>Clients</h3>${bizQualityHTML(b)}${last?`<p class="review-mini">${'★'.repeat(last.stars)}${'☆'.repeat(5-last.stars)} « ${last.text} » <span class="hint">${last.who}</span></p>`:''}</div>
     <div class="bs-sec"><div class="ug-h"><h3>Agrandir</h3>${modesHTML()}</div>
       <button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>${np?`<p class="hint" style="margin-top:6px">Niveau ${np} : revenus ×2 et un étage de plus.</p>`:''}</div>
@@ -2543,7 +2545,7 @@ function renderHud(){
     <div class="daybar" title="Avancement du mois"><i id="daybar"></i></div>`;
 }
 function vGestion(){
-  const seg=`<div class="seg" role="tablist">${[['affaires','Boutiques'],['avis','Clients'],['patrimoine','Immobilier'],['upg','Améliorations']].map(([k,l])=>`<button class="${S.gTab===k?'on':''}" data-a="gtab" data-f="${k}">${l}</button>`).join('')}</div>`;
+  const seg=`<div class="seg" role="tablist">${[['affaires','Boutiques'],['avis','Clients'],['patrimoine','Immobilier'],['upg','Améliorer']].map(([k,l])=>`<button class="${S.gTab===k?'on':''}" data-a="gtab" data-f="${k}">${l}</button>`).join('')}</div>`;
   return seg+({affaires:vAffaires,avis:vAvis,patrimoine:vPatrimoine,upg:vUpg}[S.gTab]||vAffaires)();
 }
 function vAffaires(){
@@ -2708,7 +2710,7 @@ function vMarche(){
     <p class="hint" style="margin-top:8px">Achat à +1 %, revente à −1 % (frais du marché). La ligne orange, c’est ton prix moyen d’achat.</p>
     <button class="btn ghost small" style="margin-top:8px" data-a="mcap" ${S.cash>=mktCapCost()?'':'disabled'}>📦 Agrandir l’entrepôt à ${mktCap()*5} ${m.u}s (${fmt(mktCapCost())})</button></div>
   <div class="sec-head"><h2>📰 Actualités du marché</h2></div>
-  <div class="panel">${M.news.length?M.news.map(n=>`<p class="mnews">${n.up?'📈':'📉'} ${n.t} <span class="hint">${dateLabel(n.day)}</span></p>`).join(''):'<p class="hint">Les nouvelles arrivent… Une bonne nouvelle fait monter les prix, une mauvaise les fait chuter. Mais le marché ne réagit pas toujours comme prévu.</p>'}</div>`;
+  <div class="panel">${M.news.length?M.news.map(n=>`<p class="mnews">${n.up?'📈':'📉'} ${n.t} <span class="hint">${dateLabel(n.day)}</span></p>`).join(''):'<p class="hint">Rien pour l’instant. Une bonne nouvelle fait souvent monter les prix. Souvent, pas toujours.</p>'}</div>`;
 }
 function normTab(){if(S.tab==='quetes'){if(S.qTab==='club'||S.qTab==='mairie'){S.tab='empire';S.eTab=S.qTab}else S.tab='objectifs';S.qTab='obj'}}
 function renderMain(){
@@ -2794,7 +2796,7 @@ document.addEventListener('click',e=>{
   const a=b.dataset.a,id=b.dataset.id;let top=false,full=true;
   switch(a){
     case 'crmode':CR.mode=b.dataset.v;document.querySelectorAll('[data-a=crmode]').forEach(x=>x.classList.toggle('on',x===b));full=false;break;
-    case 'speed':S.speed=S.speed===1?2:S.speed===2?4:1;toast(`⏩ Le temps passe ×${S.speed}${S.speed>1?' : un mois toutes les '+Math.round(DAY_SEC/S.speed)+' s':''}.`);break;
+    case 'speed':S.speed=S.speed===1?2:S.speed===2?4:1;toast(S.speed>1?`Temps ×${S.speed} : un mois toutes les ${Math.round(DAY_SEC/S.speed)} s.`:'Temps normal : un mois toutes les 40 s.');break;
     case 'chdec':chDecide(b.dataset.v);full=false;break;
     case 'chskip':chSkip();full=false;break;
     case 'pickav':CR.av=b.dataset.v;document.querySelectorAll('.av').forEach(x=>x.classList.toggle('on',x===b));full=false;break;
@@ -2803,7 +2805,7 @@ document.addEventListener('click',e=>{
     case 'cro':CR.origin=b.dataset.v;modal(crHTML());full=false;break;
     case 'crs':CR.sit=b.dataset.v;modal(crHTML());full=false;break;
     case 'start':applyStart();closeModal();ac();
-      queueModal(`<div class="reveal-box pop">${S.hero.av}</div><h2>Bienvenue, ${esc(S.hero.name)}</h2><p>Ta première boutique t’attend. Touche la bulle 💰 au-dessus pour encaisser ta première vente.</p><p class="hint">En haut à gauche de la carte, ton objectif du moment. Quand il est rempli, il devient vert : touche-le pour récupérer ta récompense.</p><button class="btn big" style="margin-top:16px" data-a="close">C’est parti</button>`);dailyModal();break;
+      queueModal(`<div class="reveal-box pop">${S.hero.av}</div><h2>${esc(S.hero.name)}, une boutique de sneakers et pas mal d’ambition</h2><p>Touche la bulle au-dessus de ta boutique pour encaisser.</p><p class="hint">En haut de la carte : ton objectif. Il passe au vert quand c’est fait ; touche-le pour récupérer l’argent.</p><button class="btn big" style="margin-top:16px" data-a="close">Au boulot</button>`);dailyModal();break;
     case 'close':closeModal();break;
     case 'heirs':modal(heirsHTML());full=false;break;
     case 'inherit':inherit(b.dataset.v);break;
@@ -2901,7 +2903,7 @@ function doAct(id,aid){
   const b=BIZ_BY[id],st=S.biz[id],a=ACTS.find(x=>x.id===aid),c=actCost(b,a);
   if(st.cd[aid]>S.day){toast(`Pas encore possible : disponible en ${dateLabel(st.cd[aid])}.`);sfx('no');return}
   if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
-  if(S.energy<a.nrg){toast('Tu es trop fatigué pour ça ce mois-ci.');sfx('no');return}
+  if(S.energy<a.nrg){toast('Trop crevé pour ça ce mois-ci.');sfx('no');return}
   spend(c);S.energy=clamp(S.energy-a.nrg,0,100);st.q[a.k]=clamp(st.q[a.k]+a.gain,0,100);st.cd[aid]=S.day+a.cd;S.counts.actions++;addXP(5);sfx('good');
   toast(`${a.e} ${pick(BOOST_MSG[a.k])} ${QK[a.k].n} +${a.gain}.`);
 }
@@ -3002,9 +3004,9 @@ function chartSVG(){
 function vMarche(){
   const M=S.mkt,i=M.sel,A=M.a[i],d=assetDef(i),h=A.hist,ch=h.length>1?(A.price/h[0]-1)*100:0,pl=A.qty?(A.price*.99-A.avg)*A.qty:0;
   const tot=M.a.reduce((s,x,k)=>s+x.qty*x.price,0);
-  return `<div class="sec-head"><h2>📊 Bourse</h2><p>Portefeuille ${fmt(tot)}<br>Bénéfice réalisé ${(M.profit>=0?'+':'')+fmt(M.profit)}</p></div>
+  return `<div class="sec-head"><h2>Bourse</h2><p>Portefeuille ${fmt(tot)}<br>Encaissé ${(M.profit>=0?'+':'')+fmt(M.profit)}</p></div>
   <div class="seg">${M.a.map((x,k)=>{const dd=assetDef(k),c=x.hist.length>1?(x.price/x.hist[0]-1)*100:0;return `<button class="${k===i?'on':''}" data-a="msel" data-i="${k}">${dd.e} ${dd.n}<br><span class="${c>=0?'pos':'neg'}" style="font-size:.75rem">${c>=0?'▲':'▼'}${Math.abs(c).toFixed(1)} %</span></button>`}).join('')}</div>
-  <div class="panel"><div class="mhead"><span class="mic">${d.e}</span><div><h3>${d.n}</h3><p class="hint">${i===0?'Le produit phare de la ville':i===1?'Crypto très volatile, gros gains ou grosses pertes':'Suit la santé de l’économie locale… et de tes affaires'}</p></div><div class="mprice"><b id="m-price">${fmt(A.price)}</b><span id="m-ch" class="${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'} ${Math.abs(ch).toFixed(1)} %</span></div></div>
+  <div class="panel"><div class="mhead"><span class="mic">${d.e}</span><div><h3>${d.n}</h3><p class="hint">${i===0?'Ce que tout le monde s’arrache ici':i===1?'Crypto nerveuse : ça monte vite, ça tombe plus vite':'Suit l’économie locale, donc un peu tes affaires'}</p></div><div class="mprice"><b id="m-price">${fmt(A.price)}</b><span id="m-ch" class="${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'} ${Math.abs(ch).toFixed(1)} %</span></div></div>
     <div id="m-chart">${chartSVG()}</div>
     <div class="kv" style="margin-top:8px"><span>Détenu</span><b>${A.qty.toLocaleString('fr-FR')} / ${assetCap(i).toLocaleString('fr-FR')} ${d.u}s</b></div>
     <div class="kv"><span>Prix moyen d’achat</span><b>${A.qty?fmt(A.avg):'—'}</b></div>
@@ -3012,12 +3014,12 @@ function vMarche(){
     <div class="mbtns"><button class="btn go" data-a="mbuy" data-n="${d.mul}">Acheter ${d.mul}</button><button class="btn go" data-a="mbuy" data-n="${d.mul*10}">Acheter ${(d.mul*10).toLocaleString('fr-FR')}</button><button class="btn go" data-a="mbuy" data-n="max">Acheter max</button>
       <button class="btn pinkb" data-a="msell" data-n="${d.mul}">Vendre ${d.mul}</button><button class="btn pinkb" data-a="msell" data-n="${d.mul*10}">Vendre ${(d.mul*10).toLocaleString('fr-FR')}</button><button class="btn pinkb" data-a="msell" data-n="max">Tout vendre</button></div>
     <h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>
-    <div class="ordrow"><span>🎯 Vendre à</span>${[0,10,25,50].map(v=>`<button class="chip ${A.tp===v?'onchip':''}" data-a="mtp" data-v="${v}">${v?'+'+v+' %':'Off'}</button>`).join('')}</div>
-    <div class="ordrow"><span>🛑 Couper à</span>${[0,10,20].map(v=>`<button class="chip ${A.sl===v?'onchip':''}" data-a="msl" data-v="${v}">${v?'−'+v+' %':'Off'}</button>`).join('')}</div>
-    <p class="hint" style="margin-top:6px">Les ordres s’exécutent tout seuls, même quand tu es sur la carte. Ligne orange : ton prix d’achat. Verte : objectif. Rouge : stop-loss.</p>
-    <button class="btn ghost small" style="margin-top:8px" data-a="mcap" ${S.cash>=mktCapCost()?'':'disabled'}>📦 Agrandir le portefeuille ×5 (${fmt(mktCapCost())})</button></div>
-  <div class="sec-head"><h2>📰 Actualités</h2></div>
-  <div class="panel">${M.news.length?M.news.map(n=>`<p class="mnews">${n.up?'📈':'📉'} ${n.t} <span class="hint">${dateLabel(n.day)}</span></p>`).join(''):'<p class="hint">Les nouvelles arrivent… Une bonne nouvelle fait monter les prix, une mauvaise les fait chuter. Mais le marché ne réagit pas toujours comme prévu.</p>'}</div>`;
+    <div class="ordrow"><span>Vendre à</span>${[0,10,25,50].map(v=>`<button class="chip ${A.tp===v?'onchip':''}" data-a="mtp" data-v="${v}">${v?'+'+v+' %':'Off'}</button>`).join('')}</div>
+    <div class="ordrow"><span>Couper à</span>${[0,10,20].map(v=>`<button class="chip ${A.sl===v?'onchip':''}" data-a="msl" data-v="${v}">${v?'−'+v+' %':'Off'}</button>`).join('')}</div>
+    <p class="hint" style="margin-top:6px">Les ordres partent tout seuls, même carte ouverte. Orange : ton prix d’achat. Vert : objectif. Rouge : coupure.</p>
+    <button class="btn ghost small" style="margin-top:8px" data-a="mcap" ${S.cash>=mktCapCost()?'':'disabled'}>Portefeuille ×5 (${fmt(mktCapCost())})</button></div>
+  <div class="sec-head"><h2>Rumeurs du marché</h2></div>
+  <div class="panel">${M.news.length?M.news.map(n=>`<p class="mnews">${n.up?'📈':'📉'} ${n.t} <span class="hint">${dateLabel(n.day)}</span></p>`).join(''):'<p class="hint">Rien pour l’instant. Une bonne nouvelle fait souvent monter les prix. Souvent, pas toujours.</p>'}</div>`;
 }
 function mktLive(){const M=S.mkt,A=M.a[M.sel],e=$('#m-price');if(!e)return;e.textContent=fmt(A.price);const ch=(A.price/A.hist[0]-1)*100,c=$('#m-ch');c.textContent=(ch>=0?'▲ ':'▼ ')+Math.abs(ch).toFixed(1)+' %';c.className=ch>=0?'pos':'neg';const pl=$('#m-pl');if(pl&&A.qty){const v=(A.price*.99-A.avg)*A.qty;pl.textContent=(v>=0?'+':'')+fmt(v);pl.className=v>=0?'pos':'neg'}if(M.histT<.12)$('#m-chart').innerHTML=chartSVG()}
 
@@ -4029,7 +4031,7 @@ function dailyModal(){
   const next=cont?S.streak+1:1,pos=((next-1)%7)+1,mult=(pos===7?3:1)*(metaActiveId()==='coffre'?2:1);
   const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
-    <p>Reviens chaque jour pour faire grimper ta série. Le 7e jour, la récompense est triplée.</p>
+    <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
     <div class="big-num">+${fmt(reward)}</div><p class="hint">Série : ${next} jour${next>1?'s':''} · 🎟️ +${pos===7?10:5} jetons${metaActiveId()==='coffre'?' · 🎁 Coffre XXL ×2':''}</p>
     ${META_JOKER_USE?`<p class="hint">🃏 ${META_JOKER_USE} joker${META_JOKER_USE>1?'s':''} utilisé${META_JOKER_USE>1?'s':''} : ta série est sauvée !</p>`:''}
@@ -4092,7 +4094,7 @@ function metaHud(force){const r=document.querySelector('#hud .hud-r .bs-row');if
   if(x&&!force)return;if(x)x.remove();const voted=!!metaInit().votes[metaWeek()];
   r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn small ghost" data-a="meta_shop" aria-label="Boutique">🛍️</button><button class="btn small ghost" data-a="meta_poll" aria-label="Sondage de la semaine">🗳️${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
 function metaEmp(){if(S.tab!=='empire'||S.eTab!=='plus')return;const mn=$('#main');if(!mn||$('#meta-emp'))return;const m=metaInit(),act=META_POLL_BY[metaActiveId()];
-  mn.insertAdjacentHTML('afterbegin',`<div class="panel" id="meta-emp"><div class="bs-row" style="justify-content:space-between"><b>🎟️ ${m.jetons} jetons</b>${metaHasPass()?'<span class="tag">👑 Pass Empire</span>':''}</div>
+  const sg=mn.querySelector('.seg');(sg||mn).insertAdjacentHTML(sg?'afterend':'afterbegin',`<div class="panel" id="meta-emp"><div class="bs-row" style="justify-content:space-between"><b>🎟️ ${m.jetons} jetons</b>${metaHasPass()?'<span class="tag">👑 Pass Empire</span>':''}</div>
   <p class="hint" style="margin-top:6px">${metaStreakLine()}</p>${act?`<p class="hint">🗳️ En vigueur : ${act.e} ${act.t}</p>`:''}
   ${INACTIVITY_RESET?`<p class="hint">⏳ Règle d’inactivité active : sans connexion pendant ${INACTIVITY_DAYS} jours, ton niveau repart à zéro.</p>`:''}
   <div class="bs-row" style="margin-top:8px"><button class="btn small go" data-a="meta_shop">🛍️ Boutique et Pass</button><button class="btn small ghost" data-a="meta_poll">🗳️ Sondage${m.votes[metaWeek()]?'':' (à voter)'}</button></div></div>`)}
