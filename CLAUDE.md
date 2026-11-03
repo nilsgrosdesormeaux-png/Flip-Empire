@@ -32,5 +32,8 @@ https://nilsgrosdesormeaux-png.github.io/Flip-Empire/
 - À chaque mise en ligne, changer la date de version dans `<meta name="fe-build" content="…">` (visible dans Empire → Compte) pour que le joueur puisse vérifier qu'il a la bonne version.
 - Si un joueur a encore l'ancienne version : ouvrir le lien avec `?v=` + un nombre au bout.
 
+## IDEES.md
+Les envies de Nils, leur état et sa façon de travailler. À lire en premier, à mettre à jour quand un point avance.
+
 ## JOURNAL.md
 Après chaque séance, ajoute en haut de `JOURNAL.md` : la date, qui (ex. « Claude de Thomas »), ce qui a changé en 3-5 lignes, ce qui reste à faire. C'est ce qui permet à l'autre Claude de reprendre sans tout relire.
