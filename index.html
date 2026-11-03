@@ -645,7 +645,7 @@ function addXP(n){
 
 /* ================= EFFECT HELPERS (for story events) ================= */
 let FXC=[];
-const chance=p=>Math.random()<p;
+const chance=p=>Math.random()<(typeof DEC_ADJ==='function'?DEC_ADJ(p):p);
 function money(sec){const v=costSec(sec);earn(v);FXC.push('+'+fmt(v));return v}
 function pay(sec){const v=Math.min(S.cash,costSec(sec));S.cash-=v;dispCash=Math.min(dispCash,S.cash);FXC.push('−'+fmt(v));return v}
 function repD(n){S.rep=clamp(S.rep+n,0,100);FXC.push(`📣 Réputation ${n>0?'+':''}${n}`)}
@@ -3090,6 +3090,546 @@ Object.assign(EV,{
 });
 ['nantes_mecene','nantes_crue','lyon_guide','lyon_lumieres','paris_star','paris_touristes','londres_royal','ny_tuyau','ny_broadway','tokyo_seisme','tokyo_figurine','dubai_expo','dubai_sable','lune_meteores','lune_famille','magnat_ipo','magnat_fondation','magnat_rachat','magnat_paparazzi','retraite'].forEach(k=>EV_POOL.push(k));
 ['banque','influ','tendance','vol','panne','hygiene','celebrite','fete','stagiaire','journaliste','augmentation','maman','sport','bilan','ado'].forEach(k=>{if(EV[k])EV[k].cool=EV[k].cool||(k==='maman'||k==='ado'?18:28)});
+/* ===== AGENT DECISIONS ===== */
+/* Décisions intelligentes : chances liées aux stats, indices, variété, mémoire des événements. Mairie : mandats de 6 ans, campagne stratégique. */
+var DEC_ADJ=null;
+const DEC_TERM=72,DEC_CAMP=6;
+(function(){try{const st=document.createElement('style');st.textContent='.dec-odds{display:block;font-size:12px;font-weight:600;opacity:.9;margin-top:3px}.dec-odds.ok{color:#17834A}.dec-odds.risk{color:#B26A00}.dec-odds.bad{color:#C2362B}.dec-clue{font-size:13px;background:rgba(229,156,59,.12);border-left:3px solid #E59C3B;padding:6px 8px;border-radius:6px;margin-top:8px}.dec-poll{display:flex;gap:4px;align-items:flex-end;height:48px;margin-top:6px}.dec-poll i{flex:1;background:#E59C3B;border-radius:3px 3px 0 0;min-height:3px}.dec-poll i.w{background:#17834A}.dec-tax{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.dec-tax .on{outline:3px solid #17834A}';document.head.appendChild(st)}catch(e){}})();
+
+/* ---------- stats et cotes ---------- */
+const bizOn=id=>!!(S.biz[id]&&S.biz[id].lvl>0);
+const decKid=(a,b)=>S.kids.filter(k=>k.age>=a&&k.age<=b)[0]||null;
+function decPollAvg(){const P=S.pol;if(P&&P.dist)return DISTRICTS.reduce((a,d)=>a+(P.dist[d.id]?P.dist[d.id].pop:0)*d.w,0);return S.rep*.45}
+const DS={rep:['réputation',()=>S.rep],nrg:['énergie',()=>S.energy],sat:['satisfaction clients',()=>avgSat()],hp:['santé',()=>S.hero.health],
+  rel:['complicité de couple',()=>S.partner?S.partner.rel:40],appr:['confiance des habitants',()=>S.pol.appr==null?50:S.pol.appr],
+  club:['niveau du club',()=>S.club.own?clubStr2():30],mor:['moral du vestiaire',()=>S.club.morale||50],pop:['intentions de vote',()=>decPollAvg()]};
+function skOdds(o,d){let p=typeof o.p==='function'?o.p(d):o.p;const why=[];
+  (o.s||[]).forEach(([k,w])=>{const v=DS[k][1](),dl=(v-50)/100*.5*(w==null?1:w);p+=dl;why.push({n:DS[k][0],v,dl})});
+  (o.b||[]).forEach(f=>{const r=f(d);if(r&&r[0]){p+=r[0];why.push({t:r[1],dl:r[0]})}});
+  return{p:clamp(p,.03,.97),why}}
+const whyTxt=w=>w.t?`${w.dl>0?'🧠':'⚠️'} ${w.t}`:`${w.dl>=0?'🧠':'⚠️'} tes ${Math.round(w.v)} ${/^[aeéiou]/i.test(w.n)?'d’':'de '}${w.n} ${w.dl>=0?'aident':'te desservent'}`;
+function decPayNeed(c){if(c.need)pay(c.need);if(c.bneed)budD(-c.bneed)}
+function SK(t,o){const c={t,need:o.need,bneed:o.bneed,sk:o};c.go=d=>{decPayNeed(c);return Math.random()<skOdds(o,d).p?o.win(d):o.lose(d)};return c}
+function LK(t,p,win,lose,need){const c={t,need,luck:p};c.go=d=>{decPayNeed(c);return Math.random()<p?win(d):lose(d)};return c}
+function OK(t,go,need,bneed){const c={t,need,bneed,sure:1};c.go=d=>{decPayNeed(c);return go(d)};return c}
+function catPair(E){const c=E.cat||'business',P=S.pol;
+  if(c==='vie')return S.partner?[['énergie',S.energy],['couple',S.partner.rel]]:[['énergie',S.energy],['santé',S.hero.health]];
+  if(c==='pol')return [['réputation',S.rep],P.office?['confiance',P.appr==null?50:P.appr]:['intentions de vote',decPollAvg()]];
+  if(c==='club')return [['moral',S.club.morale||50],['niveau',S.club.own?clubStr2():30]];
+  return [['réputation',S.rep],['satisfaction',avgSat()]]}
+function catDelta(E){const pr=catPair(E);return clamp(((pr[0][1]-50)+(pr[1][1]-50))/2/100*.45,-.2,.2)}
+function decExpr(src){const i=src.indexOf('chance(');if(i<0)return null;let j=i+7,dep=1;for(;j<src.length&&dep;j++){if(src[j]==='(')dep++;else if(src[j]===')')dep--}return src.slice(i+7,j-1)}
+function prepEv(E){if(!E||!E.ch)return;E.ch.forEach(c=>{if(c._p)return;c._p=1;if(c.sk||c.luck!=null||c.sure)return;const src=String(c.go);if(src.indexOf('chance(')<0)return;
+  c._rnd=1;c._expr=decExpr(src);const g=c.go;c.go=function(d){const dl=catDelta(E);DEC_ADJ=p=>clamp(p+dl,.03,.97);try{return g(d)}finally{DEC_ADJ=null}}})}
+function chOdds(E,c,d){
+  if(c.sk){if(c.sk.label)return{cls:'risk',h:typeof c.sk.label==='function'?c.sk.label(d):c.sk.label};const r=skOdds(c.sk,d),pc=Math.round(r.p*100);
+    const head=r.p>=.9?`✅ quasi sûr : ${pc} %`:r.p>=.6?`🎲 plutôt favorable : ${pc} %`:r.p>=.35?`🎲 risqué : ${pc} %`:`⚠️ très risqué : ${pc} %`;
+    const why=r.why.filter(w=>Math.abs(w.dl)>=.03).sort((a,b)=>Math.abs(b.dl)-Math.abs(a.dl)).slice(0,2).map(whyTxt).join(' · ');
+    return{cls:r.p>=.6?'ok':r.p>=.35?'risk':'bad',h:head+(why?' · '+why:'')}}
+  if(c.luck!=null)return{cls:'risk',h:`🎲 pur hasard : ${Math.round(c.luck*100)} %`};
+  if(c._rnd){const dl=catDelta(E),pr=catPair(E),w=`${dl>=0?'🧠':'⚠️'} ${pr[0][0]} ${Math.round(pr[0][1])} · ${pr[1][0]} ${Math.round(pr[1][1])} (${dl>=0?'+':''}${Math.round(dl*100)} pts)`;
+    let base=null;try{base=c._expr?Number(new Function('d','return ('+c._expr+')')(d)):null}catch(e){base=null}
+    if(base!=null&&isFinite(base)){const p=clamp(base+dl,.03,.97);return{cls:p>=.6?'ok':p>=.35?'risk':'bad',h:`🎲 ${p>=.6?'plutôt favorable':p>=.35?'risqué':'très risqué'} : ${Math.round(p*100)} % · ${w}`}}
+    return{cls:'risk',h:`🎲 issue incertaine · ${w}`}}
+  return{cls:'ok',h:'✅ issue certaine'}}
+
+/* ---------- petits effets ---------- */
+function appD(n){const P=S.pol;P.appr=clamp((P.appr==null?50:P.appr)+n,0,100);FXC.push(`🏛️ Confiance ${n>0?'+':''}${n}`)}
+function budD(sec){const P=S.pol,v=costSec(Math.abs(sec));if(sec<0){const x=Math.min(P.budget,v);P.budget-=x;FXC.push(`🏛️ Budget −${fmt(x)}`)}else{P.budget+=v;FXC.push(`🏛️ Budget +${fmt(v)}`)}}
+function pollD(n){const P=S.pol;if(!P.dist)return;DISTRICTS.forEach(d=>P.dist[d.id].pop=clamp(P.dist[d.id].pop+n,0,100));FXC.push(`📊 Intentions ${n>=0?'+':''}${n} partout`)}
+function distD(id,n){const P=S.pol,D=DISTRICTS.find(x=>x.id===id);if(!P.dist||!D)return;P.dist[id].pop=clamp(P.dist[id].pop+n,0,100);FXC.push(`📊 ${D.e} ${D.n} ${n>=0?'+':''}${n}`)}
+function mlog(t){const P=S.pol;P.log=P.log||[];P.log.unshift({day:S.day,t});if(P.log.length>8)P.log.length=8;P.termDecs=(P.termDecs||0)+1}
+function clubMor(n){const c=S.club;c.morale=clamp((c.morale||50)+n,0,100);FXC.push(`🔥 Moral ${n>0?'+':''}${n}`)}
+function clubNote(n){const c=S.club;if(c.squad&&c.squad.length){const w=c.squad.reduce((a,p)=>p&&p.note<a.note?p:a,c.squad[0]);w.note=clamp(w.note+n,1,99);c.str=clubStr2();FXC.push(`⚽ ${w.name} ${n>0?'+':''}${n}`)}else{c.str=clamp(c.str+n,0,99);FXC.push(`⚽ Niveau ${n>0?'+':''}${n}`)}}
+function kidT(name,n){const k=S.kids.find(x=>x.name===name);if(k){k.talent=clamp(k.talent+n,0,100);FXC.push(`🎓 Talent de ${k.name} ${n>0?'+':''}${n}`)}}
+const isMayor=()=>S.pol.office==='maire'&&!S.pol.cand;
+const qOf=(id,k)=>S.biz[id]?S.biz[id].q[k]:50;
+const bigNext=()=>{const e=dayEvent(S.day+1);return e&&e.m>=1.8?e:null};
+
+/* ---------- nouveaux événements ---------- */
+const DEC_EV={
+/* --- Affaires (selon ce que tu possèdes) --- */
+d_sneak_lot:{cat:'business',w:6,ctx:1,cool:30,cond:()=>bizOn('sneak'),def:2,who:'🧢',name:'Un grossiste de passage',title:'Un lot de paires « rares »',init:()=>({fake:Math.random()<.55}),
+  text:()=>'Il ouvre son coffre : vingt paires de la collab la plus recherchée, à moitié prix de la cote.',
+  clue:d=>d.fake?'Les étiquettes sont mal cousues et il refuse de te donner une facture.':'Il te tend les factures d’origine et le numéro de série de chaque boîte.',
+  ch:[SK('Tout acheter cash',{need:120,p:d=>d.fake?.06:.94,label:'🔎 Tout dépend de l’indice : relis-le bien',win:()=>{money(330);repD(2);return 'Des vraies ! Revendues en une semaine avec une belle marge.'},lose:()=>{repD(-8);return 'Des contrefaçons. Tu dois tout détruire, la honte en plus.'}}),
+    OK('Faire authentifier avant d’acheter',d=>{if(d.fake){repD(2);return 'L’expert est formel : contrefaçons. Piège évité.'}money(160);return 'Authentiques. Un peu moins de marge, zéro risque.'},30),
+    OK('Passer ton tour',()=> 'Il remballe et file vers une autre boutique.')]},
+d_trott_batt:{cat:'business',w:6,ctx:1,cool:36,cond:()=>bizOn('trott'),def:2,who:'🔋',name:'Ton chef d’atelier',title:'Des batteries qui chauffent',
+  text:()=>`Trois clients signalent une odeur de brûlé sur les trottinettes vendues ce mois-ci.`,
+  clue:()=>`Qualité actuelle de ton atelier : ${Math.round(qOf('trott','qual'))}/100. Plus elle est haute, plus un défaut isolé est probable.`,
+  ch:[OK('Rappel général et remboursement',()=>{repD(5);satD('trott','qual',10);return 'Tout le monde salue ton sérieux. La presse locale en parle en bien.'},120),
+    SK('Réparer discrètement',{p:d=>.25+qOf('trott','qual')/200,s:[['rep',.4]],win:()=>{satD('trott','qual',5);return 'C’était un lot isolé. Personne n’en saura rien.'},lose:()=>{repD(-12);mod(.7,3,'trott');return 'Une trottinette prend feu en pleine rue. Scandale.'}}),
+    SK('Ignorer, ça arrive à tout le monde',{p:d=>qOf('trott','qual')/180,win:()=> 'Fausse alerte, heureusement.',lose:()=>{repD(-15);mod(.6,4,'trott');return 'Un accident. Ton atelier fait la une pour de mauvaises raisons.'}})]},
+d_vide_toile:{cat:'business',w:5,ctx:1,cool:40,cond:()=>bizOn('vide'),def:0,who:'🖼️',name:'Une vieille dame',title:'Une toile poussiéreuse',init:()=>({real:Math.random()<.4}),
+  text:()=>'Dans un lot de vaisselle, tu trouves une petite toile signée d’un nom illisible.',
+  clue:d=>hasP('dessin')?(d.real?'Ton œil de dessinateur reconnaît une vraie technique de maître : la toile est ancienne.':'Ton œil de dessinateur repère une reproduction imprimée, retouchée au pinceau.'):S.hero.study?'Tes études t’ont appris une chose : on fait toujours expertiser.':'Impossible de savoir à l’œil nu. Seul un expert peut trancher.',
+  ch:[OK('La revendre telle quelle',d=>{money(20);return 'Partie à 20 secondes de revenus. Tu ne sauras jamais.'}),
+    OK('Payer un expert',d=>{if(d.real){money(700);repD(4);return 'Une œuvre du XIXᵉ siècle ! Vendue aux enchères.'}return 'Une simple reproduction. Au moins, tu sais.'},40),
+    OK('L’accrocher dans la boutique',()=>{repD(1);satD('vide','qual',5);return 'Elle donne du cachet au stand.'})]},
+d_depot_montre:{cat:'business',w:5,ctx:1,cool:40,cond:()=>bizOn('depot'),def:1,who:'⌚',name:'Un vendeur pressé',title:'Une montre sans papiers',
+  text:()=>'Un homme veut déposer une montre de luxe. Il propose un prix très bas.',
+  clue:()=>'Il est nerveux, refuse de donner son nom et veut du liquide tout de suite.',
+  ch:[SK('Accepter l’affaire',{need:60,p:.12,s:[['rep',-.2]],win:()=>{money(260);return 'Personne n’est venu la réclamer. Cette fois.'},lose:()=>{repD(-14);mod(.75,3,'depot');return 'Montre volée. La police débarque devant tes clients.'}}),
+    OK('Refuser poliment',()=> 'Il repart aussi vite qu’il est venu.'),
+    OK('Prévenir discrètement la police',()=>{repD(6);flag('policeAmie');return 'Un réseau de recel démantelé. Le commissaire te remercie.'})]},
+d_auto_compteur:{cat:'business',w:5,ctx:1,cool:40,cond:()=>bizOn('auto'),def:1,who:'🔧',name:'Ton mécanicien',title:'Un compteur à « ajuster »',
+  text:()=>'« Si je retire 80 000 km au compteur de la berline, on la vend le double. Personne ne vérifie. »',
+  clue:()=>'Les acheteurs consultent de plus en plus l’historique d’entretien en ligne.',
+  ch:[SK('Laisse-le faire',{p:.3,win:()=>{money(220);return 'Vendue. Tu dors mal, mais tu as encaissé.'},lose:()=>{repD(-18);mod(.6,4,'auto');return 'L’acheteur vérifie l’historique. Plainte pour fraude.'}}),
+    OK('Vendre honnêtement avec garantie',()=>{repD(4);satD('auto','qual',12);return 'Le client revient avec deux amis.'}),
+    OK('Le recadrer fermement',()=>{satD('auto','qual',4);return 'Il comprend le message.'})]},
+d_ecom_rush:{cat:'business',w:6,ctx:1,cool:30,cond:()=>bizOn('ecom'),def:2,who:'📦',name:'Ta cheffe d’entrepôt',title:'Le rush des commandes',
+  text:()=>'Les commandes explosent. L’entrepôt sature.',
+  clue:()=>{const e=bigNext();return e?`Le mois prochain : ${e.n}. Ce sera encore pire !`:'Le mois prochain s’annonce calme : le pic va retomber tout seul.'},
+  ch:[OK('Embaucher des intérimaires',()=>{satD('ecom','wait',25);if(bigNext()){mod(1.35,2,'ecom');return 'Bien vu : l’entrepôt encaisse le pic sans broncher.'}return 'Les intérimaires s’ennuient vite : le pic retombe déjà.'},150),
+    SK('Faire tourner l’équipe à fond',{p:.3,s:[['nrg',1],['sat',1]],win:()=>{mod(1.25,2,'ecom');nrg(-10);return 'Ça tient ! Tu as bossé jusqu’à minuit avec eux.'},lose:()=>{satD('ecom','wait',-25);nrg(-15);return 'Retards en cascade, clients furieux.'}}),
+    OK('Ne rien changer',()=>{if(bigNext()){satD('ecom','wait',-20);return 'Le pic t’écrase. Les avis négatifs pleuvent.'}return 'Le calme revient comme prévu.'})]},
+d_chain_luxe:{cat:'business',w:5,ctx:1,cool:48,cond:()=>bizOn('chain'),def:2,who:'👜',name:'Une grande maison de luxe',title:'Un corner de luxe ?',
+  text:()=>'Une marque prestigieuse veut installer un espace dans ton grand magasin.',
+  clue:()=>`Ils n’acceptent que les magasins impeccables (qualité ≥ 70). La tienne : ${Math.round(qOf('chain','qual'))}.`,
+  ch:[SK('Les recevoir tout de suite',{need:80,p:()=>qOf('chain','qual')>=70?.9:.12,win:()=>{mod(1.4,8,'chain');repD(6);return 'Signé ! Une clientèle haut de gamme découvre ton magasin.'},lose:()=>{repD(-3);return '« Pas à la hauteur. » Ils partent chez un concurrent.'}}),
+    SK('Tout rénover avant leur visite',{need:260,p:.88,win:()=>{satD('chain','qual',30);mod(1.4,8,'chain');repD(6);return 'Rénové de fond en comble. Ils signent.'},lose:()=>{satD('chain','qual',30);return 'Magasin superbe, mais ils ont choisi quelqu’un d’autre.'}}),
+    OK('Décliner',()=> 'Tu gardes ta liberté.')]},
+d_plat_fuite:{cat:'business',w:5,ctx:1,cool:48,cond:()=>bizOn('plat'),def:0,who:'💻',name:'Ton responsable sécurité',title:'Fuite de données',
+  text:()=>'Des pirates ont copié une partie des fichiers clients de ta plateforme.',
+  clue:()=>'La loi oblige à prévenir les clients sous 72 heures. Les journalistes tech fouillent déjà.',
+  ch:[OK('Tout révéler et prévenir les clients',()=>{repD(-3);satD('plat','qual',10);return 'Les clients apprécient la franchise. La tempête passe vite.'}),
+    SK('Étouffer l’affaire',{p:.18,win:()=> 'Personne n’a rien vu. Pour l’instant.',lose:()=>{repD(-20);mod(.6,6,'plat');return 'Révélé par la presse. Amende record et clients partis.'}}),
+    OK('Engager des experts en urgence',()=>{satD('plat','qual',15);repD(2);return 'Faille colmatée en 24 h. Communication impeccable.'},300)]},
+d_bail:{cat:'business',w:5,cool:36,cond:()=>openIds().length>=2,def:1,who:'🏢',name:'Ton propriétaire',title:'Le loyer augmente',
+  text:()=>'« Le quartier prend de la valeur. Votre loyer augmente de 30 %. »',
+  clue:()=>`Tu paies toujours à l’heure, et trois locaux sont vides dans la rue.${ownedCount()>=3?' Toi-même propriétaire, tu connais les ficelles.':''}`,
+  ch:[SK('Négocier',{p:.35,s:[['rep',1]],b:[()=>ownedCount()>=3?[.2,'tes propriétés : tu connais le métier']:null],win:()=>{repD(1);return 'Il recule : augmentation de 5 % seulement.'},lose:()=>{pay(60);return 'Il ne cède rien.'}}),
+    OK('Accepter',()=> 'Tu signes l’avenant.',80),
+    SK('Menacer de partir',{p:.25,s:[['sat',1.2]],win:()=> 'Il panique : loyer inchangé !',lose:()=>{mod(.9,3);return 'Il te prend au mot. Déménagement forcé, clients perdus.'}})]},
+d_recrue:{cat:'business',w:5,cool:30,cond:()=>openIds().length>=1,def:2,who:'🧑‍💼',name:'Ton bureau de recrutement',title:'Deux candidats',
+  text:()=>'Un seul poste de responsable. Deux profils.',
+  clue:()=>'Clara : CV brillant, mais trois employeurs en deux ans. Moussa : débutant, il est revenu trois fois demander des nouvelles.',
+  ch:[SK('Prendre Clara',{p:.35,win:()=>{satD('all','qual',15);return 'Clara transforme tes process. Pour combien de temps ?'},lose:()=>{satD('all','wait',-10);return 'Elle part au bout de deux mois chez un concurrent.'}}),
+    SK('Prendre Moussa',{p:.85,s:[['rep',.3]],win:()=>{satD('all','wait',18);return 'Moussa apprend vite et ne compte pas ses heures.'},lose:()=> 'Il est motivé, mais il lui faudra du temps.'}),
+    OK('Ne prendre personne',()=>{nrg(-8);return 'Tu fais le travail toi-même.'})]},
+d_influ_colere:{cat:'business',w:5,cool:30,cond:()=>openIds().length>=1,def:2,who:'📱',name:'Un client influent',title:'Un avis qui fait le buzz',init:()=>({b:rOpen(),k:'clean'}),
+  text:d=>`Un influenceur démolit ton ${nm(d.b).toLowerCase()} devant 80 000 abonnés.`,
+  clue:d=>{const q=S.biz[d.b].q,w=Object.keys(q).reduce((a,k)=>q[k]<q[a]?k:a,'clean');d.k=w;return `Son reproche principal : ${QK[w].e} ${QK[w].n.toLowerCase()} (${Math.round(q[w])}/100 chez toi).`},
+  ch:[SK('Lui répondre publiquement avec calme',{p:.3,s:[['rep',1.2]],win:()=>{repD(5);return 'Ta réponse est saluée. Il retire sa vidéo.'},lose:()=>{repD(-6);return 'Ta réponse est jugée sur la défensive.'}}),
+    OK('Corriger le problème qu’il pointe',d=>{satD(d.b,d.k||'clean',25);repD(3);return 'Tu règles le vrai problème et l’invites à revenir. Il publie un rectificatif.'},70),
+    SK('Ignorer',{p:.3,win:()=> 'Le buzz retombe tout seul.',lose:()=>{repD(-8);return 'Ça tourne en boucle pendant des semaines.'}})]},
+d_fourn:{cat:'business',w:5,cool:24,cond:()=>openIds().length>=1,def:1,who:'🚚',name:'Ton fournisseur',title:'Livraison en retard',
+  text:()=>'Ta commande est bloquée à l’entrepôt. Le transport express coûte cher.',
+  clue:()=>{const e=bigNext();return e?`Le mois prochain : ${e.n}. Pas question d’avoir des rayons vides !`:'Le mois prochain est un mois ordinaire.'},
+  ch:[OK('Payer l’express',()=>{if(bigNext()){mod(1.25,1);return 'Rayons pleins pile pour le gros mois. Bien joué.'}return 'Livré vite… pour un mois calme. Argent mal placé.'},90),
+    OK('Attendre la livraison normale',()=>{if(bigNext()){mod(.8,1);return 'Rayons vides pendant le gros mois. Aïe.'}return 'Personne n’a remarqué le retard.'})]},
+d_rachat:{cat:'business',w:4,cool:48,cond:()=>openIds().length>=2,def:2,init:()=>({b:rOpen()}),who:'📉',name:'Un concurrent en faillite',title:'Une affaire à reprendre',
+  text:d=>`Ton concurrent direct en ${nm(d.b).toLowerCase()} met la clé sous la porte.`,
+  clue:()=>'Son fichier clients est excellent, mais ses locaux sont vétustes et ses dettes floues.',
+  ch:[OK('Racheter seulement le fichier clients',d=>{mod(1.2,6,d.b);return 'Ses clients fidèles passent chez toi.'},150),
+    SK('Tout racheter',{need:500,p:.3,s:[['sat',.8]],win:d=>{mod(1.45,8,d.b);return 'Le pari paie : tu doubles ta clientèle.'},lose:d=>{satD(d.b,'qual',-20);return 'Des dettes cachées et des locaux pourris. Gouffre.'}}),
+    OK('Laisser passer',()=> 'Un autre repreneur s’en charge.')]},
+d_salon:{cat:'business',w:5,cool:30,cond:()=>openIds().length>=2,def:2,who:'🎪',name:'La chambre de commerce',title:'Le salon professionnel',
+  text:()=>'Grand salon régional : acheteurs, investisseurs, journalistes.',
+  ch:[SK('Tenir un stand et pitcher',{need:100,p:.3,s:[['rep',.8],['nrg',.6]],b:[()=>S.hero.study?[.15,'tes études t’ont appris à pitcher']:null],win:()=>{mod(1.3,4);repD(4);return 'Trois gros contrats signés sur le salon.'},lose:()=>{nrg(-10);return 'Stand désert. Tu repars avec des goodies.'}}),
+    OK('Y aller en simple visiteur',()=>{nrg(-5);repD(1);return 'Quelques cartes de visite utiles.'}),
+    OK('Rester à la boutique',()=> 'Tu gardes la boutique.')]},
+d_fisc:{cat:'business',w:4,cool:60,cond:()=>openIds().length>=2,def:0,who:'🧾',name:'L’administration fiscale',title:'Contrôle fiscal',
+  text:()=>'Un inspecteur des impôts demande trois ans de comptabilité.',
+  clue:()=>S.stage>=2||S.flags.compta?'Ton équipe administrative a tout classé : factures, relevés, contrats.':'Tes papiers sont dans des boîtes à chaussures, un peu partout.',
+  ch:[SK('Présenter tes papiers tels quels',{p:()=>S.stage>=2||S.flags.compta?.92:.3,win:()=>{repD(2);return 'Rien à signaler. L’inspecteur te félicite presque.'},lose:()=>{pay(200);return 'Des oublis. Redressement et pénalités.'}}),
+    OK('Engager un expert-comptable',()=>{flag('compta');return 'Il remet tout d’aplomb. Contrôle passé, et tes prochains seront sans souci.'},120),
+    SK('Faire traîner',{p:.15,win:()=> 'L’inspecteur est muté. Ouf.',lose:()=>{pay(300);repD(-5);return 'Pénalités de retard en plus. Mauvaise idée.'}})]},
+d_burnout:{cat:'business',w:6,cool:30,cond:()=>openIds().some(id=>S.biz[id].q.wait<45),def:2,init:()=>({b:worstQ('wait')}),who:'😩',name:'Ton équipe',title:'L’équipe craque',
+  text:d=>`Au ${nm(d.b).toLowerCase()}, les employés enchaînent les heures sup. L’un d’eux pleure dans la réserve.`,
+  ch:[OK('Recruter du renfort',d=>{satD(d.b,'wait',30);return 'L’ambiance revient.'},100),
+    SK('Verser une prime',{need:50,p:.5,s:[['rep',.6]],win:d=>{satD(d.b,'wait',18);return 'Ils serrent les dents, motivés.'},lose:d=>{satD(d.b,'wait',4);return 'Merci pour la prime, mais ils sont toujours épuisés.'}}),
+    SK('Faire un discours motivant',{p:.15,s:[['nrg',.8],['rep',.6]],win:d=>{satD(d.b,'wait',10);return 'Ton discours les galvanise.'},lose:d=>{satD(d.b,'wait',-12);return 'Des mots ne remplacent pas des bras. Deux démissions.'}})]},
+d_tv:{cat:'business',w:4,cool:60,once:true,cond:()=>openIds().length>=3,def:1,who:'📺',name:'Une émission de télé',title:'Pitch devant les investisseurs',
+  text:()=>'L’émission « Qui veut miser sur moi ? » t’invite à pitcher en direct.',
+  ch:[SK('Y aller et tout donner',{p:.15,s:[['rep',1],['nrg',.6]],b:[()=>S.hero.study?[.15,'tes études : chiffres maîtrisés']:null,()=>hasP('musique')||hasP('dessin')?[.05,'ta fibre artistique : tu as de l’aisance']:null],win:()=>{money(900);repD(10);trophy('t_presse');return 'Trois investisseurs se battent pour toi. Diffusion record.'},lose:()=>{repD(-5);return 'Trou de mémoire en direct. Le replay devient un mème.'}}),
+    OK('Décliner',()=> 'Tu restes discret.')]},
+d_crypto:{cat:'business',w:3,cool:60,cond:()=>S.cash>costSec(300),def:1,who:'🪙',name:'Un ami très enthousiaste',title:'Le jeton miracle',
+  text:()=>'« Mets un peu dans ce jeton, il va faire ×4, crois-moi. »',
+  ch:[LK('Tenter le coup',.3,()=>{money(600);return 'Ça a vraiment fait ×4. Incroyable.'},()=> 'Le jeton s’effondre à zéro.',150),OK('Pas question',()=> 'Tu préfères ce que tu connais.')]},
+d_ticket:{cat:'vie',w:3,cool:48,cond:()=>true,def:1,who:'🎟️',name:'Le buraliste',title:'Un ticket à gratter',
+  text:()=>'Le buraliste te tend un ticket : « Allez, pour la chance ! »',
+  ch:[LK('Gratter',.12,()=>{money(250);return 'Gagné ! Le buraliste n’en revient pas.'},()=> 'Perdu. Comme d’habitude.',2),OK('Non merci',()=> 'Tu gardes ta monnaie.')]},
+d_meteo:{cat:'business',w:3,cool:36,cond:()=>monthOf(S.day)>=4&&monthOf(S.day)<=6,def:1,who:'🌦️',name:'Ton grossiste',title:'Stocker des ventilateurs ?',
+  text:()=>'Les prévisions sont incertaines : canicule ou été pourri. Il te propose un stock de ventilateurs.',
+  ch:[LK('Acheter le stock',.5,()=>{money(220);return 'Canicule ! Tout part en trois jours.'},()=> 'Été pourri. Les cartons prennent la poussière.',100),OK('Ne pas parier sur la météo',()=> 'Prudence.')]},
+d_stagiaire:{cat:'business',w:4,cool:40,cond:()=>openIds().length>=2,def:1,who:'🧑‍💻',name:'Ton stagiaire',title:'« Je peux tout automatiser »',
+  text:()=>'Ton stagiaire veut remplacer ta caisse et ton stock par un logiciel maison.',
+  clue:()=>'Il code la nuit et a déjà gagné un hackathon. Mais il n’a jamais rien mis en production.',
+  ch:[SK('Lui laisser un mois',{p:.4,s:[['nrg',.4]],b:[()=>hasP('jeux')||S.hero.study?[.15,'tu parles sa langue : tu peux le guider']:null],win:()=>{satD('all','wait',15);return 'Ça marche ! Les files d’attente fondent.'},lose:()=>{satD('all','wait',-10);return 'Bug le samedi : caisses bloquées toute la journée.'}}),
+    OK('Le tester sur une seule boutique',()=>{satD(rOpen(),'wait',10);return 'Prudent. Le test est concluant.'}),
+    OK('Non, on garde ce qui marche',()=> 'Il est déçu.')]},
+
+/* --- Selon la ville --- */
+c0_noel:{cat:'business',w:6,ctx:1,cool:12,cond:()=>S.city===0&&monthOf(S.day)>=9,def:2,who:'🎄',name:'Le comité des fêtes',title:'Le marché de Noël',
+  text:()=>'Un chalet est disponible sur la place pour le marché de Noël.',
+  clue:()=>`Les chalets bien tenus attirent les foules. Ta satisfaction moyenne : ${Math.round(avgSat())}.`,
+  ch:[SK('Louer le chalet',{need:60,p:.2,s:[['sat',1.4]],win:()=>{money(200);repD(3);return 'File d’attente tous les soirs. Chocolat chaud offert !'},lose:()=>{nrg(-8);return 'Chalet mal placé, peu de monde.'}}),OK('Juste sponsoriser les illuminations',()=>{repD(3);return 'Ton nom brille sur la grand-rue.'},40),OK('Rester à l’écart',()=> 'Tu profites des fêtes en famille.')]},
+c0_brocante:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===0,def:1,who:'🧺',name:'L’association du quartier',title:'La grande brocante',
+  text:()=>'Toute la ville déballe dimanche. Les chineurs arrivent dès 5 h.',
+  ch:[SK('Y aller à l’aube',{p:.35,s:[['nrg',1.2]],win:()=>{money(140);return 'Tu déniches trois pièces rares avant tout le monde.'},lose:()=>{nrg(-10);return 'Tu t’endors dans la voiture. Les bonnes affaires sont parties.'}}),OK('Y aller tranquillement à midi',()=>{money(30);return 'Quelques petites trouvailles.'}),OK('Faire la grasse matinée',()=>{nrg(10);return 'Repos bien mérité.'})]},
+c1_voyage:{cat:'business',w:6,ctx:1,cool:30,cond:()=>S.city===1,def:2,who:'🎨',name:'Le Voyage à Nantes',title:'Une œuvre sur ton toit',
+  text:()=>'Le parcours d’art estival veut installer une œuvre géante sur ton bâtiment.',
+  clue:()=>'Le parcours attire des milliers de visiteurs… qui passent devant les boutiques les mieux notées.',
+  ch:[SK('Accepter',{p:.25,s:[['sat',1],['rep',.6]],win:()=>{mod(1.35,3);repD(5);return 'La ligne verte passe devant chez toi. Foule tout l’été.'},lose:()=>{repD(2);return 'Les visiteurs prennent des photos… sans entrer.'}}),OK('Refuser',()=> 'L’œuvre ira ailleurs.')]},
+c1_canaris:{cat:'business',w:5,ctx:1,cool:40,cond:()=>S.city===1,def:1,who:'🟡',name:'Le club des Canaris',title:'Sponsor maillot ?',
+  text:()=>'Le grand club de la ville te propose d’apparaître sur la manche du maillot.',
+  clue:()=>S.club.own?`Attention : tu présides déjà ${esc(S.club.name)}. Tes supporters risquent de mal le prendre.`:'Le club est adoré dans toute la ville.',
+  ch:[SK('Signer',{need:150,p:()=>S.club.own?.2:.85,win:()=>{repD(6);mod(1.2,6);return 'Ton logo à la Beaujoire chaque week-end.'},lose:()=>{repD(-4);if(S.club.own)clubMor(-15);return 'Tes propres supporters crient à la trahison.'}}),OK('Décliner',()=> 'Tu restes neutre.')]},
+c2_bouchon:{cat:'business',w:5,ctx:1,cool:48,cond:()=>S.city===2,def:2,who:'🍷',name:'Un vieux cuisinier',title:'Un bouchon à reprendre',
+  text:()=>'Le patron d’un bouchon du Vieux-Lyon part à la retraite et cherche un repreneur.',
+  clue:()=>hasP('cuisine')?'Toi qui cuisines, tu sais refaire son tablier de sapeur à l’identique.':'Sans cuisinier, un bouchon perd vite ses habitués.',
+  ch:[SK('Reprendre le bouchon',{need:200,p:.3,b:[()=>hasP('cuisine')?[.45,'ta passion cuisine']:null],s:[['rep',.6]],win:()=>{mod(1.3,8);repD(5);return 'Les habitués restent, les touristes arrivent.'},lose:()=>{nrg(-12);return 'Les habitués boudent. Tu revends à perte.'}}),OK('Lui trouver un repreneur parmi tes contacts',()=>{repD(4);return 'Il te remercie avec un magnum.'}),OK('Ne rien faire',()=> 'Le bouchon ferme.')]},
+c2_soie:{cat:'business',w:5,ctx:1,cool:40,cond:()=>S.city===2,def:1,who:'🧵',name:'Un atelier de canuts',title:'La soie de la Croix-Rousse',
+  text:()=>'Un atelier historique propose une collection exclusive en soie.',
+  clue:()=>`Les clients de soie exigent un service irréprochable. Ta satisfaction : ${Math.round(avgSat())}.`,
+  ch:[SK('Lancer la collection',{need:120,p:.15,s:[['sat',1.4]],win:()=>{mod(1.3,5);repD(4);return 'Rupture de stock en dix jours.'},lose:()=> 'Belle collection, clients pas au rendez-vous.'}),OK('Commander quelques pièces',()=>{money(50);return 'Petites ventes, zéro risque.'},20),OK('Décliner',()=> 'Une autre fois.')]},
+c3_fashion:{cat:'business',w:6,ctx:1,cool:24,cond:()=>S.city===3,def:2,who:'👠',name:'Une styliste',title:'La Fashion Week',
+  text:()=>'Une styliste veut tes produits dans son défilé.',
+  clue:()=>bizOn('sneak')&&S.biz.sneak.lvl>=50?'Tes sneakers sont devenues une référence : elle a vu ta boutique sur les réseaux.':'Elle ne connaît pas encore ta marque.',
+  ch:[SK('Prêter tes produits',{p:()=>bizOn('sneak')&&S.biz.sneak.lvl>=50?.75:.3,s:[['rep',.6]],win:()=>{mod(1.4,3);repD(6);return 'Vu sur tous les podiums. Ventes en folie.'},lose:()=> 'Défilé sans écho.'}),OK('Lui vendre au prix fort',()=>{money(80);return 'Une belle vente, sans plus.'})]},
+c3_loyers:{cat:'business',w:5,ctx:1,cool:36,cond:()=>S.city===3,def:1,who:'🏢',name:'Une foncière parisienne',title:'Ton bail parisien',
+  text:()=>'La foncière propose de racheter ton bail pour transformer ta boutique en appartements.',
+  clue:()=>'Les loyers parisiens montent de 8 % par an. Ta boutique est ta meilleure vitrine.',
+  ch:[OK('Vendre le bail',()=>{money(250);mod(.85,6);return 'Gros chèque, mais moins de vitrine.'}),SK('Faire monter les enchères',{p:.3,s:[['rep',.8]],win:()=>{money(400);return 'Ils doublent leur offre, tu gardes même un local.'},lose:()=> 'Ils se retirent. Tu gardes ta boutique.'}),OK('Refuser',()=>{repD(2);return 'Les voisins saluent ta fidélité au quartier.'})]},
+c4_douane:{cat:'business',w:6,ctx:1,cool:30,cond:()=>S.city===4,def:1,who:'🛃',name:'La douane britannique',title:'Conteneur bloqué',
+  text:()=>'Ton conteneur de marchandises est bloqué à Douvres : formulaire incomplet.',
+  clue:()=>S.stage>=2?'Ton équipe administrative maîtrise les formulaires post-Brexit.':'Tu n’as personne pour gérer la paperasse.',
+  ch:[SK('Remplir les papiers toi-même',{p:()=>S.stage>=2?.9:.4,b:[()=>S.hero.study?[.15,'tes études']:null],win:()=> 'Débloqué en 48 h.',lose:()=>{mod(.85,2);nrg(-10);return 'Trois allers-retours. Rayons vides deux semaines.'}}),OK('Payer un transitaire',()=> 'Débloqué en un jour.',70)]},
+c4_pub:{cat:'vie',w:5,ctx:1,cool:30,cond:()=>S.city===4,def:1,who:'🍺',name:'Le pub du coin',title:'Quiz night',
+  text:()=>'Le pub organise sa soirée quiz. Les patrons du quartier y sont.',
+  ch:[SK('Faire équipe avec eux',{p:.25,b:[()=>hasP('lecture')?[.4,'ta culture de grand lecteur']:null,()=>S.hero.study?[.15,'tes études']:null],s:[['nrg',.4]],win:()=>{repD(5);return 'Vous gagnez ! Tout le quartier veut boire une pinte avec toi.'},lose:()=>{repD(1);return 'Dernière place, mais bonne ambiance.'}}),OK('Rentrer dormir',()=>{nrg(8);return 'Une nuit complète.'})]},
+c5_ws:{cat:'business',w:5,ctx:1,cool:48,cond:()=>S.city===5,def:1,who:'💼',name:'Une banque de Wall Street',title:'Lever des fonds',
+  text:()=>'Une banque propose de lever des fonds pour ton empire.',
+  clue:()=>`Ils regardent ta réputation (${Math.round(S.rep)}) et la satisfaction de tes clients (${Math.round(avgSat())}).`,
+  ch:[SK('Faire la tournée des investisseurs',{p:0,s:[['rep',1.2],['sat',1.2]],win:()=>{money(800);repD(4);return 'Levée bouclée en une semaine.'},lose:()=>{nrg(-12);return 'Ils trouvent tes chiffres trop justes.'}}),OK('Pas maintenant',()=> 'Tu restes indépendant.')]},
+c5_inspect:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===5,def:1,init:()=>({b:worstQ('clean')}),who:'🧑‍🔬',name:'Le service d’hygiène de la ville',title:'Inspection surprise',
+  text:d=>`Un inspecteur se présente à ton ${nm(d.b).toLowerCase()} avec sa grille de notation.`,
+  clue:d=>`Propreté actuelle : ${Math.round(qOf(d.b,'clean'))}/100. En dessous de 60, c’est la mauvaise note affichée en vitrine.`,
+  ch:[SK('Le laisser inspecter',{p:d=>qOf(d.b,'clean')>=60?.92:.15,win:()=>{repD(3);return 'Note A affichée en vitrine.'},lose:d=>{repD(-6);mod(.8,3,d.b);return 'Note C. Les clients fuient.'}}),OK('Fermer une heure pour nettoyer',d=>{satD(d.b,'clean',25);return 'Il revient : impeccable. Note A.'},50)]},
+c6_omote:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===6,def:1,init:()=>({b:rOpen()}),who:'🙇',name:'Un critique tokyoïte',title:'L’omotenashi',
+  text:d=>`Un critique très suivi vient tester l’accueil de ton ${nm(d.b).toLowerCase()}.`,
+  clue:d=>`À Tokyo, l’attente est impardonnable. Ton service ici : ${Math.round(qOf(d.b,'wait'))}/100.`,
+  ch:[SK('Le servir normalement',{p:d=>qOf(d.b,'wait')/100,win:d=>{mod(1.4,4,d.b);repD(5);return 'Article élogieux : files d’attente devant chez toi.'},lose:()=>{repD(-5);return '« Accueil décevant. » Ça fait mal.'}}),OK('Mobiliser toute l’équipe pour lui',d=>{satD(d.b,'wait',20);repD(3);return 'Service parfait. Il est conquis.'},60)]},
+c6_anime:{cat:'business',w:5,ctx:1,cool:40,cond:()=>S.city===6,def:1,who:'🎌',name:'Un studio d’animation',title:'Une collab anime',
+  text:()=>'Un studio propose une collection en édition limitée avec son héros star.',
+  ch:[SK('Signer la collab',{need:120,p:.35,b:[()=>hasP('jeux')?[.35,'tu connais la culture otaku par cœur']:null],s:[['rep',.4]],win:()=>{mod(1.5,3);return 'Les fans campent devant ta boutique.'},lose:()=> 'Mauvais personnage choisi : les fans boudent.'}),OK('Décliner',()=> 'Une autre fois.')]},
+c7_cheikh:{cat:'business',w:5,ctx:1,cool:40,cond:()=>S.city===7,def:1,who:'👳🏽',name:'Un cheikh',title:'« Je veux tout acheter »',
+  text:()=>'Un cheikh veut racheter tout le stock de ta meilleure boutique, à un prix à discuter.',
+  clue:()=>'Ici, on respecte ceux qui négocient longtemps avec élégance. Une réputation solide impressionne.',
+  ch:[SK('Négocier longuement autour d’un thé',{p:.25,s:[['rep',1.2],['nrg',.4]],win:()=>{money(500);repD(4);return 'Accord royal. Il revient chaque mois.'},lose:()=>{money(120);return 'Il paie le prix normal, sans plus.'}}),OK('Accepter son premier prix',()=>{money(160);return 'Vente rapide.'})]},
+c7_chaleur:{cat:'business',w:5,ctx:1,cool:24,cond:()=>S.city===7&&monthOf(S.day)>=5&&monthOf(S.day)<=8,def:0,who:'🌡️',name:'Ton technicien',title:'49 °C à l’ombre',
+  text:()=>'La climatisation de tes boutiques tourne à fond. Une panne générale menace.',
+  ch:[OK('Révision complète',()=>{satD('all','clean',5);return 'Aucune panne de l’été.'},80),SK('Croiser les doigts',{p:.35,s:[['sat',.5]],win:()=> 'La clim tient bon.',lose:()=>{satD('all','qual',-20);mod(.8,2);return 'Panne en plein pic. Clients en sueur.'}})]},
+c8_o2:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===8,def:0,who:'🫧',name:'Le contrôle du dôme',title:'Alerte oxygène',
+  text:()=>'Une fuite d’oxygène est signalée près de ton entrepôt.',
+  clue:()=>'Le manuel est clair : on évacue d’abord, on répare ensuite.',
+  ch:[OK('Évacuer puis réparer',()=>{mod(.9,1);repD(4);return 'Personne n’est blessé. Les habitants saluent ton sang-froid.'}),SK('Réparer sans évacuer',{p:.3,s:[['nrg',.6]],win:()=> 'Réparé en vitesse. Personne n’a rien remarqué.',lose:()=>{repD(-15);health(-10);return 'Malaises en série. Enquête ouverte.'}})]},
+c8_tour:{cat:'business',w:5,ctx:1,cool:30,cond:()=>S.city===8,def:1,who:'🚀',name:'Une agence spatiale',title:'Touristes en apesanteur',
+  text:()=>'Un vaisseau de 200 touristes arrive. Ils veulent des souvenirs.',
+  ch:[SK('Ouvrir une boutique éphémère au port',{need:90,p:.3,s:[['sat',1]],win:()=>{money(300);return 'Tout est vendu avant le décollage.'},lose:()=> 'Ils ont dépensé tout leur budget au restaurant.'}),OK('Faire comme d’habitude',()=>{money(40);return 'Quelques ventes en plus.'})]},
+
+/* --- Vie, famille, passions --- */
+v_soiree:{cat:'vie',w:5,ctx:1,cool:24,cond:()=>S.hero.age<32,def:1,who:'🎉',name:'Tes potes',title:'Soirée la veille d’un rendez-vous',
+  text:()=>'Tes potes organisent la soirée de l’année. Demain, 9 h : rendez-vous avec ton banquier.',
+  clue:()=>`Ton énergie : ${Math.round(S.energy)}. En dessous de 50, une nuit blanche se paie cher.`,
+  ch:[SK('Y aller quand même',{p:.1,s:[['nrg',1.6]],win:()=>{repD(3);nrg(-5);return 'Tu rencontres un futur client… et tu es frais à 9 h.'},lose:()=>{nrg(-20);repD(-3);return 'Rendez-vous raté. Ton banquier note ton retard.'}}),OK('Passer une heure puis rentrer',()=>{repD(1);return 'Le bon compromis.'}),OK('Dormir tôt',()=>{nrg(10);return 'Frais comme un gardon.'})]},
+v_cours:{cat:'vie',w:5,ctx:1,once:true,cond:()=>!S.hero.study&&S.hero.age<55,def:1,who:'🎓',name:'Le CNAM',title:'Cours du soir',
+  text:()=>'Une formation en gestion, deux soirs par semaine pendant un an.',
+  clue:()=>`Il faudra tenir le rythme : ton énergie est à ${Math.round(S.energy)}.`,
+  ch:[SK('S’inscrire',{need:80,p:.15,s:[['nrg',1.8]],win:()=>{S.hero.study='Diplôme du soir en gestion';repD(5);FXC.push('🎓 Diplômé en gestion');return 'Diplôme en poche ! Tes décisions s’en ressentiront.'},lose:()=>{nrg(-15);return 'Trop crevé, tu abandonnes en cours d’année.'}}),OK('Pas maintenant',()=> 'Peut-être plus tard.')]},
+v_ecole:{cat:'vie',w:6,ctx:1,cool:24,cond:()=>!!decKid(6,16),def:1,init:()=>({k:decKid(6,16).name}),who:'🏫',name:'L’école',title:'Réunion parents-profs',
+  text:d=>`La maîtresse de ${esc(d.k)} demande à te voir.`,
+  clue:d=>`« ${esc(d.k)} décroche en maths… mais passe ses récréations à construire des machines. »`,
+  ch:[SK('L’aider aux devoirs le soir',{p:.25,s:[['nrg',1.2]],win:d=>{kidT(d.k,6);nrg(-8);return 'Les notes remontent doucement.'},lose:d=>{nrg(-12);return 'Vous finissez tous les deux en larmes.'}}),
+    OK('Payer un prof particulier',d=>{kidT(d.k,5);return 'Ça progresse.'},60),
+    OK('L’inscrire à un atelier robotique',d=>{kidT(d.k,12);return 'Bingo : les maths prennent sens. Bien vu !'},40)]},
+v_reve:{cat:'vie',w:5,ctx:1,cool:36,cond:()=>!!decKid(10,17),def:1,init:()=>{const k=decKid(10,17);return{k:k.name,t:k.talent,r:pick(['footballeur','musicien','entrepreneur','médecin'])}},who:'🌟',name:'Ton enfant',title:'Un grand rêve',
+  text:d=>`${esc(d.k)} t’annonce : « Plus tard, je serai ${d.r}. »`,
+  clue:d=>`Son talent actuel : ${d.t}/100.${d.r==='entrepreneur'?' Et tu as justement des boutiques…':''}`,
+  ch:[SK('Le soutenir à fond',{need:80,p:d=>d.t/100,win:d=>{kidT(d.k,12);return 'Il/elle progresse à vue d’œil.'},lose:d=>{kidT(d.k,3);return 'Beaucoup d’efforts, peu de résultats pour l’instant.'}}),
+    OK('Le faire bosser l’été dans ta boutique',d=>{kidT(d.k,d.r==='entrepreneur'?14:3);return d.r==='entrepreneur'?'Il/elle a ça dans le sang !':'Utile, mais pas son rêve.'}),
+    OK('Lui dire d’être réaliste',d=>{kidT(d.k,-4);return 'Il/elle claque la porte de sa chambre.'})]},
+v_projet:{cat:'vie',w:5,ctx:1,cool:48,cond:()=>S.partner&&S.partner.rel>=40,def:1,whoF:()=>S.partner.av,nameF:()=>S.partner.name,title:'Un projet à deux ?',
+  text:()=>`${esc(S.partner.name)} veut lancer sa propre activité et te demande un coup de pouce.`,
+  clue:()=>`Votre complicité : ${Math.round(S.partner.rel)}/100. Un couple soudé travaille bien ensemble.`,
+  ch:[SK('Investir dans son projet',{need:200,p:0,s:[['rel',1.6],['rep',.4]],win:()=>{money(450);relD(15);return 'Son affaire décolle. Vous êtes fiers l’un de l’autre.'},lose:()=>{relD(5);return 'Échec, mais vous avez essayé ensemble.'}}),OK('L’encourager sans argent',()=>{relD(6);return 'Ton soutien compte beaucoup.'}),OK('Le décourager',()=>{relD(-15);return 'Froid glacial à la maison.'})]},
+v_anniv:{cat:'vie',w:5,ctx:1,cool:24,cond:()=>!!S.partner,def:3,whoF:()=>S.partner.av,nameF:()=>S.partner.name,title:'Votre anniversaire',
+  text:()=>'C’est votre anniversaire de rencontre. Tu avais presque oublié.',
+  clue:()=>hasP('cuisine')?'Ta cuisine fait toujours fondre ton/ta partenaire.':`Énergie : ${Math.round(S.energy)}. Un week-end surprise demande de l’organisation.`,
+  ch:[SK('Dîner fait maison',{p:.35,s:[['nrg',.6]],b:[()=>hasP('cuisine')?[.55,'ta passion cuisine']:null],win:()=>{relD(15);return 'Une soirée parfaite.'},lose:()=>{relD(2);return 'Le plat est brûlé. Vous finissez avec une pizza.'}}),
+    OK('Grand restaurant',()=>{relD(8);return 'Belle soirée.'},60),
+    SK('Week-end surprise',{need:150,p:.2,s:[['nrg',.8],['rel',.8]],win:()=>{relD(22);nrg(10);return 'Un week-end inoubliable.'},lose:()=>{relD(4);nrg(-8);return 'Pluie, hôtel raté… mais vous en riez.'}}),
+    OK('Laisser passer',()=>{relD(-15);return '« Tu as oublié, hein ? »'})]},
+v_bilan:{cat:'vie',w:5,ctx:1,cool:36,cond:()=>S.hero.age>=40,def:1,who:'🩺',name:'Ton médecin',title:'Le bilan de santé',
+  text:()=>'Ton médecin insiste : un bilan complet, cette année.',
+  clue:()=>`Ta santé : ${Math.round(S.hero.health)}/100. Plus elle est basse, plus reporter est dangereux.`,
+  ch:[OK('Faire tous les examens',()=>{health(8);nrg(-4);return 'Un petit souci repéré tôt. Soigné.'},30),SK('Reporter',{p:()=>S.hero.health/100,win:()=> 'Tout allait bien de toute façon.',lose:()=>{health(-15);return 'Un problème non soigné s’aggrave.'}}),OK('Changer d’hygiène de vie',()=>{health(5);nrg(8);mod(.95,3);return 'Moins de travail, plus de sport.'})]},
+v_passion:{cat:'vie',w:5,ctx:1,cool:30,cond:()=>(S.hero.passions||[]).length>0,def:1,init:()=>{const p=pick(S.hero.passions);return{p}},who:'✨',nameF:d=>PASSIONS[d.p]?PASSIONS[d.p].n:'Ta passion',title:'Ta passion te rattrape',
+  text:d=>({musique:'Un bar te propose un concert samedi soir.',dessin:'Une galerie veut exposer tes dessins.',lecture:'Un éditeur aime ton projet de livre.',cuisine:'Un concours de cuisine amateur ouvre ses inscriptions.',foot:'Le tournoi des entrepreneurs de la ville cherche un capitaine.',jeux:'Un tournoi e-sport local t’invite.'})[d.p]||'Une occasion de vivre ta passion se présente.',
+  clue:()=>`Il faudra de l’énergie (${Math.round(S.energy)}) et un peu de réputation (${Math.round(S.rep)}) pour briller.`,
+  ch:[SK('Y aller à fond',{p:.2,s:[['nrg',1],['rep',.6]],win:()=>{repD(5);nrg(8);return 'Un triomphe ! Tout le monde en parle.'},lose:()=>{nrg(-8);return 'Ça ne s’est pas passé comme prévu.'}}),OK('En profiter tranquillement',()=>{nrg(10);return 'Juste pour le plaisir. Ça fait du bien.'}),OK('Pas le temps',()=>{nrg(-4);return 'Le travail d’abord.'})]},
+v_parents:{cat:'vie',w:5,ctx:1,cool:48,cond:()=>S.hero.age>=35&&S.hero.age<=65,def:2,who:'👵🏽',name:'Tes parents',title:'Tes parents vieillissent',
+  text:()=>'Ta mère a fait une chute. Elle ne peut plus vivre seule.',
+  clue:()=>S.stage>=2?'Ton logement est assez grand pour les accueillir.':'Ton logement est petit : cohabiter sera serré.',
+  ch:[OK('Payer une aide à domicile',()=>{repD(1);return 'Elle reste chez elle, bien entourée.'},100),
+    SK('Les accueillir chez toi',{p:()=>S.stage>=2?.8:.3,s:[['rel',.4]],win:()=>{relD(5);nrg(5);return 'Les repas de famille sont joyeux. Les enfants adorent.'},lose:()=>{relD(-12);nrg(-10);return 'Trop serrés. Les tensions montent.'}}),
+    OK('Passer la voir plus souvent',()=>{nrg(-10);return 'Elle est heureuse de te voir. Toi, épuisé.'})]},
+v_ami:{cat:'vie',w:5,cool:36,cond:()=>true,def:1,init:()=>({ok:Math.random()<.5,n:pick(FIRST)}),who:'🤝',nameF:d=>`${d.n}, un ami d’enfance`,title:'Un prêt entre amis',
+  text:d=>`${esc(d.n)} te demande de l’argent pour tenir un mois.`,
+  clue:d=>d.ok?`${esc(d.n)} a monté une petite boîte qui tourne bien : il attend un gros paiement client.`:`${esc(d.n)} te doit déjà 50 € depuis 2019… et il vient de s’acheter une console.`,
+  ch:[SK('Lui prêter',{need:100,p:d=>d.ok?.92:.08,label:'🔎 Relis l’indice avant de prêter',win:()=>{money(130);repD(2);return 'Remboursé avec un petit cadeau. Un vrai ami.'},lose:()=> 'Tu ne reverras jamais cet argent.'}),OK('Refuser gentiment',()=> 'Il comprend.'),OK('Lui proposer un job',()=>{satD('all','wait',8);return 'Il bosse dur pour s’en sortir.'})]},
+v_marathon:{cat:'vie',w:4,cool:36,cond:()=>S.hero.age<60,def:1,who:'🏃',name:'Le club d’athlétisme',title:'Le marathon de la ville',
+  text:()=>'Tout le monde court cette année. Même ton rival.',
+  clue:()=>`Santé ${Math.round(S.hero.health)}, énergie ${Math.round(S.energy)}. Un marathon ne pardonne pas l’impréparation.`,
+  ch:[SK('Courir les 42 km',{p:0,s:[['nrg',1],['hp',1]],b:[()=>hasP('foot')?[.1,'ton passé de footballeur']:null],win:()=>{repD(5);health(5);return 'Tu passes la ligne sous les vivats !'},lose:()=>{health(-8);return 'Crampe au 30ᵉ km. Abandon.'}}),OK('Courir le 10 km',()=>{health(3);return 'Belle sortie.'}),OK('Encourager depuis le bord',()=> 'Tu distribues de l’eau aux coureurs.')]},
+
+/* --- Club de foot --- */
+cl_star:{cat:'club',w:5,ctx:1,cool:36,cond:()=>S.club.own,def:2,who:'⭐',name:'Un agent de joueurs',title:'Une star en fin de carrière',
+  text:()=>'Un ancien international de 34 ans veut finir sa carrière chez toi.',
+  clue:()=>'Il remplit les stades, mais ses genoux sont fragiles et il coûte cher.',
+  ch:[OK('Le signer pour le spectacle',()=>{S.club.fans=Math.round(S.club.fans*1.2);repD(4);clubMor(5);return 'Billetterie en feu.'},300),
+    SK('Négocier un contrat au rendement',{p:.25,s:[['rep',1]],win:()=>{S.club.fans=Math.round(S.club.fans*1.2);clubNote(6);return 'Il accepte et marque dès son premier match.'},lose:()=> 'Il signe chez le voisin.'}),OK('Refuser',()=> 'Tu mises sur la jeunesse.')]},
+cl_arbitre:{cat:'club',w:4,ctx:1,cool:48,cond:()=>S.club.own,def:1,who:'🟨',name:'Un intermédiaire louche',title:'Un arbitre « arrangeant »',
+  text:()=>'On te propose d’« arranger » le prochain match.',
+  clue:()=>'La ligue vient d’ouvrir une enquête sur ce genre de pratiques.',
+  ch:[SK('Accepter',{need:80,p:.15,win:()=>{S.club.pts+=3;return 'Victoire. Mais tu dors mal.'},lose:()=>{repD(-20);S.club.pts=Math.max(0,S.club.pts-6);clubMor(-15);return 'Démasqué ! Points retirés et scandale national.'}}),OK('Refuser',()=>{repD(2);return 'Tu raccroches.'}),OK('Le dénoncer',()=>{repD(7);clubMor(5);return 'La ligue te félicite publiquement.'})]},
+cl_pepite:{cat:'club',w:5,ctx:1,cool:36,cond:()=>S.club.own,def:1,who:'🧒🏾',name:'Ton recruteur',title:'Une pépite de 16 ans',
+  text:()=>'Un gamin du quartier jongle comme un pro. Trois clubs le veulent.',
+  clue:()=>S.club.acad?'Ton centre de formation rassure ses parents.':'Sans centre de formation, ses parents hésitent.',
+  ch:[SK('Lui proposer un contrat',{need:60,p:.3,b:[()=>S.club.acad?[.15*S.club.acad+.2,'ton centre de formation']:null],s:[['mor',.4]],win:()=>{clubNote(8);repD(2);return 'Il signe ! Il deviendra peut-être une star.'},lose:()=> 'Il choisit un club plus huppé.'}),OK('Laisser filer',()=> 'Tant pis.')]},
+cl_crise:{cat:'club',w:6,ctx:1,cool:24,cond:()=>S.club.own&&(S.club.morale||50)<45,def:1,who:'😤',name:'Le vestiaire',title:'Série noire',
+  text:()=>'Cinq défaites. Les supporters sifflent.',
+  clue:()=>`Moral actuel : ${Math.round(S.club.morale||50)}. Un discours ne suffit que si on te respecte.`,
+  ch:[OK('Stage commando au vert',()=>{clubMor(18);return 'Cohésion retrouvée.'},80),SK('Discours dans le vestiaire',{p:.2,s:[['rep',1]],win:()=>{clubMor(15);return 'Les joueurs repartent gonflés à bloc.'},lose:()=>{clubMor(-5);return 'Personne n’écoute.'}}),OK('Ne rien dire',()=>{clubMor(-6);return 'Le malaise s’installe.'})]},
+cl_ultras:{cat:'club',w:4,ctx:1,cool:36,cond:()=>S.club.own,def:2,who:'📣',name:'Les ultras',title:'Les ultras veulent te voir',
+  text:()=>'Les ultras exigent une baisse du prix des places.',
+  ch:[SK('Aller les voir en tribune',{p:.25,s:[['rep',.8],['mor',.6]],win:()=>{S.club.fans=Math.round(S.club.fans*1.1);return 'Accueil glacial, puis chants à ton nom.'},lose:()=>{repD(-3);return 'Huées. Ça ne passe pas.'}}),OK('Baisser les prix',()=>{S.club.fans=Math.round(S.club.fans*1.12);return 'Tribunes pleines, recettes un peu plus maigres.'}),OK('Refuser',()=>{S.club.fans=Math.round(S.club.fans*.92);return 'Banderoles hostiles au prochain match.'})]},
+
+/* --- Mandat de maire --- */
+m_promoteur:{cat:'pol',w:5,ctx:1,cool:40,cond:isMayor,def:1,who:'🏗️',name:'Un promoteur',title:'Des tours sur le parc ?',
+  text:()=>'Un promoteur veut construire trois tours sur une friche verte. Il glisse une enveloppe « pour ta campagne ».',
+  clue:()=>'Un journaliste d’investigation fouine depuis des mois dans les permis de construire.',
+  ch:[SK('Prendre l’enveloppe et signer',{p:.2,win:()=>{money(300);budD(60);mlog('🏗️ Tours signées (enveloppe)');return 'Les tours sortent de terre. Personne ne sait rien.'},lose:()=>{appD(-25);repD(-15);mlog('🏗️ Scandale de l’enveloppe');return 'Le journaliste publie tout. Mise en examen.'}}),
+    SK('Exiger 30 % de logements sociaux',{p:.3,s:[['appr',.6],['rep',.6]],win:()=>{appD(8);budD(40);mlog('🏗️ Tours avec logements sociaux');return 'Il accepte. Des logements pour les familles.'},lose:()=>{appD(-2);mlog('🏗️ Projet abandonné');return 'Il part construire ailleurs.'}}),
+    OK('Refuser et en faire un jardin',()=>{appD(5);repD(3);mlog('🌳 Friche transformée en jardin');return 'Les riverains t’applaudissent.'},0,20)]},
+m_crue:{cat:'pol',w:5,ctx:1,cool:36,cond:isMayor,def:1,who:'🌧️',name:'Les services techniques',title:'Alerte intempéries',
+  text:()=>'Les prévisions annoncent des pluies diluviennes dans dix jours.',
+  clue:()=>`Les digues n’ont pas été entretenues depuis 20 ans. Budget municipal : ${fmt(S.pol.budget)}.`,
+  ch:[OK('Renforcer les digues en urgence',()=>{appD(6);mlog('🌧️ Digues renforcées avant la crue');return 'La crue passe sans dégâts. Prévoyance saluée.'},0,60),
+    SK('Préparer seulement les secours',{p:.4,s:[['appr',.3]],win:()=>{appD(2);mlog('🌧️ Crue gérée');return 'Quelques caves inondées, gérées vite.'},lose:()=>{appD(-10);mod(.85,2);mlog('🌧️ Quartiers inondés');return 'Les quais sont sous l’eau.'}}),
+    LK('Ne rien faire',.4,()=>{mlog('🌧️ Pas de crue');return 'La pluie passe à côté. Chanceux.'},()=>{appD(-18);mod(.75,3);mlog('🌧️ Inondation catastrophique');return 'Catastrophe. On te reproche ton inaction.'})]},
+m_manif:{cat:'pol',w:5,ctx:1,cool:36,cond:()=>isMayor()&&S.pol.projects.length>0,def:0,init:()=>({p:pick(S.pol.projects)}),who:'✊',name:'Un collectif de riverains',title:'Manifestation',
+  text:d=>{const p=PROJ_ALL.find(x=>x.id===d.p);return `Des riverains manifestent contre les nuisances du chantier « ${p?p.n:'municipal'} ».`},
+  clue:()=>`Ta cote de confiance : ${Math.round(S.pol.appr)}. Quand elle est haute, on t’écoute.`,
+  ch:[SK('Les recevoir en mairie',{p:.25,s:[['appr',1.2],['nrg',.4]],win:()=>{appD(6);mlog('✊ Dialogue réussi avec les riverains');return 'Compromis trouvé : horaires de chantier aménagés.'},lose:()=>{appD(-4);mlog('✊ Dialogue rompu');return 'La réunion tourne au pugilat.'}}),
+    OK('Payer des protections anti-bruit',()=>{appD(4);mlog('✊ Murs anti-bruit');return 'Calme revenu.'},0,40),
+    SK('Ignorer',{p:.3,win:()=> 'Le mouvement s’essouffle.',lose:()=>{appD(-8);mlog('✊ Manif ignorée, colère');return 'Le cortège grossit chaque samedi.'}})]},
+m_subv:{cat:'pol',w:5,ctx:1,cool:48,cond:()=>isMayor()&&S.club.own,def:1,who:'⚽',name:'Ton directeur sportif',title:'Une subvention pour ton club ?',
+  text:()=>`${esc(S.club.name)} demande une subvention municipale. C’est ton club.`,
+  clue:()=>'Voter une subvention pour son propre club, c’est un conflit d’intérêts : l’opposition guette.',
+  ch:[SK('La voter quand même',{p:.15,win:()=>{clubNote(5);budD(-50);mlog('⚽ Subvention au club');return 'Ça passe inaperçu.'},lose:()=>{appD(-15);repD(-8);budD(-50);mlog('⚽ Conflit d’intérêts révélé');return 'L’opposition saisit la justice.'}}),OK('Te retirer du vote',()=>{appD(4);mlog('⚽ Déport lors du vote');return 'Le conseil vote sans toi. Transparence saluée.'}),OK('Refuser',()=>{clubMor(-6);appD(2);return 'Tes joueurs font la tête.'})]},
+m_conseil:{cat:'pol',w:5,ctx:1,cool:30,cond:isMayor,def:1,who:'🪑',name:'L’opposition municipale',title:'Le vote du budget',
+  text:()=>'L’opposition menace de bloquer le budget si tu ne cèdes rien.',
+  clue:()=>`Ta confiance (${Math.round(S.pol.appr)}) et ta réputation (${Math.round(S.rep)}) pèsent dans les négociations.`,
+  ch:[SK('Passer en force',{p:.15,s:[['appr',1],['rep',.6]],win:()=>{appD(2);mlog('🪑 Budget voté en force');return 'Vote serré, mais acquis.'},lose:()=>{appD(-8);budD(-30);mlog('🪑 Budget bloqué');return 'Budget bloqué deux mois. Services à l’arrêt.'}}),
+    OK('Accepter un amendement',()=>{budD(-25);appD(3);mlog('🪑 Compromis budgétaire');return 'Compromis. Tout le monde sauve la face.'}),
+    SK('Négocier en coulisses',{p:.35,s:[['rep',.8]],win:()=>{appD(4);mlog('🪑 Accord en coulisses');return 'Accord obtenu sans rien céder d’important.'},lose:()=>{appD(-3);return 'Les coulisses fuitent dans la presse.'}})]},
+m_jumelage:{cat:'pol',w:4,ctx:1,cool:60,cond:isMayor,def:1,who:'🌍',name:'Une ville étrangère',title:'Un jumelage',
+  text:()=>'Une ville étrangère propose un jumelage, avec échanges scolaires et salons.',
+  ch:[OK('Signer et organiser un salon',()=>{appD(4);repD(3);mod(1.1,4);mlog('🌍 Jumelage signé');return 'Délégations, échanges, nouveaux clients.'},0,30),OK('Signer sans frais',()=>{appD(1);mlog('🌍 Jumelage symbolique');return 'Une plaque à l’entrée de la ville.'})]},
+m_audit:{cat:'pol',w:4,ctx:1,cool:60,cond:isMayor,def:0,who:'🔍',name:'La chambre régionale des comptes',title:'Audit des finances',
+  text:()=>'Les magistrats épluchent les comptes de la ville.',
+  clue:()=>S.pol.tax===2&&S.pol.budget>costSec(300)?'Tes impôts sont hauts alors que le budget dort : ils vont le relever.':'Tes comptes semblent cohérents.',
+  ch:[SK('Ouvrir tous les dossiers',{p:()=>S.pol.tax===2&&S.pol.budget>costSec(300)?.25:.9,win:()=>{appD(5);mlog('🔍 Audit exemplaire');return 'Rapport élogieux. Gestion saine.'},lose:()=>{appD(-8);mlog('🔍 Audit critique');return '« Pression fiscale injustifiée. » La presse s’en empare.'}}),
+    OK('Baisser les impôts avant leur rapport',()=>{S.pol.tax=Math.max(0,S.pol.tax-1);appD(4);mlog('🔍 Impôts baissés avant l’audit');return 'Le rapport est neutre. Contribuables ravis.'})]},
+m_greve:{cat:'pol',w:4,ctx:1,cool:40,cond:isMayor,def:1,who:'🚌',name:'Les chauffeurs de bus',title:'Grève des transports',
+  text:()=>'Les bus sont à l’arrêt. Les commerçants du centre perdent des clients.',
+  clue:()=>S.pol.projects.includes('tram')?'Ton tramway roule : la ville est moins dépendante des bus.':'Sans tramway, toute la ville est paralysée.',
+  ch:[SK('Négocier toute la nuit',{p:.3,s:[['appr',.6],['nrg',.6]],win:()=>{appD(5);mlog('🚌 Grève réglée en une nuit');return 'Accord à l’aube.'},lose:()=>{appD(-4);nrg(-10);return 'Pas d’accord. Ça continue.'}}),OK('Accorder une prime',()=>{appD(2);mlog('🚌 Prime aux chauffeurs');return 'Bus de retour dès lundi.'},0,40),OK('Attendre',()=>{if(S.pol.projects.includes('tram')){mlog('🚌 Le tram absorbe la grève');return 'Le tram tient la ville. La grève s’essouffle.'}appD(-6);mod(.85,2);mlog('🚌 Ville paralysée');return 'Paralysie générale.'})]},
+m_festival:{cat:'pol',w:4,ctx:1,cool:36,cond:()=>isMayor()&&monthOf(S.day)>=3&&monthOf(S.day)<=6,def:1,who:'🎶',name:'Une productrice',title:'Un festival d’été',
+  text:()=>'Une productrice veut organiser un grand festival en ville cet été.',
+  clue:()=>hasP('musique')?'Ta passion musique : tu sais quelles têtes d’affiche attirent les foules.':'Le choix des artistes fera tout le succès.',
+  ch:[SK('Cofinancer et choisir l’affiche',{bneed:50,p:.35,b:[()=>hasP('musique')?[.35,'ta passion musique']:null],s:[['appr',.4]],win:()=>{appD(8);mod(1.3,2);mlog('🎶 Festival triomphal');return '80 000 festivaliers. La ville vibre.'},lose:()=>{appD(-3);mlog('🎶 Festival raté');return 'Affiche ratée, billetterie vide.'}}),OK('Prêter juste le terrain',()=>{appD(2);mlog('🎶 Festival accueilli');return 'Un festival sympa, sans risque.'}),OK('Refuser',()=>{appD(-2);return 'Les jeunes sont déçus.'})]},
+m_sdf:{cat:'pol',w:4,ctx:1,cool:48,cond:()=>isMayor()&&monthOf(S.day)>=10||isMayor()&&monthOf(S.day)<=1,def:1,who:'🧥',name:'Une association',title:'Grand froid',
+  text:()=>'Une vague de froid frappe. Des sans-abri dorment dehors.',
+  ch:[OK('Ouvrir un gymnase chauffé',()=>{appD(6);repD(3);mlog('🧥 Gymnase ouvert pour le grand froid');return 'Plus personne ne dort dehors.'},0,25),OK('Soutenir l’association',()=>{appD(3);mlog('🧥 Aide à l’association');return 'Couvertures et soupe chaude.'},40),OK('Laisser l’État gérer',()=>{appD(-6);return 'Les images choquent la ville.'})]},
+
+/* --- Campagne électorale (programmés) --- */
+camp_prog:{sched:true,cat:'pol',def:0,who:'📜',name:'Ton équipe de campagne',title:'L’axe de ta campagne',cond:()=>S.pol.cand,
+  text:()=>'Il faut choisir le thème central de ta campagne. Il donnera le ton à tous tes tracts.',
+  clue:()=>{const P=S.pol;if(!P.dist)return '';if(P.camp&&P.camp.known)return 'Ton sondage montre : '+DISTRICTS.map(d=>`${d.e} ${CONCERNS[P.dist[d.id].con]}`).join(', ')+'.';const d=pick(DISTRICTS);return `Rumeur : ${d.e} ${d.n} se plaint surtout de ${CONCERNS[P.dist[d.id].con]}. Un sondage t’en dirait plus.`},
+  ch:[['commerce','💼 Économie et commerce'],['ecologie','🌳 Cadre de vie et écologie'],['securite','🛡️ Sécurité'],['logement','🏠 Logement et social']].map(([th,t])=>({t,sure:1,go:()=>{const P=S.pol;let n=0;DISTRICTS.forEach(d=>{const m=P.dist[d.id].con===th;if(m)n++;P.dist[d.id].pop=clamp(P.dist[d.id].pop+(m?7:1),0,100)});P.camp.theme=th;FXC.push(`📊 ${n} quartier${n>1?'s':''} conquis par ce thème`);return n>=2?'Ton thème touche juste : plusieurs quartiers s’y retrouvent.':n?'Un quartier adhère, les autres restent tièdes.':'Le thème tombe à plat : ce n’est pas ce qui préoccupe les gens.'}}))},
+camp_dons:{sched:true,cat:'pol',def:0,who:'💰',name:'Ton trésorier de campagne',title:'Financer la campagne',cond:()=>S.pol.cand,
+  text:()=>'Les affiches, les meetings, les tracts : une campagne coûte cher.',
+  clue:()=>'Un promoteur propose un « don » généreux… La loi plafonne strictement les dons des entreprises.',
+  ch:[OK('Campagne modeste, sur tes fonds',()=>{S.pol.camp.war+=1;FXC.push('🗳️ Budget de campagne modeste');return 'Sobre et propre.'},40),
+    OK('Grosse campagne sur tes fonds',()=>{S.pol.camp.war+=4;FXC.push('🗳️ Gros budget de campagne');return 'Tes affiches couvrent toute la ville.'},250),
+    SK('Accepter le don du promoteur',{p:.25,win:()=>{S.pol.camp.war+=5;FXC.push('🗳️ Gros budget (don douteux)');return 'L’argent coule à flots. Personne ne pose de question.'},lose:()=>{S.pol.camp.war+=5;S.pol.camp.oppD-=6;pollD(-6);repD(-6);return 'Le don est révélé. Ton adversaire en fait ses choux gras.'}})]},
+camp_rumeur:{sched:true,cat:'pol',def:1,whoF:()=>decOpp().e,nameF:()=>S.pol.opp||'Ton adversaire',title:'Une rumeur sur toi',cond:()=>S.pol.cand,
+  text:()=>'Ton adversaire laisse entendre que tes boutiques maltraitent leurs clients.',
+  clue:()=>`Satisfaction réelle de tes clients : ${Math.round(avgSat())}. ${decOpp().weak==='ethique'?'Et ton adversaire a lui-même un dossier embarrassant…':''}`,
+  ch:[SK('Répondre chiffres à l’appui',{p:()=>avgSat()>=65?.85:.2,win:()=>{pollD(4);return 'Les avis clients parlent pour toi. Rumeur balayée.'},lose:()=>{pollD(-4);return 'Les chiffres confirment à moitié la rumeur. Aïe.'}}),
+    OK('Ignorer',()=>{pollD(-2);return 'La rumeur s’installe un peu.'}),
+    SK('Sortir son dossier embarrassant',{p:()=>decOpp().weak==='ethique'?.85:.2,win:()=>{S.pol.camp.oppD+=6;FXC.push('📉 Adversaire affaibli');return 'Le dossier fait mouche. Ton adversaire s’enfonce.'},lose:()=>{pollD(-5);return 'Le dossier est creux. On te reproche une campagne sale.'}})]},
+camp_final:{sched:true,cat:'pol',def:2,who:'🏁',name:'Ton équipe de campagne',title:'Le sprint final',cond:()=>S.pol.cand,
+  text:()=>'Dernier mois. Où mettre tes dernières forces ?',
+  clue:()=>{const P=S.pol;const w=DISTRICTS.slice().sort((a,b)=>P.dist[a.id].pop-P.dist[b.id].pop)[0];return `Ton quartier le plus faible : ${w.e} ${w.n}. Énergie restante : ${Math.round(S.energy)}.`},
+  ch:[SK('Tournée des quartiers faibles',{p:.1,s:[['nrg',1.6]],win:()=>{const P=S.pol;DISTRICTS.slice().sort((a,b)=>P.dist[a.id].pop-P.dist[b.id].pop).slice(0,2).forEach(d=>distD(d.id,8));nrg(-12);return 'Tu serres des milliers de mains. Ça se sent.'},lose:()=>{nrg(-20);return 'Tu t’effondres de fatigue en plein marché.'}}),
+    OK('Grand meeting final',()=>{pollD(4);return 'Salle comble, ambiance électrique.'},120),
+    OK('Te reposer avant le scrutin',()=>{nrg(15);return 'Tu arrives frais pour la soirée électorale.'})]}
+};
+Object.assign(EV,DEC_EV);
+Object.keys(DEC_EV).forEach(k=>{if(!DEC_EV[k].sched&&!EV_POOL.includes(k))EV_POOL.push(k)});
+/* ancien débat : remplacé par un débat qui dépend du profil de l’adversaire */
+EV.debat={sched:true,cat:'pol',def:0,whoF:()=>decOpp().e,nameF:()=>S.pol.opp||OPP[0],title:'Le grand débat télévisé',cond:()=>S.pol.cand,
+  text:()=>`Face à toi, ${esc(S.pol.opp||OPP[0])}. Les caméras tournent. Choisis ton angle d’attaque.`,
+  clue:()=>`Profil de l’adversaire : ${decOpp().desc}`,
+  ch:[['chiffres','📊 Démonter ses chiffres'],['vision','💡 Proposer une vision nouvelle'],['proximite','🏘️ Parler du quotidien des quartiers'],['ethique','⚖️ Attaquer son intégrité']].map(([a,t])=>SK(t,{p:()=>decOpp().weak===a?.6:.22,s:[['rep',.5]],b:[()=>a==='chiffres'&&S.hero.study?[.12,'tes études : tu maîtrises les dossiers']:null,()=>a==='proximite'&&avgSat()>=65?[.1,'tes clients te connaissent']:null,()=>S.energy<30?[-.12,'tu es épuisé']:null],
+    win:()=>{pollD(7);if(decOpp().weak===a){S.pol.camp.oppD+=3;FXC.push('📉 Adversaire touché')}return 'Tu touches juste. Les réseaux te donnent vainqueur du débat.'},lose:()=>{pollD(-4);return 'Ton angle tombe à plat. Ton adversaire contre-attaque.'}}))};
+EV.elec_annonce={sched:true,cat:'pol',def:1,who:'🗳️',name:'La préfecture',title:'Les municipales approchent',
+  text:()=>`Les élections municipales auront lieu en ${dateLabel(S.pol.nextElec)}, pour un mandat de ${DEC_TERM/12} ans. ${S.pol.office?'Tu te représentes ?':'Beaucoup de gens te poussent à te présenter.'}`,
+  clue:()=>S.pol.office?`Ta cote de confiance (${Math.round(S.pol.appr)}) comptera beaucoup.`:`Ta réputation (${Math.round(S.rep)}) donnera ton score de départ dans les quartiers.`,
+  ch:[OK(()=>S.pol.office?'Me représenter':'Je me lance !',()=>{decStartCampaign();FXC.push('🗳️ Candidat aux municipales');return `Campagne de ${DEC_CAMP} mois. Onglet Quêtes, puis Mairie : programme, quartiers, soutiens, sondages.`}),
+    OK('Pas cette fois',()=>{decInit();S.pol.camp.skip=S.pol.nextElec;return S.pol.office?'Tu finiras ton mandat, puis tu passeras la main.':'Tu restes concentré sur tes affaires.'})]};
+
+/* ---------- moteur : affichage des chances, choix des événements ---------- */
+function eventHTML(inline){
+  const E=evDef();if(!E)return '';prepEv(E);const d=S.event.data;let clue='';try{clue=E.clue?E.clue(d):''}catch(e){clue=''}
+  return `<div class="evcard ${inline?'inline':''}"><span class="evcat">${CATS[E.cat||'business']||CATS.business}</span><div class="ev-who"><span class="ev-av">${evWho(E,d)}</span><div><p class="hint">${esc(evName(E,d))}</p><h2>${E.title}</h2></div></div>
+    <p class="ev-text">${E.text(d)}</p>${clue?`<p class="dec-clue">🔎 ${clue}</p>`:''}
+    <div class="ev-ch">${E.ch.map((c,i)=>{const need=c.need?costSec(c.need):0,bn=c.bneed?costSec(c.bneed):0,ok=(!need||S.cash>=need)&&(!bn||S.pol.budget>=bn);let o;try{o=chOdds(E,c,d)}catch(e){o={cls:'risk',h:'🎲 issue incertaine'}}
+      return `<button class="btn ${i===0?'':'ghost'} ev-btn" data-a="decide" data-i="${i}" ${ok?'':'disabled'}>${chT(c,d)}${need?` <span class="ev-cost">(${fmt(need)})</span>`:''}${bn?` <span class="ev-cost">(budget de la ville : ${fmt(bn)})</span>`:''}<span class="dec-odds ${o.cls}">${o.h}</span></button>`}).join('')}</div>
+    <p class="hint" style="margin-top:8px">À décider avant ${dateLabel(S.event.deadline)}. Sans réponse, les choses se feront sans toi.</p>
+    ${inline?'':'<button class="btn ghost small" style="margin-top:10px" data-a="close">Décider plus tard</button>'}</div>`;
+}
+function pickEvent(){
+  decInit();
+  const due=S.sched.filter(s=>s.day<=S.day).sort((a,b)=>a.day-b.day);
+  if(due.length){const s=due[0];S.sched=S.sched.filter(x=>x!==s);if(EV[s.id]&&(!EV[s.id].cond||EV[s.id].cond())){prepEv(EV[s.id]);return [s.id,s.data]}}
+  if(S.partner&&S.partner.rel<10&&EV.rupture)return ['rupture',{}];
+  if(S.day<S.nextEv||!openIds().length)return null;
+  if(S.day-(S.flags.decLastEv||-99)<2)return null;
+  if(S.energy<25&&EV.fatigue&&(!S.flags.fatigueLast||S.day-S.flags.fatigueLast>4)){S.flags.fatigueLast=S.day;S.flags.decLastEv=S.day;return ['fatigue',{}]}
+  const mem=S.evMem,lastCat=S.flags.decLastCat;
+  const pool=EV_POOL.filter((k,i,a)=>{const E=EV[k];if(a.indexOf(k)!==i||!E||E.sched||(E.once&&S.flags['done_'+k])||mem.includes(k))return false;
+    if(S.evSeen[k]&&S.day-S.evSeen[k]<(E.cool||40))return false;try{return !E.cond||!!E.cond()}catch(e){return false}});
+  if(!pool.length)return null;
+  const wt=k=>{const E=EV[k];let w=E.w||4;if(!S.evSeen[k])w*=1.8;if(E.ctx)w*=1.6;if((E.cat||'business')===lastCat)w*=.45;return w};
+  let tot=pool.reduce((a,k)=>a+wt(k),0),r=Math.random()*tot;
+  for(const k of pool){if((r-=wt(k))<0){S.flags['last_'+k]=S.day;S.flags.decLastEv=S.day;S.flags.decLastCat=EV[k].cat||'business';mem.push(k);if(mem.length>12)mem.shift();prepEv(EV[k]);return [k,{}]}}
+  return null;
+}
+
+/* ---------- Mairie : adversaires, sondages, mandat ---------- */
+const OPP_PROFILES=[
+  {id:'sortant',n:'Mme Durand',e:'👩🏼‍💼',t:'maire sortante',desc:'Gestionnaire solide sur les chiffres, mais on lui reproche son manque d’idées nouvelles.',weak:'vision',strong:'centre',base:47},
+  {id:'populiste',n:'M. Lefort',e:'🧔🏻',t:'tribun populiste',desc:'Charismatique, il promet tout à tout le monde… mais ses comptes ne tiennent pas debout.',weak:'chiffres',strong:'nord',base:45},
+  {id:'techno',n:'Mme Benali',e:'👩🏽‍💼',t:'cheffe d’entreprise',desc:'Brillante en dossiers, mais distante : les quartiers la trouvent froide et loin de leur quotidien.',weak:'proximite',strong:'quais',base:44},
+  {id:'notable',n:'M. Rousseau',e:'👴🏻',t:'notable du centre-ville',desc:'Énorme réseau chez les commerçants, mais une vieille affaire de permis de construire le poursuit.',weak:'ethique',strong:'centre',base:46},
+  {id:'ecolo',n:'Mme Nguyen',e:'👩🏻',t:'militante écologiste',desc:'Adorée des jeunes, mais son programme manque de vision pour l’emploi et les commerces.',weak:'vision',strong:'sud',base:43}];
+const decOpp=()=>OPP_PROFILES.find(o=>o.id===(S.pol.camp&&S.pol.camp.opp))||OPP_PROFILES[1];
+const DEC_TAX=[{n:'Bas',e:'🟢',b:.6,a:.5,t:'Habitants ravis, budget serré'},{n:'Normal',e:'🟡',b:1,a:0,t:'Équilibre'},{n:'Élevé',e:'🔴',b:1.5,a:-.7,t:'Gros budget, grogne des habitants'}];
+PROJECTS.push({id:'mediat',e:'📚',n:'Médiathèque',cost:50,pm:.02,t:'Confiance +8, réputation +3'},{id:'velo',e:'🚲',n:'Pistes cyclables',cost:70,pm:.03,t:'Revenus +3 %, quartiers sud ravis'},
+  {id:'piscine',e:'🏊',n:'Piscine municipale',cost:90,pm:.02,t:'Ta santé +5, confiance +6'},{id:'sante',e:'🏥',n:'Maison de santé',cost:110,pm:.02,t:'Ta santé +8, quartiers nord ravis'},
+  {id:'ecole',e:'🏫',n:'Rénovation des écoles',cost:100,pm:.02,t:'Talent de tes enfants +6, confiance +8'},{id:'incub',e:'💡',n:'Incubateur de start-ups',cost:160,pm:.08,t:'Revenus +8 %'});
+PROJECTS.slice(-6).forEach(p=>{if(!PROJ_ALL.some(x=>x.id===p.id))PROJ_ALL.push(p)});
+function decInit(){const P=S.pol;if(!P)return;
+  if(P.appr==null)P.appr=55;if(P.tax==null)P.tax=1;if(!Array.isArray(P.log))P.log=[];if(!Array.isArray(P.termProj))P.termProj=[];
+  if(!P.camp||typeof P.camp!=='object')P.camp={};const C=P.camp;if(!Array.isArray(C.hist))C.hist=[];['war','warN','oppD'].forEach(k=>{if(typeof C[k]!=='number')C[k]=0});
+  if(P.v!==2){P.v=2;if(!P.cand)P.nextElec=Math.max(P.nextElec||0,S.day+(P.office?36:24));if(P.office&&!P.termStart)P.termStart=S.day}
+  if(P.cand&&!P.dist)initCampaign();if(!Array.isArray(S.evMem))S.evMem=[];}
+function decCampB(d){const P=S.pol,C=P.camp;return (C.war||0)+(P.office?(P.appr-50)*.3:0)}
+function decOppScore(d){const o=decOpp();return o.base+S.city*.8+(o.strong===d.id?6:0)-(S.pol.camp.oppD||0)}
+function pollPct(){const P=S.pol;if(!P.dist)return 0;let t=0;DISTRICTS.forEach(d=>{const me=Math.max(5,distScore(d)+decCampB(d)),op=Math.max(5,decOppScore(d));t+=me/(me+op)*100*d.w});return Math.round(t*10)/10}
+function decStartCampaign(){const P=S.pol;initCampaign();decInit();const pool=OPP_PROFILES.filter(o=>!(P.office&&o.id==='sortant'));const o=pick(pool);
+  P.camp={opp:o.id,hist:[],war:0,warN:0,oppD:0,known:0,skip:0};P.opp=`${o.n}, ${o.t}`;
+  if(P.office)DISTRICTS.forEach(d=>P.dist[d.id].pop=clamp(P.dist[d.id].pop+Math.round((P.appr-50)*.4),5,95));
+  P.camp.hist.push(pollPct());sched('camp_prog',1);sched('camp_dons',2);sched('debat',3);sched('camp_rumeur',4);sched('camp_final',5)}
+const decKept=()=>{const P=S.pol;return (P.promises||[]).filter(id=>id==='impots'?P.tax===0:P.projects.includes((PROMISES.find(p=>p.id===id)||{}).proj)).length};
+const decIncome=()=>costSec(80)*DEC_TAX[S.pol.tax||0].b;
+function bilanHTML(){const P=S.pol,n=(P.promises||[]).length,k=decKept(),pr=P.termProj||[],months=Math.max(0,S.day-(P.termStart||S.day));
+  const sc=P.appr+k*8-(n-k)*8+pr.length*4,g=sc>=85?['good','🌟 Mandat remarquable']:sc>=60?['good','👍 Bilan solide']:sc>=40?['mid','➖ Bilan mitigé']:['bad','👎 Mandat décevant'];
+  return `<div class="reveal-box pop">📋</div><h2>Bilan de ton mandat</h2><p class="hint">Mandat n°${P.terms} · ${months} mois à la mairie</p><div class="panel" style="margin-top:10px">
+    <div class="kv"><span>🏗️ Projets inaugurés</span><b>${pr.length?pr.map(id=>(PROJ_ALL.find(x=>x.id===id)||{e:'🏗️'}).e).join(' '):'aucun'}</b></div>
+    <div class="kv"><span>📜 Promesses tenues</span><b>${k}/${n}</b></div><div class="kv"><span>🏛️ Confiance des habitants</span><b>${Math.round(P.appr)}/100</b></div>
+    <div class="kv"><span>🗂️ Décisions prises</span><b>${P.termDecs||0}</b></div><div class="kv"><span>💶 Budget laissé</span><b>${fmt(P.budget)}</b></div></div>
+    <div class="verdict ${g[0]}" style="margin-top:12px">${g[1]}</div><button class="btn big" style="margin-top:16px" data-a="close">Continuer</button>`}
+function election(){
+  decInit();const P=S.pol;if(!P.dist)initCampaign();const o=decOpp(),oppName=P.opp||o.n,was=P.office==='maire';
+  if(was){P.kept=decKept();P.broken=(P.promises||[]).length-P.kept}
+  const review=was?bilanHTML():'';
+  let tot=0;const res=DISTRICTS.map(d=>{const me=Math.max(5,distScore(d)+decCampB(d)+rand(-2.5,2.5)),op=Math.max(5,decOppScore(d)+rand(-2.5,2.5));const pct=Math.round(me/(me+op)*1000)/10;tot+=pct*d.w;return{d,pct}});
+  tot=Math.round(tot*10)/10;const win=tot>50,poll=P.camp.hist.length?P.camp.hist[P.camp.hist.length-1]:null;
+  P.cand=false;P.nextElec=S.day+DEC_TERM;P.acts={};
+  if(win){if(!P.office)P.terms=0;P.office='maire';P.terms++;P.wins++;P.promises=P.prom.slice();P.kept=0;P.broken=0;P.budget+=costSec(100);P.termStart=S.day;P.termProj=[];P.termDecs=0;P.appr=clamp(Math.round(48+(tot-50)*1.2),35,80);FXC=[];trophy('t_maire');S.rep=clamp(S.rep+10,0,100)}
+  else{if(P.office)P.office=null;S.rep=clamp(S.rep-3,0,100)}
+  S.journal.unshift({day:S.day,who:'🗳️',name:'Élections municipales',title:win?'Élu maire !':'Battu aux élections',choice:`Face à ${oppName}`,res:win?`Tu l’emportes avec ${tot} % des voix. Mandat de ${DEC_TERM/12} ans.`:`${oppName} l’emporte. Tu obtiens ${tot} %.`,fx:[`🗳️ ${tot} %`]});
+  if(review)queueModal(review);
+  queueModal(`<div class="reveal-box">🗳️</div><h2>Soirée électorale</h2><p class="hint">Face à ${esc(oppName)} · résultats quartier par quartier${poll!=null?` (dernier sondage : ${poll} %)`:''}</p>
+    <div class="elec">${res.map(r=>`<div class="erow"><span>${r.d.e} ${r.d.n}</span><div class="ebar"><i class="${r.pct>50?'eme':'eop'}" data-w="${r.pct}"></i></div><b>${r.pct} %</b></div>`).join('')}</div>
+    <div class="cashdelta ${win?'':'neg'}" style="margin-top:10px">${tot} %</div>
+    <div class="verdict ${win?'good':'bad'} vdelay">${win?`🎉 Tu es élu maire de ${S.city?CITIES[S.city].n:'ta ville'} pour ${DEC_TERM/12} ans ! Tiens tes promesses.`:`😔 Battu cette fois. Prochaine élection dans ${DEC_TERM/12} ans.`}</div>
+    <button class="btn big" style="margin-top:16px" data-a="close">Continuer</button>`);
+  setTimeout(()=>document.querySelectorAll('.ebar i').forEach(e=>e.style.width=e.dataset.w+'%'),300);sfx(win?'rank':'bad');
+  P.camp={opp:P.camp.opp,hist:[],war:0,warN:0,oppD:0,known:0,skip:0};
+}
+function polMonth(pm){
+  decInit();const P=S.pol;
+  if(!P.cand&&P.camp.skip!==P.nextElec&&P.camp.ask!==P.nextElec&&S.day>=P.nextElec-DEC_CAMP&&S.day<P.nextElec&&!S.sched.some(x=>x.id==='elec_annonce')&&!(S.event&&S.event.id==='elec_annonce')){P.camp.ask=P.nextElec;sched('elec_annonce',0)}
+  if(P.cand&&S.day>=P.nextElec)election();
+  else if(!P.cand&&S.day>=P.nextElec){
+    if(P.office==='maire'){const html=bilanHTML();P.office=null;queueModal(html);S.journal.unshift({day:S.day,who:'🏛️',name:'Mairie',title:'Fin de mandat',choice:'Tu ne t’es pas représenté',res:'Tu rends les clés de la mairie.',fx:[]})}
+    P.nextElec=S.day+DEC_TERM;}
+  if(P.cand){if(P.poll)P.camp.known=1;P.camp.hist.push(pollPct());if(P.camp.hist.length>8)P.camp.hist.shift()}
+  if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(15)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
+  P.acts={};P.poll=false;
+}
+function buildProject(id){const pr=PROJ_ALL.find(x=>x.id===id),P=S.pol;if(!pr)return;const c=costSec(pr.cost);if(P.office!=='maire'||P.projects.includes(id))return;if(P.budget<c){toast(`Budget municipal insuffisant (${fmt(P.budget)}).`);sfx('no');return}
+  decInit();P.budget-=c;if(id!=='fete'){P.projects.push(id);P.termProj.push(id)}FXC=[];
+  if(id==='parc')repD(5);if(id==='police')repD(4);if(id==='logement')repD(8);if(id==='fete')mod(1.5,2);if(id==='stadep'){if(S.club.own&&S.club.stade<3)S.club.stade++;repD(3)}
+  if(id==='mediat')repD(3);if(id==='piscine')health(5);if(id==='sante')health(8);if(id==='ecole')S.kids.forEach(k=>k.talent=clamp(k.talent+6,0,100));
+  P.appr=clamp(P.appr+({mediat:8,ecole:8,piscine:6,logement:7,parc:6,sante:6,fete:4}[id]||5),0,100);mlog(`${pr.e} Inauguration : ${pr.n}`);
+  const prom=(P.promises||[]).find(x=>(PROMISES.find(p=>p.id===x)||{}).proj===id);sfx('rank');addXP(20);toast(`${pr.e} ${pr.n} inauguré ! ${pr.t}.${prom?' Promesse tenue ✅':''}`)}
+function vMairie(){
+  decInit();const P=S.pol,cn=S.city?CITIES[S.city].n:'ta ville';
+  if(P.office==='maire'&&!P.cand){const proms=P.promises||[],months=Math.max(0,S.day-(P.termStart||S.day));
+    return `<div class="clubhero"><div class="ch-ic">🏛️</div><h2>Maire de ${cn}</h2><p class="hint">Mandat n°${P.terms} · ${months} mois sur ${DEC_TERM} · prochaine élection : ${dateLabel(P.nextElec)}</p>
+      ${gaugeHTML('🏛️ Confiance',P.appr)}<div class="kv" style="margin-top:8px"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Recettes par mois</span><b>${fmt(decIncome())}</b></div></div>
+    <div class="sec-head"><h2>💶 Impôts locaux</h2><p>Budget contre popularité</p></div>
+    <div class="panel"><div class="dec-tax">${DEC_TAX.map((t,i)=>`<button class="btn small ${P.tax===i?'on':'ghost'}" data-a="dec_tax" data-v="${i}">${t.e} ${t.n}</button>`).join('')}</div><p class="hint" style="margin-top:6px">${DEC_TAX[P.tax].t}.${proms.includes('impots')?' Tu as promis de baisser les impôts : garde-les bas pour tenir parole.':''}</p></div>
+    <div class="sec-head"><h2>📜 Tes promesses</h2><p>Tenues = bonus à la réélection</p></div>
+    <div class="panel">${proms.length?proms.map(id=>{const p=PROMISES.find(x=>x.id===id);if(!p)return '';const ok=id==='impots'?P.tax===0:P.projects.includes(p.proj);return `<div class="kv"><span>${p.e} ${p.n}</span><b class="${ok?'pos':''}">${ok?'✅ Tenue':'⏳ À faire'}</b></div>`}).join(''):'<p class="hint">Aucune promesse.</p>'}</div>
+    <div class="sec-head"><h2>🏗️ Grands projets</h2></div>
+    <div class="panel"><ul class="ug">${PROJ_ALL.map(pr=>{const done=P.projects.includes(pr.id),c=costSec(pr.cost);return `<li><div><strong>${pr.e} ${pr.n}</strong><span class="hint">${pr.t}</span></div>${done?'<span class="done">✓ Inauguré</span>':`<button class="btn small go" data-a="proj" data-id="${pr.id}" ${P.budget>=c?'':'disabled'}>${fmt(c)}</button>`}</li>`}).join('')}</ul></div>
+    <div class="sec-head"><h2>🗂️ Décisions du mandat</h2></div>
+    <div class="panel">${P.log.length?P.log.map(l=>`<div class="kv"><span>${l.t}</span><b class="hint">${dateLabel(l.day)}</b></div>`).join(''):'<p class="hint">Les dossiers arriveront au fil des mois.</p>'}</div>`}
+  if(P.cand){const t=P.nextElec-S.day,o=decOpp(),C=P.camp,h=C.hist,last=h.length?h[h.length-1]:pollPct(),shown=C.known||P.poll?last:Math.round(last/5)*5,warC=costSec(100*(C.warN+1));
+    return `<div class="clubhero"><div class="ch-ic">🗳️</div><h2>Campagne pour ${cn}</h2><p class="hint">Vote en ${dateLabel(P.nextElec)} (dans ${t} mois) · mandat de ${DEC_TERM/12} ans</p>
+      <div class="kv" style="margin-top:8px"><span>📊 Intentions de vote${C.known||P.poll?'':' (estimation)'}</span><b class="${shown>=50?'pos':''}">${C.known||P.poll?'':'~'}${shown} %</b></div>
+      <div class="dec-poll">${h.map(v=>`<i class="${v>=50?'w':''}" style="height:${clamp((v-25)*2,4,100)}%" title="${v} %"></i>`).join('')}</div><p class="hint">Évolution mois par mois (vert = majorité).</p></div>
+    <div class="sec-head"><h2>${o.e} Ton adversaire</h2></div>
+    <div class="panel"><p><strong>${esc(P.opp||o.n)}</strong></p><p class="hint" style="margin-top:4px">${o.desc}</p><p class="hint" style="margin-top:4px">Fief : ${(DISTRICTS.find(d=>d.id===o.strong)||{}).n||'?'}. Repère son point faible pour le débat.</p></div>
+    <div class="sec-head"><h2>💰 Budget de campagne</h2><p>Bonus partout : +${C.war}</p></div>
+    <div class="panel"><button class="btn small go" data-a="dec_war" ${C.warN>=3||S.cash<warC?'disabled':''}>Injecter ${fmt(warC)} (+2 partout)</button><p class="hint" style="margin-top:6px">${C.warN}/3 tranches. Chaque tranche coûte plus cher.</p></div>
+    <div class="sec-head"><h2>📜 Ton programme</h2><p>${P.prom.length}/3 promesses</p></div>
+    <div class="panel"><div class="chips">${PROMISES.map(p=>`<button class="chip ${P.prom.includes(p.id)?'onchip':''}" data-a="prom" data-id="${p.id}">${p.e} ${p.n}</button>`).join('')}</div><p class="hint" style="margin-top:6px">Une promesse qui répond à la préoccupation d’un quartier y rapporte gros. Une fois élu, il faudra la tenir.</p></div>
+    <div class="sec-head"><h2>🗺️ Les quartiers</h2><p>${P.poll||C.known?'Sondage exact':'Estimations'}</p></div>
+    <div class="dists">${DISTRICTS.map(d=>{const x=P.dist[d.id],ex=P.poll||C.known,sh=ex?Math.round(x.pop):Math.round(x.pop/5)*5;return `<div class="dist"><b>${d.e} ${d.n}${o.strong===d.id?' 🛡️':''}</b><span class="hint">${Math.round(d.w*100)} % des électeurs · ${ex?'inquiet pour '+CONCERNS[x.con]:'préoccupation : ? (sondage)'}</span><div class="gbar"><i style="width:${sh}%;background:${sh>=50?'#17834A':'#E59C3B'}"></i></div><span class="hint">${ex?'':'~'}${sh} % de soutien</span>
+      <div class="bs-row" style="margin-top:6px"><button class="btn small" data-a="pcamp" data-k="meeting" data-d="${d.id}" ${P.acts['meeting'+d.id]?'disabled':''}>🗣️ Meeting (${fmt(costSec(60))}, ⚡10)</button><button class="btn small ghost" data-a="pcamp" data-k="porte" data-d="${d.id}" ${P.acts['porte'+d.id]?'disabled':''}>🚪 Porte-à-porte (⚡16)</button></div></div>`}).join('')}</div>
+    <div class="bs-row" style="margin-top:10px"><button class="btn small" data-a="pcamp" data-k="affiches" ${P.acts.affiches?'disabled':''}>📰 Affiches partout (${fmt(costSec(100))})</button><button class="btn small ghost" data-a="pcamp" data-k="sondage" ${P.acts.sondage?'disabled':''}>📊 Sondage (${fmt(costSec(40))})</button></div>
+    <div class="sec-head"><h2>🤝 Soutiens</h2></div>
+    <div class="panel">${ENDORSE.map(e=>{const got=P.endo.includes(e.id),ok=e.req();return `<div class="kv"><span>${e.e} ${e.n}<span class="hint" style="display:block">Condition : ${e.reqT}${e.cost?' ('+fmt(costSec(e.cost))+')':''}</span></span>${got?'<b class="pos">✓ Acquis</b>':`<button class="btn small go" data-a="endorse" data-id="${e.id}" ${ok?'':'disabled'}>Rallier</button>`}</div>`}).join('')}</div>
+    <p class="hint" style="margin-top:8px">Les actions par quartier se rechargent chaque mois. Le résultat dépend surtout de tes choix : le hasard ne pèse que quelques points.</p>`}
+  return `<div class="clubhero"><div class="ch-ic">🏛️</div><h2>La mairie de ${cn}</h2><p>Prochaines municipales : <strong>${dateLabel(P.nextElec)}</strong>. ${DEC_CAMP} mois avant, on te proposera de te présenter.</p><p class="hint" style="margin-top:6px">Un mandat dure ${DEC_TERM/12} ans. Campagne en plusieurs étapes : thème, financement, débat face à un adversaire au profil connu, sprint final. Ta réputation et la satisfaction de tes clients comptent beaucoup.</p>${gaugeHTML('📣 Réputation',S.rep)}</div>`;
+}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]');if(!b||b.disabled)return;const a=b.dataset.a,P=S.pol;decInit();
+  if(a==='dec_tax'&&P.office==='maire'){P.tax=clamp(+b.dataset.v||0,0,2);toast(`💶 Impôts locaux : ${DEC_TAX[P.tax].n}. ${DEC_TAX[P.tax].t}.`);mlog(`💶 Impôts passés à « ${DEC_TAX[P.tax].n} »`)}
+  if(a==='dec_war'&&P.cand&&P.camp.warN<3){const c=costSec(100*(P.camp.warN+1));if(S.cash<c){sfx('no');return}spend(c);P.camp.warN++;P.camp.war+=2;toast('💰 Budget de campagne renforcé : +2 partout.');sfx('good')}
+  render()});
+/* ===== FIN AGENT DECISIONS ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
