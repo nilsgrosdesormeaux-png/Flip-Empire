@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-03d">
+<meta name="fe-build" content="2026-11-03e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2680,7 +2680,8 @@ function vEmpire(){
   if(t==='mairie')return seg+vMairie();
   return seg+`<div class="stats"><div class="stat"><strong>${fmt(S.lifetimeAll)}</strong><span>Gagné au total</span></div><div class="stat"><strong>${S.day}</strong><span>Mois joués</span></div>
     <div class="stat"><strong>${S.stats.decisions}</strong><span>Décisions</span></div><div class="stat"><strong>${S.stats.reviews5}</strong><span>Avis 5 étoiles</span></div></div>
-  <div class="panel" style="margin-top:14px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'Activés':'Coupés'}</button></div></div>
+  <p class="hint" style="margin-top:14px">Version du jeu : <b>${(document.querySelector('meta[name=fe-build]')||{}).content||'?'}</b></p>
+  <div class="panel" style="margin-top:10px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'Activés':'Coupés'}</button></div></div>
   <div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Sauvegarde</h3><p class="hint">Enregistrée toute seule dans ce navigateur. Pour changer d’appareil, copie ton code et colle-le là-bas.</p>
     <div class="bs-row" style="margin-top:8px"><button class="btn small" data-a="savexp">Copier mon code</button><button class="btn small ghost" data-a="saveimp">Coller un code</button>${installable()?`<button class="btn small go" data-a="install">Installer l’appli</button>`:''}</div>
     ${isIOS()&&!isStandalone()?`<p class="hint" style="margin-top:8px">Sur iPhone : Partager dans Safari, puis « Sur l’écran d’accueil ».</p>`:''}</div>
