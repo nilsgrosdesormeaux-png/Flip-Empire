@@ -2190,6 +2190,7 @@ function newDay(auto){
   polMonth(pm);
   // club
   clubMonth(pm,m);
+  if(typeof vieMonth==='function')vieMonth(pm);
   // story
   if(S.event&&S.day>S.event.deadline){const E=evDef();decide(E.def||0,true)}
   if(!S.event){const pe=pickEvent();if(pe)startEvent(pe[0],pe[1])}
@@ -2401,9 +2402,7 @@ function vVie(){
     ${act.length?`<div class="fxchips" style="margin-top:8px;justify-content:flex-start">${act.map(m=>`<span class="fxchip ${m.m<1?'neg':''}">${m.biz?BIZ_BY[m.biz].e:'📈'} ×${fmtM(m.m)} jusqu’en ${dateLabel(m.until)}</span>`).join('')}</div>`:''}</div>
   <div class="panel"><div class="kv"><span>🕰️ Espérance de vie estimée</span><b>~${lifeExp()} ans</b></div><div class="kv"><span>💶 Ton patrimoine</span><b>${fmt(fortune())}</b></div><p class="hint" style="margin-top:4px">Tu es ${wealthRank(fortune())}. Comme dans la vraie vie, l’argent et la santé jouent sur la longévité : en France, les 5 % d’hommes les plus aisés vivent en moyenne 13 ans de plus que les 5 % les plus modestes (Insee).</p>
     ${(h.passions||[]).length?`<div class="fxchips" style="justify-content:flex-start">${h.passions.map(k=>`<span class="fxchip">${PASSIONS[k].e} ${PASSIONS[k].n} : ${PASSIONS[k].fx}</span>`).join('')}</div>`:''}</div>
-  <div class="sec-head"><h2>Ta famille</h2><p>${familyCost()?`💸 ${fmt(familyCost())} par mois`:''}${S.grandkids?` · 👶 ${S.grandkids} petit${S.grandkids>1?'s':''}-enfant${S.grandkids>1?'s':''}`:''}</p></div>
-  <div class="panel">${P?`<div class="famrow"><span class="fam-av">${P.av}</span><div style="flex:1"><strong>${esc(P.name)}</strong><span class="hint"> ${P.job}, ${P.stage==='couple'?'en couple':P.stage==='ensemble'?'vous vivez ensemble':'marié avec toi'}</span>${gaugeHTML('❤️ Couple',P.rel)}</div></div>`:'<p class="hint">Célibataire. L’amour arrive souvent quand on ne le cherche pas…</p>'}
-    ${S.kids.map(k=>`<div class="famrow"><span class="fam-av">${kidAv(k)}</span><div style="flex:1"><strong>${esc(k.name)}</strong><span class="hint"> ${k.age} an${k.age>1?'s':''}${k.job==='entreprise'?', travaille avec toi':k.job==='etudes'?', en grande école':k.job==='libre'?', fait sa vie':''}</span>${gaugeHTML('🎓 Talent',k.talent)}</div></div>`).join('')}</div>
+  ${vieHTML()}
   <div class="sec-head"><h2>Décision en cours</h2></div>
   ${S.event?eventHTML(true):`<div class="empty">Rien à décider pour l’instant. La vie suit son cours… mais ça ne va pas durer.</div>`}
   ${(S.cohort||[]).length?`<div class="sec-head"><h2>🌍 Nés à la même seconde que toi</h2><p>3 autres bébés, ailleurs</p></div>
@@ -3385,6 +3384,249 @@ function rebuild(pid){const o=DECOR.find(x=>x.pid===pid);if(!o||S.props[pid]!==3
   spend(c);S.props[pid]=4;S.propUp[pid]=o.t==='apt'?4:3;computeNb();sfx('rank');addXP(15);
   const [X,Y]=worldToPage(o.x+o.w/2,o.y+o.d/2,(o.f+S.propUp[pid])*FH);burstAt(X,Y,6,'🏗️ Nouvelle résidence !');toast(`🏗️ Résidence de standing : loyer ${fmt(propRent(o,4))} par mois, 24 fois le loyer de départ.`)}
 /* ===== FIN AGENT ECO ===== */
+/* ===== AGENT VIE ===== */
+/* Vie de famille pilotée par le joueur : amour, étapes du couple, projet bébé, enfants, foyer et prêt immobilier. */
+const VIE_FT=3,VIE_RATE=.035/12,VIE_N=240;
+const VIE_TRAITS=[
+  {id:'aventure',e:'🧗',n:'Aventurier·e',t:'Adore l’imprévu : les week-ends et voyages comptent double.'},
+  {id:'casanier',e:'🛋️',n:'Casanier·e',t:'Préfère les soirées à la maison, qui ne coûtent rien.'},
+  {id:'ambitieux',e:'📈',n:'Ambitieux·se',t:'Comprend que tu travailles beaucoup : moins vexé·e quand tu es épuisé·e.'},
+  {id:'romantique',e:'🌹',n:'Romantique',t:'Un bon dîner et une belle demande le touchent beaucoup.'},
+  {id:'famille',e:'🍼',n:'Fibre familiale',t:'Rêve d’enfants : le projet bébé aboutit plus vite.'},
+  {id:'drole',e:'😂',n:'Plein·e d’humour',t:'Rien n’est grave : le couple s’use moins vite.'}];
+const VIE_PLACES=[
+  {id:'appli',e:'📱',n:'Appli de rencontre',t:'Beaucoup de profils, compatibilité au hasard.',c:10,nrg:3,nb:3,bonus:0},
+  {id:'amis',e:'🍻',n:'Soirée chez des amis',t:'Moins de choix, mais des gens qui te ressemblent.',c:40,nrg:8,nb:2,bonus:10},
+  {id:'club',e:'🎯',n:'Club de passion',t:'Des personnes qui partagent tes passions.',c:30,nrg:6,nb:2,bonus:6,pass:true},
+  {id:'gala',e:'🥂',n:'Gala d’affaires',t:'Réservé aux gens connus (réputation 60).',c:250,nrg:10,nb:3,bonus:4,rep:60}];
+const VIE_DATES=[
+  {id:'balade',e:'🌳',n:'Balade',c:0,nrg:3,ft:1,g:3},
+  {id:'cafe',e:'☕',n:'Café',c:15,nrg:2,ft:1,g:4},
+  {id:'maison',e:'🍝',n:'Soirée à la maison',c:0,nrg:1,ft:1,g:4,home:true,like:'casanier'},
+  {id:'diner',e:'🍷',n:'Dîner au restaurant',c:60,nrg:4,ft:1,g:7,like:'romantique'},
+  {id:'sortie',e:'🎭',n:'Concert ou expo',c:80,nrg:5,ft:1,g:7},
+  {id:'weekend',e:'🏖️',n:'Week-end en amoureux',c:400,nrg:-8,ft:2,g:13,like:'aventure'},
+  {id:'voyage',e:'✈️',n:'Voyage à l’étranger',c:2500,nrg:-15,ft:3,g:22,like:'aventure',couple:true}];
+const VIE_HOMES=[
+  {id:'coloc',e:'🛏️',n:'Chambre en colocation',rent:150,rooms:0,cf:0,t:'Pas cher, mais pas de vie de famille possible.'},
+  {id:'loc',e:'🏢',n:'Appartement loué, 2 pièces',rent:450,rooms:1,cf:1,t:'Loyer chaque mois, rien à rembourser.'},
+  {id:'apt',e:'🏬',n:'Appartement 3 pièces',price:9e4,rooms:2,cf:2,t:'Une chambre pour un enfant.'},
+  {id:'maison',e:'🏡',n:'Maison avec jardin',price:22e4,rooms:3,cf:3,t:'Le jardin, le barbecue, la tranquillité.'},
+  {id:'grande',e:'🏘️',n:'Grande maison familiale',price:45e4,rooms:5,cf:4,t:'De la place pour une famille nombreuse.'},
+  {id:'villa',e:'🏖️',n:'Villa avec piscine',price:15e5,rooms:6,cf:5,t:'Le luxe au quotidien.'},
+  {id:'domaine',e:'🏰',n:'Domaine avec château',price:12e6,rooms:8,cf:6,t:'Pour une dynastie.'}];
+const VIE_SCH={maison:{n:'Gardé à la maison',c:0,tal:.05,nrg:-2,young:1},creche:{n:'Crèche',c:.5,tal:.1,young:1},nounou:{n:'Nounou',c:1.5,tal:.12,nrg:1,young:1},
+  pub:{n:'École publique',c:0,tal:.12},priv:{n:'École privée',c:1.5,tal:.3},inter:{n:'École internationale',c:4,tal:.5}};
+const VIE_ACTS={sport:{e:'⚽',n:'Sport'},musique:{e:'🎹',n:'Musique'},code:{e:'💻',n:'Code'},langues:{e:'🌍',n:'Langues'}};
+const VIE_STEPS=[['rencontre','Rencontre'],['couple','Couple'],['ensemble','Vie commune'],['fiance','Fiançailles'],['marie','Mariage']];
+let vieConfirm=null,vieDraft='';
+function V(){if(!S.vie||typeof S.vie!=='object')S.vie={};const v=S.vie;
+  if(v.ft===undefined)v.ft=VIE_FT;if(v.ftDay===undefined)v.ftDay=S.day;if(v.ftDay!==S.day){v.ft=VIE_FT;v.ftDay=S.day}
+  if(!('home' in v))v.home=null;if(!('crush' in v))v.crush=null;if(!('search' in v))v.search=null;if(!('baby' in v))v.baby=false;if(!('preg' in v))v.preg=null;
+  if(v.lastSearch===undefined)v.lastSearch=-1;if(v.gen!==S.gen){v.gen=S.gen;v.crush=null;v.search=null;v.baby=false;v.preg=null}if(S.partner&&v.crush)v.crush=null;if(v.lastHappy===undefined)v.lastHappy=50;
+  S.kids.forEach(k=>{if(!k.school)k.school=k.age<3?'maison':'pub';if(k.act===undefined)k.act=null;if(k.bond===undefined)k.bond=50});
+  if(S.partner){const P=S.partner;if(!P.trait)P.trait=pick(VIE_TRAITS).id;if(P.compat===undefined)P.compat=randInt(50,80);if(P.stepAt===undefined)P.stepAt=P.since||S.day}
+  return v}
+const vieCost=base=>base<=0?0:Math.round(Math.max(base,costSec(base/15)));
+const vieMonthlyRev=()=>Math.round(inc()*DAY_SEC+dailyRent());
+const vieTrait=id=>VIE_TRAITS.find(t=>t.id===id)||VIE_TRAITS[0];
+const vieHomeDef=()=>{const h=V().home;return h?VIE_HOMES.find(x=>x.id===h.id):null};
+const viePrice=h=>Math.round(h.price*CITY_MULT(S.city));
+const vieRent=h=>Math.round(h.rent*CITY_MULT(S.city));
+const vieMens=p=>Math.round(p*VIE_RATE/(1-Math.pow(1+VIE_RATE,-VIE_N)));
+const vieKidsHome=()=>S.kids.filter(k=>k.age<18||!k.job).length;
+const vieRoomsNeed=()=>vieKidsHome();
+function vieKidExtra(k){const s=VIE_SCH[k.school]||VIE_SCH.pub;return Math.round(kidCost()*(s.c+(k.act?.6:0)))}
+function vieSaleValue(){const v=V(),h=vieHomeDef();if(!h||!h.price)return 0;return Math.max(0,Math.round(v.home.val*.95-(v.home.left||0)))}
+function famHappy(){const v=V(),h=vieHomeDef(),P=S.partner;let x=50;
+  const parts=[];
+  if(P){const d=Math.round((P.rel-50)*.4);x+=d;parts.push(['❤️ Couple',d])}
+  const cf=h?h.cf*4:-4;x+=cf;parts.push(['🏠 Foyer',cf]);
+  const miss=Math.max(0,vieRoomsNeed()-(h?h.rooms:0));if(miss){x-=miss*8;parts.push(['🛏️ Manque de place',-miss*8])}
+  const ks=S.kids.filter(k=>k.age<18);if(ks.length){const b=Math.round((ks.reduce((a,k)=>a+k.bond,0)/ks.length-50)*.3);x+=b;parts.push(['🧸 Enfants',b])}
+  const e=Math.round((S.energy-50)*.15);x+=e;parts.push(['⚡ Fatigue',e]);
+  if(v.home&&v.home.missed){x-=v.home.missed*8;parts.push(['🏦 Impayés',-v.home.missed*8])}
+  return {v:clamp(Math.round(x),0,100),parts}}
+function vieTake(c,what){if(c>0&&S.cash<c){toast(`Il te manque ${fmt(c-S.cash)} pour ${what}.`);sfx('no');return false}if(c>0)spend(c);return true}
+function vieUseFt(n){const v=V();if(v.ft<n){toast('Plus de temps libre ce mois-ci. Attends le mois prochain.');sfx('no');return false}v.ft-=n;return true}
+function vieNewProfile(pl){const keys=Object.keys(PASSIONS),pass=pl.pass&&(S.hero.passions||[]).length?pick(S.hero.passions):pick(keys),tr=pick(VIE_TRAITS);
+  let c=randInt(30,72)+pl.bonus+(hasP(pass)?12:0);
+  return {name:pick(FIRST.filter(n=>n!==S.hero.name&&!S.kids.some(k=>k.name===n))),av:pick(ADULTAV),job:pick(JOBS),age:Math.max(18,S.hero.age+randInt(-6,6)),trait:tr.id,pass,compat:clamp(c,10,98)}}
+function vieAct(a,d){const v=V(),P=S.partner,i=+d.i;
+  if(a!=='break'&&a!=='brk2')vieConfirm=null;
+  switch(a){
+  case 'search':{const pl=VIE_PLACES.find(x=>x.id===d.v);if(!pl)return;if(S.partner){toast('Tu es déjà en couple.');return}
+    if(v.lastSearch===S.day){toast('Une recherche par mois. Reviens le mois prochain.');sfx('no');return}
+    if(pl.rep&&S.rep<pl.rep){toast(`Il faut ${pl.rep} de réputation pour être invité.`);sfx('no');return}
+    if(S.energy<pl.nrg){toast('Trop fatigué pour sortir.');sfx('no');return}
+    if(!vieTake(vieCost(pl.c),'cette sortie'))return;
+    S.energy=clamp(S.energy-pl.nrg,0,100);v.lastSearch=S.day;v.search={where:pl.id,list:Array.from({length:pl.nb},()=>vieNewProfile(pl))};sfx('good');break}
+  case 'meet':{if(!v.search||!v.search.list[i])return;const p=v.search.list[i];v.crush=Object.assign(p,{rel:15+Math.round(p.compat/5),since:S.day});v.search=null;toast(`💌 Premier contact avec ${p.name}. Proposez-vous un rendez-vous !`);sfx('good');break}
+  case 'skip':v.search=null;break;
+  case 'forget':if(v.crush){toast(`Tu laisses tomber ${v.crush.name}.`);v.crush=null}break;
+  case 'date':{const dt=VIE_DATES.find(x=>x.id===d.v);if(!dt)return;const tgt=P||v.crush;if(!tgt)return;
+    if(dt.home&&!(P&&P.stage!=='couple'))return;if(dt.couple&&!P)return;
+    if(dt.nrg>0&&S.energy<dt.nrg){toast('Trop fatigué pour ça.');sfx('no');return}
+    const c=vieCost(dt.c);if(c>0&&S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
+    if(!vieUseFt(dt.ft))return;vieTake(c,'');S.energy=clamp(S.energy-dt.nrg,0,100);
+    let g=dt.g+(dt.like===tgt.trait?4:0)+(tgt.trait==='aventure'&&dt.ft>1?dt.g:0);
+    if(!P){const ok=chance(.4+tgt.compat/200+(S.energy-50)/400);if(!ok)g=Math.max(1,Math.round(g/3));tgt.rel=clamp(tgt.rel+g,0,100);toast(ok?`${dt.e} Super moment avec ${tgt.name} ! Complicité +${g}`:`${dt.e} Un peu gênant… Complicité +${g}`)}
+    else{g=Math.round(g*(.8+Math.random()*.4));P.rel=clamp(P.rel+g,0,100);toast(`${dt.e} ${dt.n} avec ${P.name}. Couple +${g}`)}
+    sfx('good');break}
+  case 'declare':{const c=v.crush;if(!c||c.rel<50)return;if(chance(.55+c.compat/250+(c.rel-50)/100)){S.partner={name:c.name,av:c.av,job:c.job,rel:clamp(c.rel+10,0,100),stage:'couple',since:S.day,stepAt:S.day,trait:c.trait,compat:c.compat,age:c.age};v.crush=null;toast(`❤️ ${S.partner.name} dit oui : vous êtes en couple !`);sfx('rank')}
+    else{c.rel=clamp(c.rel-15,0,100);toast(`${c.name} préfère attendre encore un peu. Complicité −15`);sfx('bad')}break}
+  case 'step':{if(!P)return;const s=vieNextStep();if(!s||!s.ok){toast(s?s.why:'Rien à faire.');sfx('no');return}
+    if(P.stage==='couple'){P.stage='ensemble';P.stepAt=S.day;P.rel=clamp(P.rel+10,0,100);toast(`🏠 Tu emménages avec ${P.name}.${vieHomeDef()?'':' Pense à trouver un vrai foyer.'}`);sfx('rank')}
+    else if(P.stage==='ensemble'){if(!vieTake(s.cost,'la bague'))return;const yes=chance(.5+(P.rel-65)/50+P.compat/400+(P.trait==='romantique'?.15:0));
+      if(yes){P.stage='fiance';P.stepAt=S.day;P.rel=clamp(P.rel+12,0,100);toast(`💍 ${P.name} a dit OUI ! Vous êtes fiancés.`);sfx('rank')}else{P.rel=clamp(P.rel-8,0,100);P.stepAt=S.day-3;toast(`💍 « Pas tout de suite… » ${P.name} n’est pas prêt·e. Couple −8. Réessaie dans 3 mois.`);sfx('bad')}}
+    else if(P.stage==='fiance'){const big=d.v==='grand',c=big?s.costBig:s.cost;if(!vieTake(c,'le mariage'))return;P.stage='marie';P.stepAt=S.day;P.rel=clamp(P.rel+(big?25:12),0,100);if(big)S.rep=clamp(S.rep+5,0,100);
+      S.journal.unshift({day:S.day,who:'💍',name:P.name,title:'Le mariage',choice:big?'Un grand mariage':'Un mariage simple',res:big?'Trois cents invités, un DJ, des larmes.':'Mairie, famille proche, un bon resto.',fx:['−'+fmt(c)]});toast(`💒 Vous êtes mariés ! ${big?'Réputation +5. ':''}Couple +${big?25:12}`);sfx('rank')}
+    break}
+  case 'break':vieConfirm='break';break;
+  case 'brk2':{if(!P)return;const was=P.stage==='marie',nm=P.name;let lost=0;if(was){lost=Math.round(S.cash*.25);S.cash-=lost;dispCash=Math.min(dispCash,S.cash)}
+    S.partner=null;v.baby=false;S.energy=clamp(S.energy-15,0,100);S.kids.forEach(k=>k.bond=clamp(k.bond-10,0,100));vieConfirm=null;
+    S.journal.unshift({day:S.day,who:'💔',name:nm,title:'La séparation',choice:'Tu as choisi de partir',res:was?'Le divorce est prononcé.':'Chacun reprend sa route.',fx:lost?['⚖️ −'+fmt(lost)]:[]});
+    toast(was?`⚖️ Divorce avec ${nm} : −${fmt(lost)}. Énergie −15.`:`💔 Tu quittes ${nm}. Énergie −15.`);sfx('bad');break}
+  case 'nobrk':vieConfirm=null;break;
+  case 'baby':{const r=vieBabyCheck();if(!r.ok){toast(r.why);sfx('no');return}v.baby=true;v.babySince=S.day;toast('🍼 Projet bébé lancé : il faut parfois plusieurs mois.');sfx('good');break}
+  case 'babystop':v.baby=false;toast('Projet bébé mis en pause.');break;
+  case 'kname':{if(!v.preg)return;const n=(d.v||vieDraft||'').trim().slice(0,20);if(!n){toast('Écris un prénom.');return}v.preg.name=n;vieDraft='';toast(`👶 Ce sera ${n}.`);break}
+  case 'ktime':{const k=S.kids[i];if(!k)return;if(S.energy<4){toast('Trop fatigué.');sfx('no');return}if(!vieUseFt(1))return;S.energy=clamp(S.energy-4,0,100);
+    const tg=k.age>=3&&k.age<=12?2:1;k.bond=clamp(k.bond+12,0,100);k.talent=clamp(k.talent+tg,0,100);toast(`🧸 Moment avec ${k.name} : lien +12, talent +${tg}`);sfx('good');break}
+  case 'kschool':{const k=S.kids[i],s=VIE_SCH[d.v];if(!k||!s||!!s.young!==(k.age<3))return;const c=Math.round(kidCost()*s.c);if(c>0&&S.cash<c*2){toast(`Il faut au moins ${fmt(c*2)} d’avance pour ce choix.`);sfx('no');return}k.school=d.v;toast(`🏫 ${k.name} : ${s.n}${c?` (+${fmt(c)} par mois)`:''}`);break}
+  case 'kact':{const k=S.kids[i];if(!k||k.age<4)return;if(d.v==='none'){k.act=null;break}if(!VIE_ACTS[d.v])return;const c=Math.round(kidCost()*.6);if(S.cash<c*2){toast(`Il faut au moins ${fmt(c*2)} d’avance.`);sfx('no');return}k.act=d.v;toast(`${VIE_ACTS[d.v].e} ${k.name} commence : ${VIE_ACTS[d.v].n}`);break}
+  case 'holiday':{const c=vieCost(300+200*S.kids.length);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}if(!vieUseFt(2))return;spend(c);S.energy=clamp(S.energy+10,0,100);if(P)P.rel=clamp(P.rel+8,0,100);S.kids.forEach(k=>{k.bond=clamp(k.bond+10,0,100)});toast('🏝️ Vacances en famille : énergie +10, tout le monde se rapproche.');sfx('good');break}
+  case 'rent':{const h=VIE_HOMES.find(x=>x.id===d.v);if(!h||!h.rent)return;const r=vieRent(h);if(r*3>vieMonthlyRev()&&S.cash<r*6){toast(`Le propriétaire refuse : il faut gagner 3 fois le loyer (${fmt(r*3)} par mois) ou avoir 6 mois d’avance.`);sfx('no');return}
+    if(!vieLeave())return;if(!vieTake(r,'le premier loyer'))return;v.home={id:h.id,missed:0};toast(`${h.e} Tu emménages : ${h.n}. Loyer ${fmt(r)} par mois.`);sfx('good');break}
+  case 'buy':case 'loan':{const h=VIE_HOMES.find(x=>x.id===d.v);if(!h||!h.price)return;if(v.home&&v.home.id===h.id)return;const p=viePrice(h),fees=Math.round(p*.08),sale=vieSaleValue();
+    if(a==='buy'){if(S.cash+sale<p+fees){toast(`Il te manque ${fmt(p+fees-S.cash-sale)} (prix + 8 % de frais de notaire).`);sfx('no');return}}
+    else{const apport=Math.round(p*.2),loan=p-apport,m=vieMens(loan),rev=vieMonthlyRev();
+      if(S.cash+sale<apport+fees){toast(`La banque demande un apport de 20 % + les frais : il te manque ${fmt(apport+fees-S.cash-sale)}.`);sfx('no');return}
+      if(m>rev*.35){toast(`Prêt refusé : la mensualité (${fmt(m)}) dépasse 35 % de tes revenus mensuels (${fmt(rev)}).`);sfx('no');return}}
+    if(!vieLeave())return;
+    if(a==='buy'){spend(p+fees);v.home={id:h.id,val:p,left:0,pay:0,missed:0};toast(`${h.e} Bienvenue chez toi : ${h.n}, payé comptant !`)}
+    else{const apport=Math.round(p*.2),loan=p-apport;spend(apport+fees);v.home={id:h.id,val:p,left:loan,pay:vieMens(loan),missed:0};toast(`${h.e} Clés en main : ${h.n}. Mensualité ${fmt(v.home.pay)} pendant 20 ans.`)}
+    S.counts.homes=(S.counts.homes||0)+1;sfx('rank');break}
+  case 'sell':{if(!v.home)return;const h=vieHomeDef();if(!h.price){v.home=null;toast('Tu rends les clés.');break}const g=vieSaleValue();earn(g);v.home=null;toast(`🏷️ Vendu : tu récupères ${fmt(g)} après remboursement de la banque.`);break}
+  case 'repay':{const hm=v.home;if(!hm||!hm.left)return;if(S.cash<hm.left){toast(`Il te manque ${fmt(hm.left-S.cash)}.`);sfx('no');return}spend(Math.round(hm.left));hm.left=0;hm.pay=0;hm.missed=0;toast('🏦 Prêt soldé : la maison est entièrement à toi !');sfx('rank');break}
+  }}
+function vieLeave(){const v=V();if(!v.home)return true;const h=vieHomeDef();if(h&&h.price){const g=vieSaleValue();earn(g);toast(`🏷️ Ancien logement vendu : ${fmt(g)} récupérés.`)}v.home=null;return true}
+function vieNextStep(){const P=S.partner;if(!P)return null;const m=S.day-(P.stepAt||P.since);
+  if(P.stage==='couple')return{n:'🏠 Emménager ensemble',ok:P.rel>=55&&m>=3,why:`Il faut ❤️ 55 et 3 mois de couple (${m}/3).`};
+  if(P.stage==='ensemble'){const c=vieCost(800);return{n:`💍 Faire ta demande (bague ${fmt(c)})`,cost:c,ok:P.rel>=65&&m>=6&&S.cash>=c,why:S.cash<c&&P.rel>=65&&m>=6?`Il te manque ${fmt(c-S.cash)} pour la bague.`:`Il faut ❤️ 65 et 6 mois de vie commune (${m}/6).`}}
+  if(P.stage==='fiance'){const c=vieCost(1500),cb=vieCost(15000);return{n:'💒 Se marier',cost:c,costBig:cb,ok:m>=3,why:`Les préparatifs prennent 3 mois (${m}/3).`}}
+  return null}
+function vieBabyCheck(){const v=V(),P=S.partner;
+  if(!P)return{ok:false,why:'Il faut être en couple.'};if(P.stage==='couple')return{ok:false,why:'Vivez d’abord ensemble.'};
+  if(P.rel<50)return{ok:false,why:'Votre couple doit être solide (❤️ 50).'};if(S.hero.age>=52)return{ok:false,why:'L’âge ne le permet plus.'};
+  if(S.kids.length>=6)return{ok:false,why:'Six enfants, c’est déjà beaucoup !'};if(v.preg)return{ok:false,why:'Un bébé est déjà en route.'};return{ok:true}}
+function vieBirth(){const v=V(),pr=v.preg;v.preg=null;const k=newKid(0);if(pr&&pr.name)k.name=pr.name;k.school='maison';k.act=null;k.bond=60;S.kids.push(k);flag('lastKid',S.day);
+  if(S.partner)S.partner.rel=clamp(S.partner.rel+10,0,100);if(S.kids.length>=3)trophy('t_famille');
+  S.journal.unshift({day:S.day,who:'👶',name:k.name,title:'Une naissance',choice:'Projet bébé',res:`${k.name} pousse son premier cri.`,fx:[`💸 +${fmt(kidCost())} par mois`]});
+  toast(`👶 Naissance de ${k.name} ! Bienvenue dans la famille.`);sfx('rank')}
+function vieMonth(pm){const v=V();pm=pm||1;const P=S.partner,h=vieHomeDef(),hm=v.home;v.ft=VIE_FT;v.ftDay=S.day;
+  if(v.crush){v.crush.rel-=2;if(v.crush.rel<5){toast(`💨 ${v.crush.name} ne répond plus.`);v.crush=null}}
+  if(P){const t=P.trait;if(t==='ambitieux'&&S.energy<30)P.rel+=2;if(t==='drole')P.rel+=.5;P.rel=clamp(P.rel,0,100)}
+  // foyer
+  if(hm&&h){if(h.rent){const r=Math.round(vieRent(h)*pm);if(S.cash>=r){spend(r);hm.missed=0}else{hm.missed=(hm.missed||0)+1;toast(`🏠 Loyer impayé (${hm.missed}/2).`);if(hm.missed>=2){v.home=null;toast('🚪 Expulsé : tu retournes vivre dans ton QG.')}}}
+    else if(hm.left>0){const intr=hm.left*VIE_RATE*pm,pay=Math.min(Math.round(hm.pay*pm),Math.round(hm.left+intr));
+      if(S.cash>=pay){spend(pay);hm.left=Math.max(0,Math.round(hm.left+intr-pay));hm.missed=0;if(!hm.left){hm.pay=0;toast('🏦 Dernière mensualité payée : la maison est à toi !')}}
+      else{hm.left=Math.round(hm.left+intr);hm.missed=(hm.missed||0)+1;toast(`🏦 Mensualité impayée (${hm.missed}/3). Attention à la saisie !`);
+        if(hm.missed>=3){const g=Math.max(0,Math.round(hm.val*.75-hm.left));earn(g);v.home=null;toast(`⚖️ Saisie : la banque revend ton logement. Tu récupères ${fmt(g)}.`)}}}}
+  const hd=vieHomeDef();if(hd){S.energy=clamp(S.energy+[0,1,1,2,3,3,4][hd.cf],0,100);if(S.partner)S.partner.rel=clamp(S.partner.rel+hd.cf*.3,0,100)}
+  // enfants
+  S.kids.forEach(k=>{if(k.age>=3&&VIE_SCH[k.school]&&VIE_SCH[k.school].young)k.school='pub';if(k.age<3&&VIE_SCH[k.school]&&!VIE_SCH[k.school].young)k.school='maison';
+    if(k.age>=18)return;const s=VIE_SCH[k.school]||VIE_SCH.pub,c=Math.round(vieKidExtra(k)*pm);
+    if(c>0){if(S.cash>=c)spend(c);else{k.school=k.age<3?'maison':'pub';k.act=null;toast(`💸 Plus les moyens : ${k.name} revient à l’option gratuite.`)}}
+    k.talent=clamp(k.talent+s.tal+(k.act?.15:0)+(k.bond>=70?.1:0),0,100);if(s.nrg)S.energy=clamp(S.energy+s.nrg,0,100);k.bond=clamp(k.bond-1+(k.act?.3:0),0,100)});
+  // bébé
+  if(v.preg&&S.day>=v.preg.due)vieBirth();
+  else if(v.baby&&!v.preg){const r=vieBabyCheck();if(!r.ok){if(!S.partner||S.partner.rel<50)v.baby=false}else{const a=S.hero.age;let p=a<35?.3:a<40?.2:a<45?.12:.05;if(S.partner.trait==='famille')p*=1.3;
+    if(chance(p)){v.baby=false;v.preg={due:S.day+9,name:''};toast(`🤰 Bonne nouvelle : un bébé arrive en ${dateLabel(S.day+9)} ! Choisis son prénom dans l’onglet Vie.`);sfx('rank')}}}
+  // bonheur familial
+  const fh=famHappy().v;v.lastHappy=fh;if(fh>=70){S.energy=clamp(S.energy+2,0,100);if(S.partner)S.partner.rel=clamp(S.partner.rel+1,0,100)}else if(fh<=30){S.energy=clamp(S.energy-1,0,100);if(S.partner)S.partner.rel=clamp(S.partner.rel-1,0,100)}
+}
+function vieBtn(a,label,o){o=o||{};return `<button class="btn small ${o.cls||'ghost'}" data-a="vie_${a}"${o.v!==undefined?` data-v="${esc(o.v)}"`:''}${o.i!==undefined?` data-i="${o.i}"`:''}${o.dis?' disabled':''}>${label}</button>`}
+function vieDots(n){return `<span class="vie-dots">${Array.from({length:VIE_FT},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}</span>`}
+function vieHTML(){const v=V(),P=S.partner,fh=famHappy(),h=vieHomeDef(),hm=v.home;let s='';
+  // bonheur
+  s+=`<div class="sec-head"><h2>Ta famille</h2><p>${familyCost()?`💸 ${fmt(familyCost())} par mois`:''}${S.grandkids?` · 👶 ${S.grandkids} petit${S.grandkids>1?'s':''}-enfant${S.grandkids>1?'s':''}`:''}</p></div>
+  <div class="panel vie-hap"><div class="vie-hapn"><span class="vie-face">${fh.v>=70?'😄':fh.v>=45?'🙂':fh.v>=30?'😕':'😢'}</span><div><b>${fh.v}</b><span class="hint"> sur 100</span><div class="vie-hapl">Bonheur familial</div></div></div>
+    <div class="vie-meter"><i style="width:${fh.v}%;background:${fh.v<35?'var(--loss)':fh.v<60?'#E59C3B':'var(--money)'}"></i><u style="left:70%"></u></div>
+    <div class="fxchips" style="justify-content:flex-start;margin-top:8px">${fh.parts.map(p=>`<span class="fxchip ${p[1]<0?'neg':''}">${p[0]} ${p[1]>0?'+':''}${p[1]}</span>`).join('')}</div>
+    <p class="hint" style="margin-top:6px">${fh.v>=70?'Foyer heureux : énergie +2 et couple +1 chaque mois.':fh.v<=30?'Ambiance tendue : énergie et couple baissent chaque mois.':'Passe le trait (70) et ton foyer te redonnera de l’énergie chaque mois.'}</p>
+    <div class="vie-ft"><b>⏳ Temps libre</b> ${vieDots(v.ft)} <span class="hint">${v.ft} créneau${v.ft>1?'x':''} restant${v.ft>1?'s':''} ce mois-ci pour l’amour et les enfants.</span></div></div>`;
+  // amour
+  s+=`<div class="sec-head"><h2>❤️ Amour</h2><p>${P?VIE_STEPS.find(x=>x[0]===P.stage)[1]:v.crush?'Ça commence…':'Célibataire'}</p></div><div class="panel">`;
+  const stIdx=P?VIE_STEPS.findIndex(x=>x[0]===P.stage):v.crush?0:-1;
+  s+=`<ol class="vie-steps" aria-label="Étapes de la relation">${VIE_STEPS.map((x,j)=>`<li class="${j<stIdx?'done':j===stIdx?'now':''}"><i></i><span>${x[1]}</span></li>`).join('')}</ol>`;
+  const dateBtns=tgt=>`<div class="bs-row" style="margin-top:8px">${VIE_DATES.filter(d=>(!d.home||(P&&P.stage!=='couple'))&&(!d.couple||P)).map(d=>{const c=vieCost(d.c);return vieBtn('date',`${d.e} ${d.n} <span class="vie-c">${c?fmt(c):'gratuit'}, ${d.ft} ⏳</span>`,{v:d.id,dis:v.ft<d.ft||S.cash<c})}).join('')}</div>`;
+  if(P){const t=vieTrait(P.trait),ns=vieNextStep();
+    s+=`<div class="famrow"><span class="fam-av">${P.av}</span><div style="flex:1"><strong>${esc(P.name)}</strong><span class="hint">, ${P.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${P.compat} % compatibles</span></div>${gaugeHTML('❤️ Couple',P.rel)}<p class="hint">${t.t} Ensemble depuis ${Math.max(0,S.day-P.since)} mois.</p></div></div>
+    <p class="hint" style="margin-top:8px"><b>Sorties</b> : elles renforcent le couple. Sans attention, il s’use chaque mois.</p>${dateBtns(P)}`;
+    if(ns){if(P.stage==='fiance'){s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('step',`💒 Mariage simple (${fmt(ns.cost)})`,{cls:'go',v:'simple',dis:!ns.ok||S.cash<ns.cost})}${vieBtn('step',`🎉 Grand mariage (${fmt(ns.costBig)})`,{cls:'pinkb',v:'grand',dis:!ns.ok||S.cash<ns.costBig})}</div>${ns.ok?'':`<p class="hint">${ns.why}</p>`}`}
+      else s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('step',ns.n,{cls:'go',dis:!ns.ok})}</div>${ns.ok?'':`<p class="hint">${ns.why}</p>`}`}
+    s+=vieConfirm==='break'?`<div class="vie-warn"><b>Vraiment rompre ?</b> ${P.stage==='marie'?`Le divorce te coûtera 25 % de ton argent (${fmt(Math.round(S.cash*.25))}).`:'Énergie −15, les enfants le vivront mal.'}<div class="bs-row" style="margin-top:6px">${vieBtn('brk2','Oui, rompre',{cls:''})}${vieBtn('nobrk','Non')}</div></div>`:`<div style="margin-top:10px;text-align:right">${vieBtn('break','💔 Rompre')}</div>`}
+  else if(v.crush){const c=v.crush,t=vieTrait(c.trait);
+    s+=`<div class="famrow"><span class="fam-av">${c.av}</span><div style="flex:1"><strong>${esc(c.name)}, ${c.age} ans</strong><span class="hint">, ${c.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${c.compat} % compatibles</span></div>${gaugeHTML('💞 Complicité',c.rel)}<p class="hint">Proposez-vous des rendez-vous. À 50 de complicité, tu peux te déclarer.</p></div></div>${dateBtns(c)}
+    <div class="bs-row" style="margin-top:10px">${vieBtn('declare','💌 Se déclarer',{cls:'go',dis:c.rel<50})}${vieBtn('forget','Laisser tomber')}</div>`}
+  else if(v.search){const pl=VIE_PLACES.find(x=>x.id===v.search.where);
+    s+=`<p class="hint">${pl.e} ${pl.n} : ${v.search.list.length} personnes t’ont tapé dans l’œil. Choisis qui revoir.</p><div class="vie-cards">${v.search.list.map((p,j)=>{const t=vieTrait(p.trait);return `<div class="vie-card"><div class="vie-cav">${p.av}</div><strong>${esc(p.name)}, ${p.age} ans</strong><span class="hint">${p.job}</span><span class="hint">${t.e} ${t.n}</span><span class="hint">${PASSIONS[p.pass]?PASSIONS[p.pass].e+' '+PASSIONS[p.pass].n:''}</span>${gaugeHTML('🧩 Compat.',p.compat)}${vieBtn('meet','☕ Revoir',{cls:'go',i:j})}</div>`}).join('')}</div><div style="margin-top:8px">${vieBtn('skip','Personne ne me plaît')}</div>`}
+  else{s+=`<p class="hint">Où chercher l’amour ce mois-ci ? Une sortie par mois.</p><div class="vie-places">${VIE_PLACES.map(pl=>{const c=vieCost(pl.c),lock=pl.rep&&S.rep<pl.rep;return `<button class="vie-place" data-a="vie_search" data-v="${pl.id}" ${lock||v.lastSearch===S.day||S.cash<c?'disabled':''}><span class="vie-pe">${pl.e}</span><span><strong>${pl.n}</strong><span class="hint">${pl.t}</span><span class="vie-c">${fmt(c)}, ⚡ −${pl.nrg}</span></span></button>`}).join('')}</div>${v.lastSearch===S.day?'<p class="hint" style="margin-top:6px">Déjà sorti ce mois-ci. Reviens le mois prochain.</p>':''}`}
+  s+='</div>';
+  // enfants
+  const br=vieBabyCheck();
+  s+=`<div class="sec-head"><h2>👶 Enfants</h2><p>${S.kids.length} enfant${S.kids.length>1?'s':''}</p></div><div class="panel">`;
+  if(v.preg){s+=`<p><b>🤰 Un bébé arrive en ${dateLabel(v.preg.due)}.</b> ${v.preg.name?`Prénom choisi : <b>${esc(v.preg.name)}</b>.`:'Choisis son prénom :'}</p>
+    <div class="bs-row" style="margin-top:6px"><input id="vie-kname" class="vie-in" maxlength="20" placeholder="Prénom" value="${esc(vieDraft)}">${vieBtn('kname','Valider',{cls:'go'})}</div>
+    <div class="bs-row" style="margin-top:6px">${FIRST.filter(n=>!S.kids.some(k=>k.name===n)&&n!==S.hero.name).slice(0,24).sort(()=>.5-Math.random()).slice(0,5).map(n=>vieBtn('kname',n,{v:n})).join('')}</div>`}
+  else if(v.baby)s+=`<p><b>🍼 Projet bébé en cours</b> depuis ${S.day-(v.babySince||S.day)} mois. Chaque mois, une chance (plus forte avant 35 ans).</p><div class="bs-row" style="margin-top:6px">${vieBtn('babystop','Mettre en pause')}</div>`;
+  else s+=`<div class="bs-row">${vieBtn('baby',`🍼 ${S.kids.length?'Avoir un autre enfant':'Avoir un enfant'}`,{cls:'go',dis:!br.ok})}</div>${br.ok?`<p class="hint" style="margin-top:4px">Chaque enfant coûte ~${fmt(kidCost())} par mois jusqu’à 18 ans, plus l’école et les activités.</p>`:`<p class="hint" style="margin-top:4px">${br.why}</p>`}`;
+  if(S.kids.length)s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('holiday',`🏝️ Vacances en famille (${fmt(vieCost(300+200*S.kids.length))}, 2 ⏳)`,{dis:v.ft<2})}</div>`;
+  s+=S.kids.map((k,j)=>{const kid=k.age<18,young=k.age<3,opts=Object.keys(VIE_SCH).filter(x=>!!VIE_SCH[x].young===young),ex=vieKidExtra(k);
+    return `<div class="famrow vie-kid"><span class="fam-av">${kidAv(k)}</span><div style="flex:1"><strong>${esc(k.name)}</strong><span class="hint"> ${k.age} an${k.age>1?'s':''}${k.job==='entreprise'?', travaille avec toi':k.job==='etudes'?', en grande école':k.job==='libre'?', fait sa vie':''}</span>${gaugeHTML('🎓 Talent',k.talent)}${kid?gaugeHTML('🧸 Lien',k.bond):''}
+    ${kid?`<div class="bs-row" style="margin-top:6px">${vieBtn('ktime','🧸 Passer du temps (1⏳)',{cls:'go',i:j,dis:v.ft<1})}</div>
+    <div class="vie-opt"><span class="hint">${young?'Garde':'École'} :</span>${opts.map(o=>`<button class="vie-chip ${k.school===o?'on':''}" data-a="vie_kschool" data-i="${j}" data-v="${o}">${VIE_SCH[o].n}${VIE_SCH[o].c?` +${fmt(Math.round(kidCost()*VIE_SCH[o].c))}`:''}</button>`).join('')}</div>
+    ${k.age>=4?`<div class="vie-opt"><span class="hint">Activité :</span><button class="vie-chip ${!k.act?'on':''}" data-a="vie_kact" data-i="${j}" data-v="none">Aucune</button>${Object.keys(VIE_ACTS).map(o=>`<button class="vie-chip ${k.act===o?'on':''}" data-a="vie_kact" data-i="${j}" data-v="${o}">${VIE_ACTS[o].e} ${VIE_ACTS[o].n}</button>`).join('')}</div>`:''}
+    <p class="hint">Coût en plus : ${ex?fmt(ex)+' par mois':'aucun'}. Meilleure école et activité = talent qui monte plus vite (utile pour l’héritage).</p>`:''}</div></div>`}).join('');
+  s+='</div>';
+  // foyer
+  const rev=vieMonthlyRev();
+  s+=`<div class="sec-head"><h2>🏠 Ton foyer</h2><p>Revenus ~${fmt(rev)} par mois</p></div><div class="panel">`;
+  if(h){s+=`<div class="famrow"><span class="fam-av">${h.e}</span><div style="flex:1"><strong>${h.n}</strong><span class="hint" style="display:block">${h.rooms} chambre${h.rooms>1?'s':''} d’enfant, confort ${h.cf} sur 6</span>
+    ${h.rent?`<div class="kv"><span>Loyer</span><b>${fmt(vieRent(h))} par mois</b></div>`:`<div class="kv"><span>Valeur</span><b>${fmt(hm.val)}</b></div>${hm.left?`<div class="kv"><span>Reste à rembourser</span><b>${fmt(hm.left)}</b></div><div class="kv"><span>Mensualité</span><b>${fmt(hm.pay)}</b></div>`:'<div class="kv"><span>Prêt</span><b>Remboursé ✅</b></div>'}`}
+    ${hm.missed?`<p class="hint" style="color:var(--loss)">⚠️ ${hm.missed} paiement${hm.missed>1?'s':''} en retard.</p>`:''}
+    <div class="bs-row" style="margin-top:6px">${hm.left?vieBtn('repay',`🏦 Solder le prêt (${fmt(hm.left)})`,{dis:S.cash<hm.left}):''}${vieBtn('sell',h.rent?'🚪 Rendre les clés':`🏷️ Vendre (${fmt(vieSaleValue())})`)}</div></div></div>`}
+  else s+=`<p class="hint">Tu dors dans ton QG (${STAGES[S.stage].name.toLowerCase()}). Un vrai foyer redonne de l’énergie, renforce le couple et loge les enfants.</p>`;
+  const need=vieRoomsNeed();if(need>(h?h.rooms:0))s+=`<p class="hint" style="color:var(--loss);margin-top:6px">🛏️ Il manque ${need-(h?h.rooms:0)} chambre${need-(h?h.rooms:0)>1?'s':''} pour tes enfants : le bonheur familial en souffre.</p>`;
+  s+=`<details class="vie-homes" ${h?'':'open'}><summary><b>Changer de logement</b> <span class="hint" style="display:block">Prêt sur 20 ans à 3,5 %, apport de 20 %, frais de notaire 8 %.</span></summary>${VIE_HOMES.filter(x=>!h||x.id!==h.id).map(x=>{
+    if(x.rent){const r=vieRent(x);return `<div class="vie-home"><span class="vie-pe">${x.e}</span><div style="flex:1"><strong>${x.n}</strong><span class="hint">${x.t} ${x.rooms} chambre${x.rooms>1?'s':''} d’enfant.</span><span class="vie-c">Loyer ${fmt(r)} par mois</span><div class="bs-row">${vieBtn('rent','Louer',{v:x.id})}</div></div></div>`}
+    const p=viePrice(x),fees=Math.round(p*.08),ap=Math.round(p*.2),m=vieMens(p-ap),sale=vieSaleValue(),okL=S.cash+sale>=ap+fees&&m<=rev*.35,okB=S.cash+sale>=p+fees;
+    return `<div class="vie-home"><span class="vie-pe">${x.e}</span><div style="flex:1"><strong>${x.n}</strong><span class="hint">${x.t} ${x.rooms} chambres d’enfant, confort ${x.cf} sur 6.</span><span class="vie-c">${fmt(p)}. Apport et frais : ${fmt(ap+fees)}. Mensualité : ${fmt(m)}</span>
+      <div class="bs-row">${vieBtn('loan','🏦 Acheter avec un prêt',{v:x.id,cls:okL?'go':'ghost'})}${vieBtn('buy',`💶 Comptant (${fmt(p+fees)})`,{v:x.id,cls:okB?'go':'ghost'})}</div>${m>rev*.35?`<span class="hint">La banque veut des revenus d’au moins ${fmt(Math.ceil(m/.35))} par mois.</span>`:''}</div></div>`}).join('')}</details></div>`;
+  return s}
+document.head.insertAdjacentHTML('beforeend',`<style>
+.vie-hapn{display:flex;gap:12px;align-items:center}.vie-face{font-size:2.6rem;line-height:1}.vie-hapn b{font-size:2rem;line-height:1}.vie-hapl{font-weight:700;font-size:.9rem}
+.vie-meter{position:relative;height:12px;border-radius:6px;background:var(--surface2);margin-top:10px;overflow:visible}.vie-meter i{display:block;height:100%;border-radius:6px;transition:width .4s}.vie-meter u{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.5}
+.vie-ft{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.vie-dots{display:inline-flex;gap:4px}.vie-dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);display:inline-block}.vie-dots i.on{background:var(--pink);border-color:var(--pink)}
+.vie-steps{list-style:none;display:flex;margin:0 0 12px;padding:0;position:relative}.vie-steps:before{content:"";position:absolute;left:10%;right:10%;top:10px;height:3px;background:var(--line)}
+.vie-steps li{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;position:relative;font-size:.7rem;font-weight:700;color:var(--muted);text-align:center}
+.vie-steps li i{width:20px;height:20px;border-radius:50%;background:var(--surface);border:3px solid var(--line);box-sizing:border-box}
+.vie-steps li.done i{background:var(--pink);border-color:var(--pink)}.vie-steps li.done{color:var(--ink)}
+.vie-steps li.now i{background:var(--sticker);border-color:var(--ink);transform:scale(1.25)}.vie-steps li.now span{background:var(--sticker);color:var(--sticker-ink);border-radius:6px;padding:0 4px}
+.vie-tags{display:flex;flex-wrap:wrap;gap:4px;margin:4px 0}
+@media (prefers-reduced-motion:reduce){.vie-meter i{transition:none}}
+.vie-c{display:block;font-size:.76rem;font-weight:600;opacity:.8}.btn .vie-c{display:inline;margin-left:4px}
+.vie-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}.vie-card{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:3px;background:var(--surface2)}.vie-cav{font-size:2rem}
+.vie-places{display:grid;gap:6px;margin-top:8px}.vie-place,.vie-home{display:flex;gap:10px;align-items:flex-start;text-align:left;font:inherit;color:var(--ink);background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}.vie-home{cursor:default;margin-top:8px}.vie-place[disabled]{opacity:.5;cursor:not-allowed}.vie-place .hint,.vie-home .hint{display:block}.vie-pe{font-size:1.7rem}
+.vie-opt{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin-top:6px}.vie-chip{font:inherit;font-size:.76rem;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}.vie-chip.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.vie-kid{border-top:1px solid var(--line);padding-top:10px;margin-top:10px}.vie-warn{margin-top:10px;padding:10px;border-radius:10px;background:var(--surface2);border:1.5px solid var(--loss)}
+.vie-in{font:inherit;padding:7px 10px;border-radius:10px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);max-width:180px}
+.vie-homes summary{cursor:pointer;margin-top:10px}
+</style>`);
+document.addEventListener('input',e=>{if(e.target.id==='vie-kname')vieDraft=e.target.value});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="vie_"]');if(!b||b.disabled)return;FXC=[];vieAct(b.dataset.a.slice(4),b.dataset);FXC=[];render()});
+/* ===== FIN AGENT VIE ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
