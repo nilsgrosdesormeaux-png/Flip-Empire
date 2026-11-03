@@ -522,7 +522,7 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 .btn{min-height:44px}
 .btn.small{min-height:44px;padding:8px 12px}
 .seg button{min-height:44px}
-.modes button{min-height:36px;position:relative}
+.modes button{min-height:36px;min-width:44px;position:relative}
 .modes button::after,.hud-ev::after,.chip::after{content:"";position:absolute;inset:-5px -2px}
 .chip{position:relative}
 .bs-x{width:44px;height:44px}
@@ -553,7 +553,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .claimbar b{display:block;font-size:1.05rem}
 .claimbar span{font-size:.84rem;opacity:.9}
 .btn.claim{background:var(--sticker);color:var(--sticker-ink);font-weight:800}
-.obj-main{margin-top:16px;background:var(--sticker);color:var(--sticker-ink);border-radius:6px 18px 6px 18px;padding:16px 16px 14px;box-shadow:3px 4px 0 var(--ink)}
+.obj-main{margin-top:16px;background:var(--sticker);color:var(--sticker-ink);border-radius:6px 18px 6px 18px;padding:16px 16px 14px;box-shadow:3px 4px 0 #1E2B2A}
 .obj-k{font-family:"Permanent Marker","Marker Felt",cursive;font-size:1rem;transform:rotate(-2deg);display:inline-block}
 .obj-main h2{font-size:1.55rem;line-height:1.1;font-weight:800;letter-spacing:-.015em;margin-top:4px}
 .obj-h{font-size:.9rem;margin-top:6px;opacity:.85}
@@ -561,7 +561,7 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .obj-bar i{display:block;height:100%;background:var(--sticker-ink)}
 .obj-f{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums}
 .tagp{display:inline-block;white-space:nowrap;font-weight:800;font-size:.82rem;padding:2px 8px 2px 12px;border-radius:3px 6px 6px 3px;background:var(--surface);color:var(--ink);border:1.5px solid var(--ink);clip-path:polygon(8px 0,100% 0,100% 100%,8px 100%,0 50%)}
-.obj-main .tagp{background:var(--ink);color:var(--sticker)}
+.obj-main .tagp{background:#1E2B2A;color:#F7E733;border-color:#1E2B2A}
 .obj-sub{margin:18px 0 4px;font-size:.95rem;color:var(--muted);font-weight:700}
 .obj-list{list-style:none;margin:0;padding:0}
 .obj-list li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 2px;border-bottom:1px solid var(--line);font-size:.95rem}
@@ -4877,7 +4877,9 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
 renderSheet=(f=>function(){const el=$('#bsheet'),sc=el?el.scrollTop:0,same=el&&el.dataset.sel===String(sel);f();if(el){if(same)el.scrollTop=sc;el.dataset.sel=String(sel)}})(renderSheet);
 renderMain=(f=>function(){const m=$('#main'),k=S.tab+(S.tab==='vie'?S.vTab:S.tab==='empire'?S.eTab:S.tab==='gestion'?S.gTab:''),same=m&&m.dataset.k===k;
   const open=same?[...m.querySelectorAll('details')].map(d=>d.open):[];f();
-  if(m){m.dataset.k=k;if(same)m.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true})}})(renderMain);
+  if(m){m.dataset.k=k;if(same)m.querySelectorAll('details').forEach((d,i)=>{if(open[i])d.open=true});
+    /* Titres de section sans emoji décoratif : la hiérarchie se lit au texte */
+    m.querySelectorAll('.sec-head h2').forEach(h=>{const t=h.firstChild;if(t&&t.nodeType===3)t.textContent=t.textContent.replace(/^\s*(?:\p{Extended_Pictographic}|\uFE0F|\u200D)+\s*/u,'')})}})(renderMain);
 /* Un seul achat par appui : un double appui rapide ne déclenche pas deux fois les actions uniques */
 const ONCE=new Set(['buyprop','renov','sellprop','stage','claim','claimall','franchise','clubname','clubbuy','mgr','upg','proj','daily','start','decide','reset2','inherit','buyblock','rebuild','mcap','staff']);
 let lastHit={el:null,t:0};
