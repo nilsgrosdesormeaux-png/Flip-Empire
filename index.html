@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-1013">
+<meta name="fe-build" content="2026-11-04-1023">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2100,7 +2100,7 @@ function spawnCar(){const r=pick(ROADS),h=Math.random()<.5,lane=Math.random()<.5
   const kind=TH_.moon?'rover':TH_.bus&&Math.random()<.35?'bus':TH_.tram&&Math.random()<.22?'tram':'car';addEnt('car',lane?[a,b]:[b,a],rand(1.8,3)*(kind==='rover'?.5:1),{dir:h?'x':'y',col:kind==='bus'?'#D7263D':pick(TH_.cars),kind})}
 function spawnClient(b){const d=doorPts(b.p);addEnt('ped',[d.E,d.R,d.D],rand(.7,1.05),{client:b.id})}
 function spawnExit(b){const d=doorPts(b.p);addEnt('ped',[d.D,d.R,d.E],rand(.7,1),{bag:true})}
-let vipEnt=null,vipNext=performance.now()+rand(30000,55000);
+let vipEnt=null,vipNext=performance.now()+rand(120000,240000);
 function spawnVip(){vipEnt=addEnt('ped',roadPath(Math.random()<.5?.12:.88),.55,{vip:true,col:'#F7C82F'});sfx('vip')}
 function updateEnts(dt){
   for(const e of ENTS){
@@ -2110,7 +2110,7 @@ function updateEnts(dt){
     else{e.x+=dx/dist*step;e.y+=dy/dist*step}
     e.ph+=dt*e.sp*14;
   }
-  if(vipEnt&&vipEnt.dead){vipEnt=null;vipNext=performance.now()+rand(45000,100000)}
+  if(vipEnt&&vipEnt.dead){vipEnt=null;vipNext=performance.now()+rand(180000,420000)}
   ENTS=ENTS.filter(e=>!e.dead);
 }
 const clientT={};let pedT=0,carT=0;
@@ -2442,7 +2442,7 @@ function doAct(id,aid){
 }
 function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+60000;S.boostReadyAt=S.boostUntil+180000;sfx('vip');toast('Rush : revenus ×2 pendant une minute.')}
 function catchVip(e){
-  const [X,Y]=worldToPage(e.x,e.y,14);const r=Math.random();S.counts.vip++;addXP(5);sfx('vip');e.dead=true;vipEnt=null;vipNext=performance.now()+rand(45000,100000)*(S.flags.vipPlus?.6:1);
+  const [X,Y]=worldToPage(e.x,e.y,14);const r=Math.random();S.counts.vip++;addXP(5);sfx('vip');e.dead=true;vipEnt=null;vipNext=performance.now()+rand(180000,420000)*(S.flags.vipPlus?.6:1);
   let txt='';
   if(r<.55){const amt=Math.max(150,inc()*120);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
   else if(r<.9){S.frenzyUntil=Date.now()+20000;txt='×5';toast('Frénésie : revenus ×5 pendant 20 secondes.')}
@@ -3081,7 +3081,7 @@ document.addEventListener('click',e=>{
   const a=b.dataset.a,id=b.dataset.id;let top=false,full=true;
   switch(a){
     case 'crmode':CR.mode=b.dataset.v;document.querySelectorAll('[data-a=crmode]').forEach(x=>x.classList.toggle('on',x===b));full=false;break;
-    case 'speed':S.speed=S.speed===1?2:S.speed===2?4:1;toast(S.speed>1?`Temps ×${S.speed} : un mois toutes les ${Math.round(DAY_SEC/S.speed)} s.`:'Temps normal : un mois toutes les 40 s.');break;
+    case 'speed':{const pro=typeof metaHasPass==='function'&&metaHasPass();if(S.speed===2&&!pro){S.speed=1;toast('Temps normal. Le temps ×4 est réservé au Pass Empire.');break}S.speed=S.speed===1?2:S.speed===2?4:1;}toast(S.speed>1?`Temps ×${S.speed} : un mois toutes les ${Math.round(DAY_SEC/S.speed)} s.`:'Temps normal : un mois toutes les 40 s.');break;
     case 'chdec':chDecide(b.dataset.v);full=false;break;
     case 'chskip':chSkip();full=false;break;
     case 'pickav':CR.av=b.dataset.v;document.querySelectorAll('.av').forEach(x=>x.classList.toggle('on',x===b));full=false;break;
@@ -3167,7 +3167,7 @@ const STAFF={clean:{e:'🧹',lv:['Personne','Agent d’entretien','Équipe de ne
   wait:{e:'🧑‍💼',lv:['Toi tout seul','Vendeur en renfort','Équipe complète','Service premium']},
   qual:{e:'🔨',lv:['Rien','Maintenance mensuelle','Rénovations régulières','Contrat qualité intégral']}};
 const SDEC=[1,.45,.15,0],SREG=[0,0,2,5],SCAP=[0,0,85,95];
-const staffCost=(b,lv)=>Math.max(80*(lv+1),Math.round(baseRev(b)*permMult()/b.time*[400,2000,9000][lv]));
+const staffCost=(b,lv)=>HARD_K*Math.max(80*(lv+1),Math.round(baseRev(b)*permMult()/b.time*[400,2000,9000][lv]));
 function qualityMonth(id,st,p){
   const s=st.staff||(st.staff={clean:0,wait:0,qual:0}),q=st.q;
   q.clean=clamp(q.clean-3.5*(st.mgr?.7:1)*SDEC[s.clean],0,100);
@@ -3914,8 +3914,10 @@ function cityCost(c){return cityRev(c)*cityDiff(c)}
 /* Immobilier : portefeuille, valeur de marché, locataires, état, prêts, petits imprévus. Écran complet : vImmo(). */
 /* Prix de la ville : ouverture, niveaux, gérants, améliorations et QG coûtent cityCost(ville) ; les ventes rapportent cityRev(ville) */
 const ECO0={cost:BIZ.map(b=>b.cost),base:BIZ.map(b=>b.base),mgr:Object.assign({},MGR),upg:UPG.map(u=>u.cost),stage:STAGES.map(x=>x.cost)};
+/* Tout ce qui s'achète coûte HARD_K fois plus cher (demande de Nils : la progression était bien trop rapide). Les revenus ne bougent pas. */
+const HARD_K=20;
 function cityPrices(ci){
-  const K=cityCost(ci),R=cityRev(ci);
+  const K=cityCost(ci)*HARD_K,R=cityRev(ci);
   BIZ.forEach((b,i)=>{b.cost=ECO0.cost[i]*K;b.base=ECO0.base[i]*R;MGR[b.id]=ECO0.mgr[b.id]*K});
   UPG.forEach((u,i)=>{u.cost=ECO0.upg[i]*K});
   STAGES.forEach((x,i)=>{x.cost=ECO0.stage[i]*K});
@@ -4847,7 +4849,7 @@ function metaPassHTML(){
     return `<div class="meta-slot"><span>💾 Emplacement ${n}${n>1?' <span class="tag">👑 Pass</span>':''}<br><span class="hint">${d?'Enregistré le '+new Date(d.at).toLocaleDateString('fr-FR'):'Vide'}</span></span>${lock?'<span class="hint">🔒</span>':`<span class="bs-row"><button class="btn small" data-a="meta_slotsave" data-id="${n}">Enregistrer</button>${d?`<button class="btn small ghost" data-a="meta_slotload" data-id="${n}">Charger</button>`:''}</span>`}</div>`}).join('');
   const ex=META_ITEMS.filter(i=>i.pass);
   return `<div class="meta-pass"><h3>👑 Pass Empire</h3><p class="meta-price">${META_PRICE.pass_month}</p>
-    <ul><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
+    <ul><li>⏩ Temps ×4 (sans pass : ×2 maximum)</li><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
     <div class="sk-pass">${ex.map(i=>`<div class="sk-pv ${i.k==='theme'?'th':i.k==='avatar'?'av':i.k==='club'?'cl':i.k==='deco'?'dc':'fx'}" ${skPvStyle(i)} title="${i.n}">${skPreview(i)}</div>`).join('')}</div>
     ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner · bientôt</button>`}
     <p class="hint" style="margin-top:8px">Que du confort : le Pass ne donne pas d’argent ni de puissance dans la partie.</p></div>
@@ -7451,7 +7453,7 @@ updateEnts=function(dt){
     else{e.x+=dx/dist*step;e.y+=dy/dist*step}
     e.ph+=dt*e.sp*14}
   vvQueues(dt);
-  if(vipEnt&&vipEnt.dead){vipEnt=null;vipNext=performance.now()+rand(45000,100000)}
+  if(vipEnt&&vipEnt.dead){vipEnt=null;vipNext=performance.now()+rand(180000,420000)}
   ENTS=ENTS.filter(e=>!e.dead);
   vvCam(dt)};
 
@@ -7624,8 +7626,13 @@ function conqGoals(){
     c%2===0?{t:'Deviens maire de la ville',p:()=>[S.pol.office?1:0,1]}:{t:`Fais monter ton club jusqu’en ${DIVS[Math.min(DIVS.length-1,2+Math.floor(c/4))]}`,p:()=>[S.club.div,Math.min(DIVS.length-1,2+Math.floor(c/4))]}
   ];
 }
-propBase=o=>(o.t==='apt'?9000:900)*o.f*cityRev(S.city||0)*Math.pow(cityDiff(S.city||0),1.25)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
-propRent=(o,l)=>propBase(o)*.035/Math.pow(cityDiff(S.city||0),.75)*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
+propBase=o=>HARD_K*(o.t==='apt'?9000:900)*o.f*cityRev(S.city||0)*Math.pow(cityDiff(S.city||0),1.25)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
+propRent=(o,l)=>propBase(o)/HARD_K*.035/Math.pow(cityDiff(S.city||0),.75)*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
+/* De quoi ouvrir la première boutique au début et à l'arrivée dans chaque ville, pas plus */
+newGame=(f=>function(){const g=f.apply(this,arguments);g.cash=Math.max(g.cash,15*HARD_K*1.3);return g})(newGame);
+franchise=(f=>function(){const c0=S.city;f.apply(this,arguments);if(S.city!==c0){const need=Math.round(BIZ[0].cost*1.3);if(S.cash<need){S.cash=need;dispCash=S.cash}}})(franchise);
+/* Temps ×4 réservé au Pass Empire : sans pass, une partie sauvegardée en ×4 repasse en ×2 */
+setInterval(()=>{try{if(S&&S.speed>2&&!(typeof metaHasPass==='function'&&metaHasPass())){S.speed=2;renderHud&&renderHud()}}catch(e){}},2000);
 /* ===== FIN DIFFICULTÉ ===== */
 /* ================= BOOT ================= */
 (function boot(){

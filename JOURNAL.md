@@ -1,5 +1,10 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1023)
+- Tout ce qui s'achète coûte 20× plus cher (constante HARD_K dans cityPrices : commerces, niveaux, gérants, améliorations, logement QG, personnel, immeubles, rénovations) ; revenus et loyers inchangés ; argent de départ et d'arrivée = 1,3× la première boutique.
+- Temps ×4 réservé au Pass Empire (sans pass : ×2 max ; une sauvegarde en ×4 repasse en ×2).
+- Bonhomme doré (bonus d'argent) 4× plus rare : toutes les 3 à 7 min.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1013)
 - Difficulté (bloc DIFFICULTÉ avant BOOT) : un commerce ne s'ouvre que si le précédent atteint le niveau 10+8×ville ; objectifs de conquête qui grandissent avec la ville (niveau 75+30×ville, 15→60 % des bâtiments, satisfaction 70→88 %, gains ×1,5 par ville, division du club qui monte) ; immobilier plus cher en fin de voyage (prix ×cityDiff^1,25).
 - Reste : vérifier en jouant que le rythme plaît à Nils (ajuster bizGate et conqGoals si trop dur).
