@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-2248">
+<meta name="fe-build" content="2026-11-04-2259">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7815,6 +7815,18 @@ mktSell=(f=>function(n){const before=S.mkt?S.mkt.profit:0;const r=f.apply(this,a
   if(d>0){S.counts=S.counts||{};S.counts.bourse=S.counts.bourse||{};const k=String(S.city||0);S.counts.bourse[k]=(S.counts.bourse[k]||0)+d}return r})(mktSell);
 mktGains=()=>{const b=S.counts&&S.counts.bourse;return b?(b[String(S.city||0)]||0):0};
 conqGoals=(f=>function(){const L=f.apply(this,arguments);return L.map(g=>/à la bourse locale/.test(g.t)?{t:g.t,p:()=>[Math.round(mktGains()),mktGoal2()]}:g)})(conqGoals);
+/* Chrono de progression : temps réel passé dans chaque ville, et moments clés (8 affaires ouvertes, tout au niveau 20) */
+function chronoTick(){
+  if(!S.started)return;
+  const c=String(S.city||0),now=Date.now();S.chrono=S.chrono||{};
+  const r=S.chrono[c]=S.chrono[c]||{t0:now,open8:null,lvl20:null};
+  if(openIds().length>=BIZ.length&&r.open8===null)r.open8=now-r.t0;
+  if(BIZ.every(b=>S.biz[b.id].lvl>=20)&&r.lvl20===null)r.lvl20=now-r.t0;
+}
+setInterval(()=>{try{chronoTick()}catch(e){}},1000);
+vEmpire=(f=>function(){const h=f();const C=S.chrono||{};const rows=Object.keys(C).sort((a,b)=>a-b).map(k=>{const r=C[k];const m=v=>v==null?'pas encore':Math.round(v/60000)+' min';
+  return `<tr><td>${esc(CITIES[k]?CITIES[k].n:'?')}</td><td>${m(r.open8)}</td><td>${m(r.lvl20)}</td></tr>`}).join('');
+  if(!rows)return h;return h.replace('<div class="foot">',`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Temps par ville</h3><p class="hint">Temps réel depuis ton arrivée.</p><table class="ltable"><tr><td></td><td>8 affaires ouvertes</td><td>tout au niveau 20</td></tr>${rows}</table></div><div class="foot">`)})(vEmpire);
 /* ===== FIN TUTORIEL ===== */
 /* ===== AGENT PERSO ===== */
 /* Naissance au hasard d'office, look du perso modifiable, réglage « Je cherche », genre des gérants,

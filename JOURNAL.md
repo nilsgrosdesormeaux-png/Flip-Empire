@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-2259)
+- Chrono de progression : Empire → « Temps par ville » affiche, pour chaque ville, le temps réel pour avoir 8 affaires ouvertes et tout au niveau 20. Sert à calibrer la progression avec les vrais temps de Nils.
+- Simulation de progression (prog2.js, hors jeu) : pas fiable en valeur absolue (ne compte ni les encaissements manuels, ni les loyers, ni les objectifs). À remplacer par les temps réels du chrono.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2248)
 - Personnel (recrutement pour la satisfaction des clients) : prix FIXE, lié au prix du commerce de la ville (1er niveau 0,5×, 2e 2×, 3e 6×). Il ne dépend plus des gains. Avant : jusqu'à 5 Md € en ville 1.
 - Reste : vérifier en jouant le prix des gérants et des améliorations, qui sont aussi fixes par ville.
