@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (séance agents, version 2026-11-04a)
+- Fait : prénoms accordés au genre (listes F/M, avatars assortis, textes accordés, choix femme/homme à la création, anciennes sauvegardes complétées).
+- Fait : carte plus colorée par ville (lumière chaude, ciel, eau, arbres qui bougent) ; skins refaits et plus nombreux ; style des boutons/panneaux revu ; correctifs d'anciennes sauvegardes (bourse v8, club sans effectif, événement disparu) et divers.
+- Attention : skins, interface et correctifs ont été coupés par la limite d'usage : publiés tels quels après tests (aucune erreur JS, 11 anciennes sauvegardes OK, fuzz 1500 clics + 150 mois × 9 villes OK). Rapport de bugs complet : 19 bugs, pas tous corrigés (G3, M6, M7 du bloc META restent ; vérifier les autres).
+- Reste à faire : les nouvelles demandes de Nils (voir IDEES.md « Demandes du 4 novembre ») ; tests 100 joueurs à relancer ; finir skins/boutique payante plus attirante.
+
 ## 2026-11-03 : Claude de Nils
 - Fait : mise en ligne (GitHub Pages, appli installable), sauvegarde robuste, bug New York (revenus négatifs) corrigé.
 - Fait : club de foot et jour de match refaits, immobilier, vie de famille, décisions et mairie, boutique et sondage (sans paiement), carte redessinée, onglet Objectifs, bandeau d'erreur.

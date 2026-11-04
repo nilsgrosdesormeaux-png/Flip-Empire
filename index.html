@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-03e">
+<meta name="fe-build" content="2026-11-04a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -5673,7 +5673,7 @@ v_parents:{cat:'vie',w:5,ctx:1,cool:48,cond:()=>S.hero.age>=35&&S.hero.age<=65,d
 v_ami:{cat:'vie',w:5,cool:36,cond:()=>true,def:1,init:()=>{const g=prRandG();return{ok:Math.random()<.5,g,n:prPickName(g,[])}},who:'🤝',nameF:d=>`${d.n}, ${gx(d.g,'un ami','une amie')} d’enfance`,title:'Un prêt entre amis',
   text:d=>`${esc(d.n)} te demande de l’argent pour tenir un mois.`,
   clue:d=>d.ok?`${esc(d.n)} a monté une petite boîte qui tourne bien : ${gx(d.g,'il','elle')} attend un gros paiement client.`:`${esc(d.n)} te doit déjà 50 € depuis 2019… et ${gx(d.g,'il','elle')} vient de s’acheter une console.`,
-  ch:[SK('Lui prêter',{need:100,p:d=>d.ok?.92:.08,label:'🔎 Relis l’indice avant de prêter',win:d=>{money(130);repD(2);return 'Remboursé avec un petit cadeau. '+gx(d.g,'Un vrai ami.','Une vraie amie.')},lose:()=> 'Tu ne reverras jamais cet argent.'}),OK('Refuser gentiment',d=>gx(d.g,'Il','Elle')+' comprend.'),OK('Lui proposer un job',()=>{satD('all','wait',8);return gx(d.g,'Il','Elle')+' bosse dur pour s’en sortir.'})]},
+  ch:[SK('Lui prêter',{need:100,p:d=>d.ok?.92:.08,label:'🔎 Relis l’indice avant de prêter',win:d=>{money(130);repD(2);return 'Remboursé avec un petit cadeau. '+gx(d.g,'Un vrai ami.','Une vraie amie.')},lose:()=> 'Tu ne reverras jamais cet argent.'}),OK('Refuser gentiment',d=>gx(d.g,'Il','Elle')+' comprend.'),OK('Lui proposer un job',d=>{satD('all','wait',8);return gx(d.g,'Il','Elle')+' bosse dur pour s’en sortir.'})]},
 v_marathon:{cat:'vie',w:4,cool:36,cond:()=>S.hero.age<60,def:1,who:'🏃',name:'Le club d’athlétisme',title:'Le marathon de la ville',
   text:()=>'Tout le monde court cette année. Même ton rival.',
   clue:()=>`Santé ${Math.round(S.hero.health)}, énergie ${Math.round(S.energy)}. Un marathon ne pardonne pas l’impréparation.`,

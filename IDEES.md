@@ -27,6 +27,8 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 | Maire et élections : moins de hasard, moins fréquent | Fait (mandats de 6 ans, campagne stratégique) |
 | Famille : rencontre, enfants, logement, plus de contrôle | Fait (onglet Vie). Le mariage n'a pas été testé de bout en bout |
 | Bug New York (argent négatif) | Corrigé |
+| Prénoms qui ne collent pas au genre | Fait (2026-11-04a) |
+| Skins plus beaux et plus nombreux | En cours (première passe en ligne) ; boutique payante à rendre plus attirante |
 | Bug « Chercher un sponsor » qui fige le jeu | Corrigé (version 2026-11-03c et suivantes) |
 | Rendement qui baisse après une amélioration | Expliqué et rendu visible (fatigue −20 %, salaires du mercato affichés) |
 
@@ -35,3 +37,16 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - Style des boutons et panneaux (agent prévu, pas encore fait).
 - Couleurs de la carte, si Nils les trouve trop ternes.
 - Serveur : comptes, sauvegarde en ligne, vrai sondage, paiements.
+
+## Demandes du 4 novembre (pas encore faites)
+- Au retour dans une partie : les championnats gagnés pendant l'absence tombent tous d'un coup, beaucoup trop d'argent → plafonner / étaler.
+- Club de foot et Mairie dans des blocs (onglets) à part.
+- Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
+- Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
+- Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
+- Décisions moins fréquentes et moins répétitives (même en ×4) ; le jeu se met en pause pendant une décision ; bouton pause disponible.
+- La bourse doit dépendre un minimum de la ville.
+- Avis clients : payer tous les services d'un coup.
+- Commerces plus chers par ville, progression plus longue dans les villes avancées (courbe à la Clash of Clans : début facile, puis de plus en plus dur).
+- Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
+- Publier soi-même sur la branche après chaque tâche terminée et testée.
