@@ -1,5 +1,10 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-0941)
+- Fait : onglets séparés Immo, Club, Mairie (8 onglets ; Bourse dans Affaires) ; 3 bugs META corrigés.
+- Fait : progression par ville type hôtel de ville (prix ×1,58 de plus par ville), immobilier d'investissement (Tout acheter, Améliorer au max), bourse liée à la ville.
+- En cours : nouvelles villes avant la Lune, ville vivante (suivre un habitant).
+
 ## 2026-11-04 : Claude de Nils (pause demandée par Nils)
 - En ligne : version 2026-11-04b (déploiements GitHub Pages réussis). Si l'ancienne version s'affiche : ajouter `?v=123` au lien.
 - Mis en pause : immobilier/économie et nouvelles villes/ville vivante. Le travail inachevé est dans `travaux-en-cours/` (patchs + LISEZMOI.md avec où on en est). À reprendre de là, pas de zéro.
