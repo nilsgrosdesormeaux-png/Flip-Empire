@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-1453">
+<meta name="fe-build" content="2026-11-04-1456">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3928,7 +3928,7 @@ const CITY_GOAL0=2e11;
 cityGoal2=()=>CITY_GOAL0*cityCost(S.city||0);
 /* Étoiles de franchise, ville par ville : 1 à l’objectif, +1 à 5 fois l’objectif, +1 à 25 fois */
 newStars=()=>{const g=cityGoal2(),l=S.lifetime||0;return l<g?0:1+(l>=g*5?1:0)+(l>=g*25?1:0)};
-mktGoal2=()=>Math.max(100,Math.round(mkt().p*mktCap()*(0.4+0.1*(S.city||0))));
+mktGoal2=()=>10000; /* objectif bourse fixe, même dans toutes les villes (demande de Nils) */
 mktCapCost=()=>Math.round(assetDef(0).p*15*Math.pow(6,S.mkt.cap));
 /* Arrivée dans une ville : un petit pécule à l’échelle de la ville (de quoi relancer la première boutique, pas plus) */
 franchise=(f=>function(){const c0=S.city;f.apply(this,arguments);if(S.city!==c0&&S.cash<200*cityCost(S.city)){S.cash=200*cityCost(S.city);dispCash=S.cash}})(franchise);

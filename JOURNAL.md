@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1456)
+- Objectif bourse fixé à 10 000 € dans toutes les villes (demande de Nils, plus d'échelle selon les revenus).
+- À trancher avec Nils : l'objectif « Gagne X dans cette ville » (cityGoal2) reste très élevé dans les grandes villes ; une valeur fixe serait plus simple mais trop facile à Rio.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1453)
 - Objectif « Gagne X dans cette ville » trop dur à Rio (80 Sx € avant) : il vaut maintenant 10 minutes de revenu des 8 affaires au niveau 10 (Ta ville 2 Md €, Rio 867 Qa €). Coefficient à ajuster avec les retours de Nils (ligne cityGoal2).
 
