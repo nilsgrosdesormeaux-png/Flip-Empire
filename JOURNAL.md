@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils, agent persos (non publié, fe-build inchangé)
+- Bloc AGENT PERSOS (avant BOOT) : fini les emojis de personnes. Un générateur `charSVG(desc, opt)` dessine des persos « jouets 3D » (grosse tête, sans contour, ombrage doux). Héros, couple, enfants, rencontres, gérants, lignée, événements, journal, boutique, bulle du QG.
+- Look (Vie → Moi) refait : grand aperçu, onglets Coiffure / Couleurs / Tenue / Accessoires, vignettes dessinées. Choix gardé dans `S.hero.ch` (optionnel ; sinon look tiré du prénom + ancien emoji, l'ancien `S.hero.look` est repris). Costumes de la boutique = tenues/accessoires (mêmes ids).
+- Ville : passants chibi (sprites en cache, enfants à la main, vélos, âgés), voitures/taxis/bus/camionnettes arrondis. `drawPerson` et `drawCarAt` remplacés (tram et rover lunaire inchangés).
+- À faire : garder le look perso dans la lignée à la mort, chiens plus jolis, avis de Nils sur téléphone.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2133)
 - Retiré : le bloc AGENT RENDU3D (socle doré, boutons brillants…) : Nils le trouve « très IA », pire qu'avant. Retour au rendu de la version 1911.
 - Nils n'aime pas non plus le look personnalisable (emojis) : à refaire. Prochaine passe graphique : skills de design (frontend-design, ux designer), vraie étude de Monopoly Go, rien de doré/brillant gadget.
