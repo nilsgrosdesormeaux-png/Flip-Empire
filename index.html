@@ -8219,8 +8219,8 @@ function r3Socle(){
     g.fillStyle=gr;g.save();r3Iso(g,z0);r3Shape(g,m,rad);g.restore();g.fill();g.beginPath();g.moveTo(L0[0],L0[1]);g.lineTo(R0[0],R0[1]);g.lineTo(R1[0],R1[1]);g.lineTo(L1[0],L1[1]);g.closePath();g.fill()};
   const zb=zTop-H;
   slab(zb,zb+5,gl.band,.8);                       /* pied sombre */
-  slab(zb+5,zTop-5,gl.side,1);                    /* tranche */
-  if(gl.gold){slab(zTop-9,zTop-6,'#F2C14E',1.08);if(gl.gold>1)slab(zb+6,zb+8,'#E8B23A',1)}
+  if(gl.gold>1){slab(zb+5,zb+7,'#E8B23A',1);slab(zb+7,zTop-9,gl.side,1)}else slab(zb+5,zTop-9,gl.side,1);
+  slab(zTop-9,zTop-5,gl.gold?'#F2C14E':gl.side,gl.gold?1.08:1);
   slab(zTop-5,zTop,gl.band,1.05);                 /* corniche */
   /* reflet vertical doux sur la tranche (lumière à gauche) */
   base();{const [L0,R0]=ext(zb),[L1]=ext(zTop);g.save();g.globalCompositeOperation='source-atop';const gr=g.createLinearGradient(0,L1[1],0,L0[1]+N*TH/2);gr.addColorStop(0,'rgba(255,255,255,.16)');gr.addColorStop(.35,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(L0[0]-20,L1[1]-N*TH,R0[0]-L0[0]+40,N*TH*2+H+60);g.restore()}
@@ -8264,7 +8264,7 @@ box=function(x,y,w,d,h,col,o){o=o||{};
   poly(ctx,[Dg,Cg,C,D],shade(col,kl));poly(ctx,[Cg,Bg,B,C],shade(col,kr));poly(ctx,[A,B,C,D],shade(top,kt));
   /* pied assombri (occlusion au sol) et haut des façades éclairé */
   const ah=Math.min(h*.35,7);
-  if(ao){ctx.fillStyle=R3AO;ctx.beginPath();ctx.moveTo(Dg[0],Dg[1]);ctx.lineTo(Cg[0],Cg[1]);ctx.lineTo(Bg[0],Bg[1]);ctx.lineTo(Bg[0],Bg[1]-ah);ctx.lineTo(Cg[0],Cg[1]-ah);ctx.lineTo(Dg[0],Dg[1]-ah);ctx.closePath();ctx.fill()}
+  if(ao&&R3.rim!==0){ctx.fillStyle=R3AO;ctx.beginPath();ctx.moveTo(Dg[0],Dg[1]);ctx.lineTo(Cg[0],Cg[1]);ctx.lineTo(Bg[0],Bg[1]);ctx.lineTo(Bg[0],Bg[1]-ah);ctx.lineTo(Cg[0],Cg[1]-ah);ctx.lineTo(Dg[0],Dg[1]-ah);ctx.closePath();ctx.fill()}
   const la=(.6+L*.02)*(1-NIGHT*.8);
   if(la>.04&&R3.rim!==0){const t=Math.min(3,h*.22);ctx.fillStyle=`rgba(255,248,230,${(la*.42).toFixed(2)})`;ctx.beginPath();ctx.moveTo(D[0],D[1]);ctx.lineTo(C[0],C[1]);ctx.lineTo(B[0],B[1]);ctx.lineTo(B[0],B[1]+t);ctx.lineTo(C[0],C[1]+t);ctx.lineTo(D[0],D[1]+t);ctx.closePath();ctx.fill();
     ctx.fillStyle=`rgba(255,255,255,${la.toFixed(2)})`;const e=1.2;ctx.beginPath();ctx.moveTo(D[0],D[1]);ctx.lineTo(C[0],C[1]);ctx.lineTo(B[0],B[1]);ctx.lineTo(B[0]-e*.9,B[1]-e*.45);ctx.lineTo(C[0],C[1]-e);ctx.lineTo(D[0]+e*.9,D[1]-e*.45);ctx.closePath();ctx.fill()}
@@ -8349,6 +8349,43 @@ drawFx=function(dt){
     fx.globalAlpha=1}
   for(let i=FLOATS.length-1;i>=0;i--)if(FLOATS[i].dead)FLOATS.splice(i,1);
 };
+/* ---------- Pastilles des commerces : jeton brillant (anneau doré à partir de Marseille) ---------- */
+const r3BadgeSpr=(tier,night)=>gfxSprite('r3b'+tier+'_'+night,112,124,g=>{const s=4.5,c=56,r=11*s;
+  g.fillStyle='rgba(20,30,50,.22)';g.beginPath();g.ellipse(c,c+r*.95,r*.8,r*.28,0,0,7);g.fill();
+  const ring=tier>=2?['#FFF0A0','#F2B51E','#B87800']:tier>=1?['#FFFFFF','#D7DEE6','#9AA6B2']:['#FFFFFF','#E3E8EC','#AEB8BF'];
+  let gr=g.createLinearGradient(0,c-r,0,c+r);gr.addColorStop(0,ring[0]);gr.addColorStop(.5,ring[1]);gr.addColorStop(1,ring[2]);
+  g.fillStyle=gr;g.beginPath();g.arc(c,c+2,r,0,7);g.fill();
+  gr=g.createRadialGradient(c-r*.3,c-r*.4,r*.1,c,c,r*.86);gr.addColorStop(0,night?'#F4F1FF':'#FFFFFF');gr.addColorStop(1,night?'#C9CDE6':'#E2EAF2');
+  g.fillStyle=gr;g.beginPath();g.arc(c,c,r*.84,0,7);g.fill();
+  g.fillStyle='rgba(255,255,255,.9)';g.beginPath();g.ellipse(c-r*.32,c-r*.5,r*.36,r*.16,-.5,0,7);g.fill()});
+const r3Badge0=badge;
+badge=function(top,e,hgt){if(!R3.on||GFX.thumb)return r3Badge0(top,e,hgt);const x=top[0],y=top[1]-(hgt||14),L=r3L();
+  const spr=r3BadgeSpr(L>=3?2:L>=1?1:0,NIGHT>.5?1:0);ctx.drawImage(spr,x-12.44,y-12.44,24.9,27.6);emoji(e,x,y+.5,13)};
+
+/* ---------- Lumière d'ambiance autour du plateau (halo derrière la maquette) ---------- */
+const r3Sky0=drawSky;
+drawSky=function(){r3Sky0();if(!R3.on||R3.halo===0)return;const c=toScreen(0,N*TH/2+10),R=Math.max(MW,MH)*.55+N*TW*.35*cam.z;
+  const n=NIGHT,a=TH_.moon||TH_.mars?.16:(.34-.18*n);if(a<=0)return;
+  const gr=ctx.createRadialGradient(c[0],c[1],0,c[0],c[1],R);
+  const tint=TH_.sea?'190,245,255':n>.5?'150,170,255':'255,248,225';
+  gr.addColorStop(0,`rgba(${tint},${a.toFixed(3)})`);gr.addColorStop(.55,`rgba(${tint},${(a*.35).toFixed(3)})`);gr.addColorStop(1,`rgba(${tint},0)`);
+  ctx.fillStyle=gr;ctx.fillRect(0,0,MW,MH)};
+
+/* ---------- Reflets qui scintillent sur les immeubles (plus nombreux à chaque ville) ---------- */
+genCity=(f=>function(ci){f(ci);try{const L=r3L(),k=Math.min(.6,L*.05);for(const o of DECOR){if(o.t!=='apt'&&!(o.t==='house'&&o.f>=3))continue;const hsh=((Math.round(o.x*31+o.y*17)*2654435761)>>>0)%1000/1000;o.r3g=hsh<k?1+hsh*20:0}}catch(e){}})(genCity);
+const r3Star=(x,y,s,a,col)=>{ctx.fillStyle=col;ctx.globalAlpha=a;ctx.beginPath();ctx.moveTo(x,y-s*2.2);ctx.lineTo(x+s*.4,y-s*.4);ctx.lineTo(x+s*2.2,y);ctx.lineTo(x+s*.4,y+s*.4);ctx.lineTo(x,y+s*2.2);ctx.lineTo(x-s*.4,y+s*.4);ctx.lineTo(x-s*2.2,y);ctx.lineTo(x-s*.4,y-s*.4);ctx.closePath();ctx.fill();ctx.globalAlpha=1};
+const r3House0=drawHouse;
+drawHouse=function(o){const r=r3House0(o);
+  if(o.r3g&&R3.on&&!GFX.thumb&&!RM&&cLod()){const ph=o.r3g,tw=Math.sin(T*1.6+ph*2.3);
+    if(tw>.55){const p=iso(o.x+o.w,o.y+o.d,o.f*FH),k=(tw-.55)/.45;
+      if(NIGHT<.5)r3Star(p[0],p[1]-.5,1.3+k*1.4,k*(1-NIGHT*1.6),'#FFFFFF');
+      else{ctx.globalCompositeOperation='lighter';cGlow(p[0],p[1]-6,26,26,.35*k);ctx.globalCompositeOperation='source-over'}}}
+  return r};
+
+/* ---------- Garde-fou de fluidité : si la carte met trop de temps à se dessiner, on retire les reflets fins ---------- */
+R3.ms=0;R3.slow=0;
+drawWorld=(f=>function(){const t0=performance.now();f();const d=performance.now()-t0;R3.ms=R3.ms*.95+d*.05;
+  if(R3.ms>22){if(++R3.slow>180&&R3.rim!==0){R3.rim=0;R3.halo=0}}else R3.slow=Math.max(0,R3.slow-1)})(drawWorld);
 /* ===== FIN AGENT RENDU3D ===== */
 /* ================= BOOT ================= */
 (function boot(){
