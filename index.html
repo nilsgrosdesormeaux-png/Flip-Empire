@@ -436,23 +436,130 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 .dists{display:grid;gap:8px;margin-top:10px}
 .dist{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:grid;gap:4px}
 /* AGENT META */
-:root[data-skin="ocean"]{--sticker:#5EC8F2;--pink:#4F7CFF;--bg:#D3E3EA;--surface2:#E6F0F4}
-:root[data-skin="sunset"]{--sticker:#FFB067;--pink:#FF6F7D;--bg:#EEDCD3;--surface2:#F6EAE3}
-:root[data-skin="forest"]{--sticker:#A8DB7A;--pink:#E7A93B;--bg:#D5E2D1;--surface2:#E7F0E3}
-:root[data-skin="neon"]{--sticker:#D38CFF;--pink:#2EF2C9;--bg:#E2DAEE;--surface2:#EEE8F6}
-:root[data-skin="gold"]{--sticker:#E8BD4A;--pink:#B8862B;--bg:#E6E0D0;--surface2:#F1ECDF}
-@media (prefers-color-scheme: dark){
-  :root[data-skin="ocean"]:not([data-theme="light"]){--bg:#0F1C24;--surface2:#1B2C36}
-  :root[data-skin="sunset"]:not([data-theme="light"]){--bg:#22171A;--surface2:#352427}
-  :root[data-skin="forest"]:not([data-theme="light"]){--bg:#111D14;--surface2:#203023}
-  :root[data-skin="neon"]:not([data-theme="light"]){--bg:#160F22;--surface2:#271C38}
-  :root[data-skin="gold"]:not([data-theme="light"]){--bg:#1C1912;--surface2:#2E291D}
-}
-:root[data-theme="dark"][data-skin="ocean"]{--bg:#0F1C24;--surface2:#1B2C36}
-:root[data-theme="dark"][data-skin="sunset"]{--bg:#22171A;--surface2:#352427}
-:root[data-theme="dark"][data-skin="forest"]{--bg:#111D14;--surface2:#203023}
-:root[data-theme="dark"][data-skin="neon"]{--bg:#160F22;--surface2:#271C38}
-:root[data-theme="dark"][data-skin="gold"]{--bg:#1C1912;--surface2:#2E291D}
+/* Palettes des thèmes (data-skin sur :root) : générées depuis META_ITEMS par le bloc AGENT SKINS (style#sk-theme-css), clair et sombre. */
+/* ===== SKINS : vitrine, aperçus, décos de carte, effets ===== */
+:root{--rar-c:#6F7F7B;--rar-r:#2A73D9;--rar-e:#8E44D6;--rar-l:#C98712}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--rar-c:#A3B2AE;--rar-r:#73AEFF;--rar-e:#C597FF;--rar-l:#F4C55A}}
+:root[data-theme="dark"]{--rar-c:#A3B2AE;--rar-r:#73AEFF;--rar-e:#C597FF;--rar-l:#F4C55A}
+:root[data-av] .hero-av{background:var(--av-bg);border-color:var(--av-ring)}
+.sheet:has(.meta-shop){max-width:760px}
+.sk-top{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sk-pill{display:inline-flex;align-items:center;gap:6px;background:var(--surface2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-weight:700;font-size:.86rem;color:var(--ink)}
+.sk-pill.jt{background:var(--sticker);color:var(--sticker-ink);border-color:transparent}
+.sk-tok{width:14px;height:14px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF4B8 0 18%,#F6C945 45%,#D99A1E 80%);box-shadow:inset 0 0 0 1.5px #B87A12}
+.meta-seg .sk-c{display:block;font-size:.68rem;font-weight:600;opacity:.75;margin-top:1px}
+.sk-earn{margin:6px 0 0;font-size:.8rem;color:var(--muted);text-align:center}
+.sk-filt{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.sk-filt button{font:inherit;font-size:.8rem;font-weight:700;border:1.5px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:5px 12px;cursor:pointer;min-height:34px}
+.sk-filt button.on{background:var(--ink);border-color:var(--ink);color:var(--surface)}
+.sk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(138px,1fr));gap:10px;margin-top:10px}
+.sk-empty{grid-column:1/-1;text-align:center;color:var(--muted);font-size:.88rem;padding:18px 0}
+.sk-card{--rc:var(--rar-c);position:relative;background:var(--surface2);border-radius:14px;padding:7px 7px 9px;display:flex;flex-direction:column;gap:3px;border:2px solid transparent;text-align:left;min-width:0}
+.sk-card.r-r{--rc:var(--rar-r)}.sk-card.r-e{--rc:var(--rar-e)}.sk-card.r-l{--rc:var(--rar-l)}
+.sk-card.r-e{border-color:color-mix(in srgb,var(--rar-e) 35%,transparent)}
+.sk-card.r-l{background:linear-gradient(var(--surface2),var(--surface2)) padding-box,linear-gradient(135deg,#F6D365,#E9894A 50%,#F6D365) border-box}
+.sk-card.on{box-shadow:0 0 0 2.5px var(--ink);background:var(--surface)}
+.sk-card.r-l.on{background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(135deg,#F6D365,#E9894A 50%,#F6D365) border-box}
+.sk-pv{position:relative;height:92px;border-radius:9px;overflow:hidden;display:grid;place-items:center;margin-bottom:5px;isolation:isolate}
+.sk-lock{position:absolute;right:5px;top:5px;width:22px;height:22px;border-radius:50%;background:rgba(15,22,26,.62);display:grid;place-items:center;z-index:3}
+.sk-lock svg{width:11px;height:11px}
+.sk-new{position:absolute;left:5px;top:5px;background:var(--pink);color:#1E2B2A;font-size:.64rem;font-weight:800;padding:2px 7px;border-radius:999px;z-index:3;letter-spacing:.02em}
+.sk-rar{font-size:.64rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--rc);display:flex;align-items:center;gap:5px}
+.sk-rar::before{content:"";width:7px;height:7px;border-radius:2px;background:var(--rc);transform:rotate(45deg)}
+.sk-n{font-size:.92rem;line-height:1.2;color:var(--ink)}
+.sk-how{font-size:.74rem;color:var(--muted);line-height:1.3}
+.sk-bar{display:flex;align-items:center;gap:6px;font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.sk-bar i{flex:1;height:5px;border-radius:3px;background:var(--line);overflow:hidden}
+.sk-bar i b{display:block;height:100%;background:var(--rc);border-radius:3px}
+.sk-bt{display:flex;gap:5px;margin-top:auto;padding-top:6px}
+.sk-bt .btn{flex:1;padding:7px 6px;font-size:.8rem;min-height:36px;border-radius:9px;white-space:nowrap}
+.sk-bt .btn.go{background:var(--ink);color:var(--surface)}
+.sk-bt .btn.ghost{border-width:1.5px}
+.sk-bt .btn.buy{background:var(--sticker);color:var(--sticker-ink);display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.sk-bt .btn.soon{background:transparent;color:var(--muted);border:1.5px dashed var(--line)}
+.sk-pass{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 12px}.sk-pass .sk-pv{height:72px;margin:0;border:2px solid rgba(255,255,255,.7)}.sk-pass .sk-av{width:44px;height:44px;font-size:24px}.sk-pass .sk-pv.cl>svg{width:50px;height:50px}
+.sk-eq{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:5px;font-size:.8rem;font-weight:800;border-radius:9px;min-height:36px;background:color-mix(in srgb,var(--money) 15%,transparent);color:var(--money)}
+/* aperçu thème : mini écran clair | sombre */
+.sk-th{display:grid;grid-template-columns:1fr 1fr;place-items:stretch}
+.sk-mk{background:var(--b);padding:8px 7px;display:flex;flex-direction:column;gap:5px;min-width:0}
+.sk-mk>.a{display:flex;gap:4px;align-items:center;justify-content:space-between}
+.sk-mk .c{height:7px;width:46%;border-radius:3px;background:var(--i)}
+.sk-mk .k{height:10px;width:32%;border-radius:5px;background:var(--k)}
+.sk-mk .s{flex:1;background:var(--s);border:1px solid var(--l);border-radius:7px;padding:6px 5px;display:flex;flex-direction:column;gap:4px}
+.sk-mk .t{height:5px;border-radius:3px;background:var(--i);width:72%}
+.sk-mk .u{height:4px;border-radius:2px;background:var(--m);width:52%}
+.sk-mk .p{height:11px;border-radius:5px;background:var(--p);width:58%;margin-top:auto}
+.sk-mk .d{display:flex;gap:3px}.sk-mk .d i{width:9px;height:9px;border-radius:50%;background:var(--s2);border:1px solid var(--l)}
+/* aperçu tenue */
+.sk-av{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;font-size:36px;line-height:1;background:var(--g);border:3px solid var(--ring);box-shadow:0 3px 0 rgba(0,0,0,.18),inset 0 -6px 0 rgba(0,0,0,.08)}
+.sk-pv.av{background:var(--pvb)}
+.sk-pv.av::before{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.35) 1.2px,transparent 1.6px) 0 0/12px 12px;z-index:-1}
+/* aperçu club */
+.sk-pv.cl{background:repeating-linear-gradient(90deg,#3F9A4F 0 18px,#48A858 18px 36px)}
+.sk-pv.cl>svg{width:74px;height:74px;filter:drop-shadow(0 3px 2px rgba(0,0,0,.25))}
+/* aperçu déco + déco sur la carte */
+.sk-pv.dc{background:var(--sky)}
+.sk-pv.dc .sk-house{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);width:84px;height:40px}
+#meta-deco{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+#meta-deco.night{background:linear-gradient(180deg,rgba(14,20,56,.42),rgba(14,20,56,.12) 55%,rgba(14,20,56,0))}
+#meta-deco.dusk{background:linear-gradient(180deg,rgba(60,30,80,.22),rgba(60,30,80,0) 45%)}
+.sk-gar{position:absolute;left:0;top:0;width:100%;}
+#meta-deco .sk-gar{top:76px;filter:drop-shadow(0 2px 1.5px rgba(0,0,0,.22))}
+.sk-cor{position:absolute;bottom:0;filter:drop-shadow(0 2px 2px rgba(0,0,0,.2))}
+.sk-cor.l{left:4px}.sk-cor.r{right:4px;transform:scaleX(-1)}
+#meta-deco .sk-cor.bal{animation:skfloat 4.5s ease-in-out infinite}
+#meta-deco .sk-cor.r.bal{animation-name:skfloatr}
+@keyframes skfloat{50%{transform:translateY(-8px) rotate(-1.5deg)}}
+@keyframes skfloatr{0%,100%{transform:scaleX(-1)}50%{transform:scaleX(-1) translateY(-8px) rotate(-1.5deg)}}
+.sk-tw{animation:sktw 1.8s ease-in-out infinite alternate}
+@keyframes sktw{from{opacity:1}to{opacity:.35}}
+.sk-mp{position:absolute;display:block}
+#meta-deco .sk-mp{top:-6%;animation:skmapfall linear infinite}
+#meta-deco .sk-mp>i{animation:sksway 2.4s ease-in-out infinite alternate}
+@keyframes skmapfall{from{top:-6%}to{top:104%}}
+@keyframes sksway{from{transform:translateX(-9px) rotate(-25deg)}to{transform:translateX(9px) rotate(35deg)}}
+#meta-deco .sk-mp.fly{animation:skfly 7s ease-in-out infinite}
+#meta-deco .sk-mp.fly>i{animation:skglow 2.2s ease-in-out infinite alternate}
+@keyframes skfly{0%,100%{transform:translate(0,0)}33%{transform:translate(18px,-14px)}66%{transform:translate(-12px,10px)}}
+@keyframes skglow{from{opacity:.25}to{opacity:1}}
+#meta-deco .sk-mp.shoot{opacity:0;animation:skshoot 6s linear infinite}
+#meta-deco .sk-mp.shoot>i{animation:none}
+@keyframes skshoot{0%{transform:translate(0,0) rotate(-28deg);opacity:0}3%{opacity:1}16%{transform:translate(-220px,116px) rotate(-28deg);opacity:0}100%{transform:translate(-220px,116px) rotate(-28deg);opacity:0}}
+/* particules (aperçus, carte, pluie) */
+.px{display:block;width:var(--z,14px);height:var(--z,14px)}
+.px-coin{border-radius:50%;background:radial-gradient(circle at 35% 30%,#FFF6C4 0 16%,#F6C945 42%,#D99A1E 78%);box-shadow:inset 0 0 0 1.5px #B4760E,inset 0 0 0 3.5px #F7D766}
+.px-bill{width:calc(var(--z,14px)*1.75);border-radius:2px;background:radial-gradient(circle,#2F8A50 0 20%,transparent 23%),linear-gradient(#8FDCA8,#6CC48C);box-shadow:inset 0 0 0 1.5px #2F8A50}
+.px-conf{width:calc(var(--z,14px)*.45);border-radius:1.5px;background:var(--c,#FF5FA2)}
+.px-dia{clip-path:polygon(50% 0,100% 36%,50% 100%,0 36%);background:linear-gradient(135deg,#F1FDFF,#8BE6F7 40%,#25AFD6 70%,#C9F7FF)}
+.px-star{clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:linear-gradient(#FFF3B0,#F5BE2E)}
+.px-heart{background:var(--c,#FF6F91);clip-path:path('M7 13 C7 13 0 8.5 0 4.2 C0 1.8 1.8 0 4 0 C5.3 0 6.4 .7 7 1.7 C7.6 .7 8.7 0 10 0 C12.2 0 14 1.8 14 4.2 C14 8.5 7 13 7 13 Z');width:14px;height:13px}
+.px-petal{border-radius:80% 0 80% 0;background:linear-gradient(135deg,#FFE3EC,var(--c,#FFA8C5))}
+.px-leaf{border-radius:0 80% 0 80%;background:linear-gradient(135deg,var(--c,#F2994A),color-mix(in srgb,var(--c,#F2994A) 70%,#5A2A0A));box-shadow:inset -1px 1px 0 rgba(255,255,255,.25)}
+.px-bar{width:calc(var(--z,14px)*1.8);height:calc(var(--z,14px)*.8);clip-path:polygon(16% 0,84% 0,100% 100%,0 100%);background:linear-gradient(#FFEFA6,#EDB52E 55%,#B87A10)}
+.px-bub{border-radius:50%;border:1.5px solid rgba(255,255,255,.85);background:radial-gradient(circle at 32% 30%,rgba(255,255,255,.9) 0 12%,rgba(180,230,255,.3) 38%,rgba(120,200,255,.12))}
+.px-snow{border-radius:50%;background:#fff;box-shadow:0 0 3px rgba(255,255,255,.8);opacity:.92}
+.px-fly{border-radius:50%;background:#F7F06A;box-shadow:0 0 0 1px rgba(110,100,0,.35),0 0 8px 4px rgba(255,226,90,.8),0 0 18px 8px rgba(255,236,120,.35)}
+.px-shoot{width:80px;height:3px;border-radius:2px;background:linear-gradient(90deg,#FFE58A,rgba(255,213,74,0));position:relative}
+.px-shoot::before{content:"";position:absolute;left:-6px;top:-5px;width:13px;height:13px;clip-path:polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);background:#FFD54A}
+.px-spark{width:7px;height:7px;border-radius:50%;background:var(--c,#FFD54A);box-shadow:0 0 6px 1px var(--c,#FFD54A)}
+.sk-pv .px{position:absolute}
+.sk-pv.fx{background:radial-gradient(circle at 50% 120%,#2E4652,#18242C 70%)}
+/* pluie d'effets */
+.meta-rain .pf{position:absolute;top:-40px;animation:skfall linear forwards}
+.meta-rain .pf.up{top:auto;bottom:-40px;animation-name:skrise}
+.meta-rain .pf>i{animation:skspin .9s linear infinite}
+.meta-rain .pf>.px-coin{animation:skflip .7s linear infinite}
+.meta-rain .pf>.px-bill{animation:skflut 1.1s ease-in-out infinite alternate}
+.meta-rain .pf>.px-bub{animation:none}
+.meta-rain .bst{position:absolute;width:0;height:0}
+.meta-rain .bst>i{position:absolute;left:0;top:0;opacity:0;animation:skburst 1.3s cubic-bezier(.15,.7,.3,1) forwards}
+@keyframes skfall{to{transform:translate3d(var(--dx,0),calc(100vh + 80px),0) rotate(var(--rot,300deg))}}
+@keyframes skrise{to{transform:translate3d(var(--dx,0),calc(-100vh - 80px),0)}}
+@keyframes skspin{to{transform:rotate3d(1,.6,.2,360deg)}}
+@keyframes skflip{50%{transform:scaleX(.12)}}
+@keyframes skflut{from{transform:rotate(-24deg) skewX(-10deg)}to{transform:rotate(26deg) skewX(10deg)}}
+@keyframes skburst{0%{transform:translate(0,0) scale(1.2);opacity:1}75%{opacity:1}100%{transform:translate(var(--bx),var(--by)) scale(.35);opacity:0}}
+@media (prefers-reduced-motion: reduce){#meta-deco *{animation:none!important}.meta-rain .pf>i{animation:none}}
 .meta-hud{display:inline-flex;gap:6px}
 .meta-hud .btn{position:relative}
 .meta-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--pink);box-shadow:0 0 0 2px var(--surface)}
@@ -484,12 +591,7 @@ input[type=range]{width:100%;accent-color:var(--ink);margin:10px 0}
 .meta-res i{position:absolute;left:0;top:0;bottom:0;background:color-mix(in srgb,var(--sticker) 55%,transparent)}
 .meta-res.me{box-shadow:inset 0 0 0 2px var(--ink);font-weight:700}
 .meta-early{margin-top:12px;font-size:.84rem;text-align:left;border:1.5px dashed var(--line);border-radius:10px;padding:8px 10px;color:var(--muted)}
-#meta-deco{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:6;pointer-events:none;font-size:26px;letter-spacing:4px;white-space:nowrap;animation:metasway 3s ease-in-out infinite;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
-@keyframes metasway{50%{transform:translateX(-50%) translateY(-5px) rotate(-2deg)}}
 .meta-rain{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
-.meta-rain span{position:absolute;top:-40px;animation:metafall linear forwards}
-@keyframes metafall{to{transform:translateY(calc(100vh + 80px)) rotate(320deg)}}
-@media (prefers-reduced-motion: reduce){#meta-deco{animation:none}}
 /* AGENT GRAPHISME */
 .gfx-open{width:100%;margin-top:14px}
 .gfx-sheet{max-width:460px;padding:20px 14px;text-align:left}
@@ -4023,12 +4125,12 @@ function metaHash(s){let h=2166136261;for(const c of String(s))h=Math.imul(h^c.c
 
 /* ---------- État (S.meta) + copie « compte » qui survit à une nouvelle vie ---------- */
 function META_DEF(){return{v:1,jetons:0,owned:[],eq:{theme:'th_classic',avatar:'av_none',club:'cl_jaune',deco:'dc_none',rain:'fx_or'},
-  baseAv:null,votes:{},winners:{},pollDone:null,jokers:0,trophyPaid:0,pending:null,welcomeDay:null,ent:{pass:null,premium:[]},shopTab:'pass'}}
-const META_ACC_KEYS=['jetons','owned','eq','votes','winners','pollDone','jokers','ent'];
+  baseAv:null,votes:{},winners:{},pollDone:null,jokers:0,trophyPaid:0,pending:null,welcomeDay:null,ent:{pass:null,premium:[]},shopTab:'pass',shopFilter:'all',fresh:[],cityPaid:null}}
+const META_ACC_KEYS=['jetons','owned','eq','votes','winners','pollDone','jokers','ent','fresh'];
 function metaInit(){
   if(!S.meta||typeof S.meta!=='object'||Array.isArray(S.meta)){const acc=metaGet(META_LS.acc)||{},m={};META_ACC_KEYS.forEach(k=>{if(acc[k]!==undefined)m[k]=acc[k]});S.meta=m}
   fillDefaults(META_DEF(),S.meta);const m=S.meta;
-  if(!Array.isArray(m.owned))m.owned=[];if(!isFinite(m.jetons)||m.jetons<0)m.jetons=0;if(!isFinite(m.jokers))m.jokers=0;
+  if(!Array.isArray(m.owned))m.owned=[];if(!Array.isArray(m.fresh))m.fresh=[];if(!m.eq||typeof m.eq!=='object')m.eq=META_DEF().eq;if(!isFinite(m.jetons)||m.jetons<0)m.jetons=0;if(!isFinite(m.jokers))m.jokers=0;
   if(!m.ent||!Array.isArray(m.ent.premium))m.ent={pass:null,premium:[]};
   return m;
 }
@@ -4036,49 +4138,122 @@ function metaSave(){const m=metaInit(),a={};META_ACC_KEYS.forEach(k=>a[k]=m[k]);
 const metaHasPass=()=>{const p=metaInit().ent.pass;return !!(p&&p.until>metaNow())};
 function metaGain(n,why){if(metaActiveId()==='jetons')n*=2;const m=metaInit();m.jetons+=n;metaSave();if(why)toast(`🎟️ +${n} jetons : ${why}`);return n}
 
-/* ---------- Catalogue ---------- */
+/* ---------- Catalogue ----------
+   r : rareté (c commun, r rare, e épique, l légendaire). Moyens d'obtention : free, cost (jetons), ach (succès en jouant,
+   gardé pour toujours une fois atteint), poll (offert par le vote), pass (Pass Empire), prem (achat, bientôt).
+   Thème : pal.l = [fond, carte, carte 2, trait, encre, gris, accent, accent 2] ; pal.d = [fond, carte, carte 2, trait, encre, gris] (sombre).
+   Tenue : e (emoji du perso), g (dégradé du fond), ring. Club : sw (couleur du stade), c2, pat (motif du maillot).
+   Déco : gar (guirlande en haut de la carte), cor (coin bas), pt (particules), sky (aperçu). Effet : fx (particule), up (monte). */
+const MA={
+  streak:n=>({t:`Série de ${n} jours`,p:()=>[S.streak||0,n]}),
+  troph:n=>({t:n>1?`${n} trophées`:'Gagne un trophée',p:()=>[(S.trophies||[]).length,n]}),
+  tro:(id,t)=>({t,p:()=>[(S.trophies||[]).includes(id)?1:0,1]}),
+  city:i=>({t:`Arrive à ${CITIES[i].n}`,p:()=>[S.city||0,i]}),
+  rank:i=>({t:`Rang ${RANKS[i][1]}`,p:()=>[rankIdx(),i]}),
+  club:()=>({t:'Achète un club',p:()=>[S.club&&S.club.own?1:0,1]}),
+  div:i=>({t:`Club en ${DIVS[i]}`,p:()=>[S.club&&S.club.own?S.club.div||0:0,i]}),
+  maire:()=>({t:'Deviens maire',p:()=>[S.pol&&S.pol.office||(S.trophies||[]).includes('t_maire')?1:0,1]}),
+  love:()=>({t:'Trouve l’amour',p:()=>[S.partner?1:0,1]}),
+  kid:()=>({t:'Deviens parent',p:()=>[Math.min(1,(S.kids||[]).length),1]}),
+  vote:()=>({t:'Vote à un sondage',p:()=>[Math.min(1,Object.keys(metaInit().votes).length),1]})
+};
 const META_ITEMS=[
-  {id:'th_classic',k:'theme',n:'Classique',sw:'#F7E733',free:1},
-  {id:'th_ocean',k:'theme',n:'Océan',sw:'#5EC8F2',ach:{t:'Gagne un trophée',ok:()=>S.trophies.length>=1}},
-  {id:'th_sunset',k:'theme',n:'Coucher de soleil',sw:'#FF9A5A',cost:60},
-  {id:'th_forest',k:'theme',n:'Forêt',sw:'#7BC67E',cost:120},
-  {id:'th_neon',k:'theme',n:'Néon',sw:'#B45CFF',prem:1,poll:'neon'},
-  {id:'th_gold',k:'theme',n:'Or impérial',sw:'#E2B33C',pass:1},
-  {id:'av_none',k:'avatar',n:'Mon perso',e:'🙂',free:1},
-  {id:'av_spy',k:'avatar',n:'Détective',e:'🕵️',cost:80},
-  {id:'av_hero',k:'avatar',n:'Super-héros',e:'🦸',cost:150},
-  {id:'av_astro',k:'avatar',n:'Astronaute',e:'🧑‍🚀',ach:{t:'Rang Marchand',ok:()=>rankIdx()>=3}},
-  {id:'av_robot',k:'avatar',n:'Robot',e:'🤖',ach:{t:'Série de 7 jours',ok:()=>S.streak>=7}},
-  {id:'av_king',k:'avatar',n:'Monarque',e:'🤴',prem:1},
-  {id:'av_vamp',k:'avatar',n:'Vampire',e:'🧛',prem:1},
-  {id:'cl_jaune',k:'club',n:'Jaune soleil',sw:'#F7C82F',free:1},
-  {id:'cl_rouge',k:'club',n:'Rouge passion',sw:'#E53935',ach:{t:'Possède un club',ok:()=>!!(S.club&&S.club.own)}},
-  {id:'cl_bleu',k:'club',n:'Bleu nuit',sw:'#1E5BD8',cost:50},
-  {id:'cl_vert',k:'club',n:'Vert pelouse',sw:'#2E9E5B',cost:50},
-  {id:'cl_rose',k:'club',n:'Rose flash',sw:'#FF5FA2',ach:{t:'3 trophées',ok:()=>S.trophies.length>=3}},
-  {id:'cl_noir',k:'club',n:'Noir et or',sw:'#2A2722',prem:1},
-  {id:'dc_none',k:'deco',n:'Aucune',e:'·',free:1},
-  {id:'dc_ballons',k:'deco',n:'Ballons',e:'🎈',ach:{t:'Série de 3 jours',ok:()=>S.streak>=3}},
-  {id:'dc_guirl',k:'deco',n:'Guirlandes',e:'🎉',cost:80},
-  {id:'dc_carnaval',k:'deco',n:'Carnaval',e:'🎭',prem:1,poll:'carnaval'},
-  {id:'dc_sapins',k:'deco',n:'Sapins d’hiver',e:'🎄',prem:1},
-  {id:'fx_or',k:'rain',n:'Pièces',e:'🪙',free:1},
-  {id:'fx_billets',k:'rain',n:'Pluie de billets',e:'💶',cost:40},
-  {id:'fx_confetti',k:'rain',n:'Confettis',e:'🎊',ach:{t:'Vote à un sondage',ok:()=>Object.keys(metaInit().votes).length>=1},poll:'neon'},
-  {id:'fx_diam',k:'rain',n:'Diamants',e:'💎',prem:1}
+  /* Thèmes */
+  {id:'th_classic',k:'theme',n:'Classique',r:'c',sw:'#F7E733',free:1,pal:{l:['#DCE3E0','#FFFFFF','#EEF2F0','#C3CDC9','#1E2B2A','#566663','#F7E733','#FF5FA2'],d:['#141D1C','#1F2B2A','#283736','#35463F','#E6EEEB','#9DADA9']}},
+  {id:'th_menthe',k:'theme',n:'Menthe glacée',r:'c',sw:'#A8F0D1',cost:30,pal:{l:['#D7EDE4','#FFFFFF','#EAF6F1','#BBD9CC','#163A2F','#4A6A60','#9EEACB','#FFB3C7'],d:['#0D1B17','#162A23','#1F362E','#2E4A40','#E1F4EC','#93B6AA']}},
+  {id:'th_lavande',k:'theme',n:'Lavande',r:'c',sw:'#C9C1FF',ach:MA.streak(5),pal:{l:['#E3E0F0','#FFFFFF','#F0EEF8','#CAC5E0','#25223F','#5B5878','#C6BDFF','#FFC2D9'],d:['#14121E','#1E1B2C','#282439','#3A3551','#ECEAF7','#A5A0C3']}},
+  {id:'th_sorbet',k:'theme',n:'Sorbet pêche',r:'c',sw:'#FFC7A6',cost:45,pal:{l:['#F3E3DC','#FFFFFF','#FAEFEA','#E6CDC3','#3A2520','#775A52','#FFC7A6','#9EDFCB'],d:['#1D1412','#291E1B','#352724','#4B3834','#F7E9E4','#C0A49C']}},
+  {id:'th_ocean',k:'theme',n:'Océan',r:'r',sw:'#5EC8F2',ach:MA.troph(1),pal:{l:['#D5E5EE','#FFFFFF','#E9F2F7','#B9D1DD','#13303D','#466373','#8AD6F7','#FFA48F'],d:['#0C1A23','#152732','#1E3340','#2C4859','#E2F0F6','#91ADBA']}},
+  {id:'th_sunset',k:'theme',n:'Coucher de soleil',r:'r',sw:'#FF9A5A',cost:60,pal:{l:['#F2E0D6','#FFFBF8','#F8EAE2','#E3C8BA','#3A211F','#795750','#FFC078','#FF8F8F'],d:['#1E1315','#2A1C1E','#372628','#4D3436','#F6E6E0','#BFA29B']}},
+  {id:'th_forest',k:'theme',n:'Forêt',r:'r',sw:'#7BC67E',cost:120,pal:{l:['#DAE4D1','#FBFDF8','#EBF2E4','#C0CFB5','#1E2D1B','#52634C','#B7DF7C','#F2B95B'],d:['#101A12','#19271B','#223325','#314934','#E3EEDE','#9BB195']}},
+  {id:'th_cafe',k:'theme',n:'Café crème',r:'r',sw:'#E9C29A',ach:MA.rank(3),pal:{l:['#E8DED3','#FFFCF8','#F3ECE3','#D7C6B3','#2E241C','#6B5B4D','#F0C79C','#A9D8BC'],d:['#17120E','#231C16','#2E261E','#43382C','#F2E9DF','#B7A696']}},
+  {id:'th_minuit',k:'theme',n:'Minuit',r:'e',sw:'#FFD66B',ach:MA.rank(5),pal:{l:['#DCE0EE','#FFFFFF','#EBEEF7','#C0C6DC','#181F3A','#515978','#FFD66B','#93B6FF'],d:['#0A0F1F','#131A2F','#1B2440','#2B3656','#E6EAF7','#99A3C3']}},
+  {id:'th_cerisier',k:'theme',n:'Cerisier',r:'e',sw:'#FFB8CF',ach:MA.city(6),pal:{l:['#F1E0E5','#FFFBFC','#F9ECF0','#E2C4CE','#3A1E29','#7A5865','#FFB8CF','#B6E3A0'],d:['#1D1217','#291A21','#35232B','#4C333F','#F8E7EE','#C4A0AF']}},
+  {id:'th_dune',k:'theme',n:'Dune dorée',r:'e',sw:'#F2C47A',ach:MA.city(7),pal:{l:['#ECE1CD','#FFFCF5','#F6EEDF','#DAC7A5','#32271A','#6C5C43','#F2C47A','#7CCAC1'],d:['#1A150E','#261F16','#32291E','#493C2B','#F5ECDC','#BAA889']}},
+  {id:'th_neon',k:'theme',n:'Néon',r:'e',sw:'#B45CFF',prem:1,poll:'neon',pal:{l:['#E5DFF2','#FFFFFF','#F1ECFA','#CEC3E6','#221639','#5D5178','#D6A2FF','#47EDCB'],d:['#120C1E','#1C142F','#271C3F','#3A2C59','#EEE7FB','#A89BC6']}},
+  {id:'th_lune',k:'theme',n:'Clair de lune',r:'l',sw:'#C4D3FF',ach:MA.city(8),pal:{l:['#E0E2E8','#FFFFFF','#EEF0F4','#C7CBD5','#1C2130','#575F71','#C4D3FF','#FFE08A'],d:['#0D0F15','#171A23','#212531','#323746','#E8EBF2','#9FA6B7']}},
+  {id:'th_gold',k:'theme',n:'Or impérial',r:'l',sw:'#E2B33C',pass:1,pal:{l:['#E8E1D1','#FFFDF7','#F4EDDF','#D8CAAC','#292215','#695D46','#EEC85E','#E9A66B'],d:['#16130D','#211D14','#2D271B','#453C29','#F3EBD8','#B4A788']}},
+  /* Tenues */
+  {id:'av_none',k:'avatar',n:'Mon perso',r:'c',e:'🙂',free:1},
+  {id:'av_chef',k:'avatar',n:'Chef étoilé',r:'c',e:'🧑‍🍳',g:['#FFFFFF','#F3D9C4'],ring:'#E07A5F',cost:50},
+  {id:'av_artist',k:'avatar',n:'Artiste',r:'c',e:'🧑‍🎨',g:['#FFE29A','#F7A6C4'],ring:'#7B5EA7',cost:60},
+  {id:'av_spy',k:'avatar',n:'Détective',r:'c',e:'🕵️',g:['#E8D6B9','#B7936A'],ring:'#5B4636',cost:80},
+  {id:'av_grad',k:'avatar',n:'Jeune diplômé',r:'c',e:'🧑‍🎓',g:['#C9DAF8','#8EA9DB'],ring:'#22355E',ach:MA.streak(3)},
+  {id:'av_hero',k:'avatar',n:'Super-héros',r:'r',e:'🦸',g:['#FF8A80','#3D5AFE'],ring:'#FFD54F',cost:150},
+  {id:'av_astro',k:'avatar',n:'Astronaute',r:'r',e:'🧑‍🚀',g:['#3A4A7A','#101830'],ring:'#C9D6FF',ach:MA.rank(3)},
+  {id:'av_robot',k:'avatar',n:'Robot',r:'r',e:'🤖',g:['#D7E6EE','#86A9BC'],ring:'#3B5566',ach:MA.streak(7)},
+  {id:'av_pilot',k:'avatar',n:'Pilote de ligne',r:'r',e:'🧑‍✈️',g:['#BFE6FF','#5AA9E6'],ring:'#1B3A5C',ach:MA.city(4)},
+  {id:'av_cowboy',k:'avatar',n:'Cow-boy',r:'r',e:'🤠',g:['#F6D49A','#C8834A'],ring:'#6E3B1F',ach:MA.city(5)},
+  {id:'av_rock',k:'avatar',n:'Rockstar',r:'r',e:'🧑‍🎤',g:['#2B2B3A','#E0457B'],ring:'#F5F5F5',cost:200},
+  {id:'av_maire',k:'avatar',n:'Juge de paix',r:'r',e:'🧑‍⚖️',g:['#F3EFE6','#C9BFA8'],ring:'#7A1F3D',ach:MA.maire()},
+  {id:'av_ninja',k:'avatar',n:'Ninja',r:'e',e:'🥷',g:['#44475A','#16171F'],ring:'#E5484D',ach:MA.city(6)},
+  {id:'av_mage',k:'avatar',n:'Magicien',r:'e',e:'🧙',g:['#7C5CFF','#2A1B6B'],ring:'#FFD66B',ach:MA.streak(14)},
+  {id:'av_fee',k:'avatar',n:'Fée',r:'e',e:'🧚',g:['#E2F7E1','#B9A6FF'],ring:'#F49AC1',ach:MA.kid()},
+  {id:'av_king',k:'avatar',n:'Monarque',r:'e',e:'🤴',g:['#8E2DE2','#4A00E0'],ring:'#F4C55A',prem:1},
+  {id:'av_vamp',k:'avatar',n:'Vampire',r:'e',e:'🧛',g:['#5A0F1F','#16070B'],ring:'#C9C9C9',prem:1},
+  {id:'av_genie',k:'avatar',n:'Génie',r:'l',e:'🧞',g:['#3FD0D4','#2D3A9A'],ring:'#F4C55A',ach:MA.troph(6)},
+  {id:'av_alien',k:'avatar',n:'Visiteur',r:'l',e:'👽',g:['#1D2B3A','#05080E'],ring:'#8CF5B0',ach:MA.city(8)},
+  {id:'av_dino',k:'avatar',n:'Dino',r:'l',e:'🦖',g:['#BDF2A6','#4FA36B'],ring:'#1F4D2E',pass:1},
+  /* Couleurs du club */
+  {id:'cl_jaune',k:'club',n:'Jaune soleil',r:'c',sw:'#F7C82F',c2:'#1E2B2A',pat:'plain',free:1},
+  {id:'cl_ciel',k:'club',n:'Ciel et blanc',r:'c',sw:'#6EC1EA',c2:'#FFFFFF',pat:'stripes',cost:40},
+  {id:'cl_bleu',k:'club',n:'Bleu nuit',r:'c',sw:'#1E5BD8',c2:'#FFFFFF',pat:'hoops',cost:50},
+  {id:'cl_vert',k:'club',n:'Vert pelouse',r:'c',sw:'#2E9E5B',c2:'#F4F1E6',pat:'collar',cost:50},
+  {id:'cl_rouge',k:'club',n:'Rouge passion',r:'c',sw:'#E53935',c2:'#FFFFFF',pat:'stripes',ach:MA.club()},
+  {id:'cl_orange',k:'club',n:'Orange mécanique',r:'r',sw:'#FF7A1A',c2:'#14213D',pat:'halves',cost:90},
+  {id:'cl_rose',k:'club',n:'Rose flash',r:'r',sw:'#FF5FA2',c2:'#1E2B2A',pat:'sash',ach:MA.troph(3)},
+  {id:'cl_bordeaux',k:'club',n:'Bordeaux',r:'r',sw:'#7A1F3D',c2:'#E9C46A',pat:'chevron',ach:MA.div(1)},
+  {id:'cl_tricolore',k:'club',n:'Tricolore',r:'r',sw:'#1F3C88',c2:'#E63946',pat:'tri',ach:MA.city(3)},
+  {id:'cl_violet',k:'club',n:'Violet royal',r:'e',sw:'#5B2A86',c2:'#F2C14E',pat:'sash',ach:MA.div(3)},
+  {id:'cl_noir',k:'club',n:'Noir et or',r:'e',sw:'#2A2722',c2:'#E2B33C',pat:'stripes',prem:1},
+  {id:'cl_champion',k:'club',n:'Or des champions',r:'l',sw:'#E9B949',c2:'#FFFFFF',pat:'chevron',ach:MA.tro('t_champion','Champion de Ligue 1')},
+  {id:'cl_aurore',k:'club',n:'Aurore',r:'l',sw:'#12B5A5',c2:'#7B2FF7',pat:'halves',pass:1},
+  /* Décorations de la ville */
+  {id:'dc_none',k:'deco',n:'Aucune',r:'c',free:1,sky:'day'},
+  {id:'dc_ampoules',k:'deco',n:'Guirlande lumineuse',r:'c',gar:'bulbs',cols:['#FFC93C','#FF6B6B','#4CC9F0','#7BD389','#FF9F1C'],sky:'dusk',cost:60},
+  {id:'dc_ballons',k:'deco',n:'Ballons',r:'c',cor:'bal',cols:['#FF5F7E','#FFD23F','#4CC9F0','#9B5DE5'],sky:'day',ach:MA.streak(3)},
+  {id:'dc_guirl',k:'deco',n:'Fanions de fête',r:'c',gar:'flags',cols:['#FF5F7E','#FFD23F','#4CC9F0','#7BD389','#9B5DE5'],sky:'day',cost:80},
+  {id:'dc_drapeaux',k:'deco',n:'Fanions du club',r:'r',gar:'flags',club:1,sky:'day',ach:MA.club()},
+  {id:'dc_lampions',k:'deco',n:'Lampions',r:'r',gar:'lanterns',cols:['#FF6B4A','#FFB627','#FF8FAB'],sky:'dusk',cost:120},
+  {id:'dc_feuilles',k:'deco',n:'Feuilles d’automne',r:'r',pt:'leaf',cols:['#E76F51','#F4A261','#E9C46A','#C1440E'],sky:'day',ach:MA.city(2)},
+  {id:'dc_neige',k:'deco',n:'Première neige',r:'r',pt:'snow',sky:'snow',ach:MA.streak(10)},
+  {id:'dc_lucioles',k:'deco',n:'Lucioles',r:'r',pt:'fly',sky:'night',ach:MA.rank(4)},
+  {id:'dc_sakura',k:'deco',n:'Pétales de cerisier',r:'e',pt:'petal',cols:['#FFB8CF','#FF9EBB','#FFD6E3'],sky:'day',ach:MA.city(6)},
+  {id:'dc_carnaval',k:'deco',n:'Carnaval',r:'e',gar:'flags',pt:'conf',cols:['#FF3D7F','#FFC300','#00C2D1','#8338EC','#3DDC97'],sky:'day',prem:1,poll:'carnaval'},
+  {id:'dc_sapins',k:'deco',n:'Sapins d’hiver',r:'e',cor:'fir',pt:'snow',sky:'snow',prem:1},
+  {id:'dc_etoiles',k:'deco',n:'Étoiles filantes',r:'l',pt:'shoot',sky:'night',ach:MA.city(8)},
+  /* Effets (pluie quand tu gagnes) */
+  {id:'fx_or',k:'rain',n:'Pièces d’or',r:'c',fx:'coin',free:1},
+  {id:'fx_bulles',k:'rain',n:'Bulles',r:'c',fx:'bub',up:1,cost:30},
+  {id:'fx_billets',k:'rain',n:'Pluie de billets',r:'c',fx:'bill',cost:40},
+  {id:'fx_coeurs',k:'rain',n:'Cœurs',r:'c',fx:'heart',cols:['#FF6F91','#FF9AB5','#E5486F'],ach:MA.love()},
+  {id:'fx_confetti',k:'rain',n:'Confettis',r:'r',fx:'conf',cols:['#FF5F7E','#FFD23F','#4CC9F0','#7BD389','#9B5DE5'],ach:MA.vote(),poll:'neon'},
+  {id:'fx_etoiles',k:'rain',n:'Étoiles',r:'r',fx:'star',cost:70},
+  {id:'fx_petales',k:'rain',n:'Pétales',r:'r',fx:'petal',cols:['#FFB8CF','#FF9EBB','#FFE3EC'],ach:MA.city(1)},
+  {id:'fx_lingots',k:'rain',n:'Lingots',r:'e',fx:'bar',ach:MA.rank(6)},
+  {id:'fx_diam',k:'rain',n:'Diamants',r:'e',fx:'dia',prem:1},
+  {id:'fx_feu',k:'rain',n:'Feu d’artifice',r:'l',fx:'spark',cols:['#FFD54A','#FF6B8B','#6BD6FF','#B58CFF','#7CF29A'],pass:1}
 ];
 const META_BY=Object.fromEntries(META_ITEMS.map(i=>[i.id,i]));
-const META_TABS=[['pass','👑 Pass'],['theme','Thèmes'],['avatar','Avatars'],['club','Club'],['deco','Ville'],['rain','Effets']];
-const META_DECO={dc_ballons:'🎈 🎈 🎈',dc_guirl:'🎉 🎊 🎉 🎊',dc_carnaval:'🎭 🎉 🎭 🎉',dc_sapins:'🎄 ❄️ 🎄 ❄️ 🎄'};
+const META_TABS=[['pass','Pass'],['theme','Thèmes'],['avatar','Tenues'],['club','Club'],['deco','Ville'],['rain','Effets']];
+const META_RAR={c:'Commun',r:'Rare',e:'Épique',l:'Légendaire'};
+/* Succès : [actuel, objectif] sans jamais planter */
+function metaAchP(it){try{const p=it.ach.p?it.ach.p():[it.ach.ok()?1:0,1];return[Math.max(0,+p[0]||0),p[1]]}catch(e){return[0,1]}}
+const metaAchDone=it=>{const p=metaAchP(it);return p[0]>=p[1]};
 /* Renvoie pourquoi l'objet est disponible ('' = verrouillé) */
 function metaOwn(it){const m=metaInit();
   if(it.free||m.owned.includes(it.id))return 'own';
-  if(it.ach&&it.ach.ok())return 'ach';
+  if(it.ach&&metaAchDone(it))return 'ach';
   if(it.prem&&m.ent.premium.includes(it.id))return 'prem';
   if(it.pass&&metaHasPass())return 'pass';
   if(it.poll&&metaActiveId()===it.poll)return 'poll';
   return '';
 }
+/* Un succès atteint une fois reste acquis (même si la série retombe) */
+function metaUnlockScan(quiet){const m=metaInit(),got=[];
+  META_ITEMS.forEach(it=>{if(it.ach&&!m.owned.includes(it.id)&&metaAchDone(it)){m.owned.push(it.id);got.push(it);if(!quiet)m.fresh.push(it.id)}});
+  if(!got.length)return;m.fresh=m.fresh.slice(-30);metaSave();
+  if(!quiet)toast(got.length>1?`Collection : ${got.length} nouveaux objets à la boutique`:`Débloqué : ${got[0].n} (${META_RAR[got[0].r]||'Commun'})`)}
 let META_PREVIEW=null,META_PREV_T=0;
 function metaEq(k){if(META_PREVIEW&&META_PREVIEW.k===k)return META_BY[META_PREVIEW.id];
   const it=META_BY[metaInit().eq[k]];return it&&it.k===k&&metaOwn(it)?it:META_ITEMS.find(i=>i.k===k&&i.free)}
@@ -4089,15 +4264,11 @@ function metaApply(){
   const av=metaEq('avatar');
   if(av.id!=='av_none'){if(!m.baseAv||m.baseAv.name!==S.hero.name)m.baseAv={av:S.hero.av,name:S.hero.name};S.hero.av=av.e}
   else if(m.baseAv){if(m.baseAv.name===S.hero.name)S.hero.av=m.baseAv.av;m.baseAv=null}
-  const wrap=$('#mapwrap');if(wrap){let d=$('#meta-deco');const dc=metaEq('deco'),txt=META_DECO[dc.id]||'';
-    if(!d){d=document.createElement('div');d.id='meta-deco';d.setAttribute('aria-hidden','true');wrap.appendChild(d)}
-    d.textContent=txt;d.hidden=!txt}
+  if(av.g){root.setAttribute('data-av',av.id.slice(3));root.style.setProperty('--av-bg',`linear-gradient(150deg,${av.g[0]},${av.g[1]})`);root.style.setProperty('--av-ring',av.ring||'var(--ink)')}
+  else{root.removeAttribute('data-av');root.style.removeProperty('--av-bg');root.style.removeProperty('--av-ring')}
+  if(typeof skDecoRender==='function')skDecoRender();
 }
-function metaRain(){
-  if(typeof RM!=='undefined'&&RM)return;const e=metaEq('rain').e,box=document.createElement('div');box.className='meta-rain';box.setAttribute('aria-hidden','true');
-  for(let i=0;i<22;i++){const s=document.createElement('span');s.textContent=e;s.style.left=(Math.random()*96)+'%';s.style.animationDelay=(Math.random()*.9).toFixed(2)+'s';s.style.animationDuration=(1.6+Math.random()*1.2).toFixed(2)+'s';s.style.fontSize=(18+Math.random()*16)+'px';box.appendChild(s)}
-  document.body.appendChild(box);setTimeout(()=>box.remove(),3400);
-}
+function metaRain(){if(typeof RM!=='undefined'&&RM)return;if(typeof skRain==='function')skRain(metaEq('rain'))}
 
 /* ---------- Sondage hebdomadaire ---------- */
 const META_POLL=[
@@ -4176,49 +4347,70 @@ function metaOnDaily(){const m=metaInit();
   metaSave();metaRain();
 }
 
-/* ---------- Boutique ---------- */
+/* ---------- Boutique (vitrine : aperçus dessinés par AGENT SKINS) ---------- */
+const META_LOCK='<span class="sk-lock"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.2" width="8" height="6" rx="1.4" fill="#fff"/><path d="M3.8 5.4V3.9a2.2 2.2 0 0 1 4.4 0v1.5" stroke="#fff" stroke-width="1.5" fill="none"/></svg></span>';
 function metaItemHTML(it){
-  const m=metaInit(),own=metaOwn(it),on=metaEq(it.k).id===it.id&&!(META_PREVIEW&&META_PREVIEW.id===it.id),pv=META_PREVIEW&&META_PREVIEW.id===it.id;
-  const vis=`<div class="meta-sw" style="${it.sw?'background:'+it.sw:''}">${it.e||''}</div>`;
-  let st='',bt='';
-  if(own){st=own==='poll'?'Offert cette semaine':own==='ach'?'Débloqué par un succès':own==='pass'?'Pass Empire':'Possédé';bt=on?'<span class="tag">✓ Équipé</span>':`<button class="btn small go" data-a="meta_eq" data-id="${it.id}">Équiper</button>`}
-  else{const tr=pv?'<span class="tag">👀 Essai</span>':`<button class="btn small ghost" data-a="meta_try" data-id="${it.id}">Essayer</button>`;
-    if(it.cost){st=`🎟️ ${it.cost} jetons`;bt=tr+`<button class="btn small ${m.jetons>=it.cost?'go':''}" data-a="meta_buy" data-id="${it.id}" ${m.jetons>=it.cost?'':'disabled'}>Acheter</button>`}
-    else if(it.ach){st='🔒 Succès : '+it.ach.t;bt=tr}
-    else if(it.pass){st='👑 Inclus dans le Pass';bt=tr}
-    else{st=`💎 Premium · ${META_PRICE.premium}`;bt=tr+`<button class="btn small" data-a="meta_pay" data-sku="${it.id}">${META_PRICE.premium}</button>`}}
-  return `<div class="meta-it ${on?'on':''}">${vis}<b>${it.n}</b><span class="hint">${st}</span><div class="meta-bt">${bt}</div></div>`;
+  const m=metaInit(),own=metaOwn(it),pv=META_PREVIEW&&META_PREVIEW.id===it.id,on=!pv&&metaEq(it.k).id===it.id,fresh=m.fresh.includes(it.id);
+  const pre=typeof skPreview==='function'?skPreview(it):'';
+  let how='',bt='',bar='';
+  const tr=pv?'<span class="sk-eq" style="color:var(--ink);background:var(--line)">En essai</span>':`<button class="btn small ghost" data-a="meta_try" data-id="${it.id}">Essayer</button>`;
+  if(own){how=own==='poll'?'Offert cette semaine par le vote':own==='pass'?'Inclus dans ton Pass':own==='prem'?'Acheté':it.free?'Offert':it.ach?'Gagné : '+it.ach.t.charAt(0).toLowerCase()+it.ach.t.slice(1):'Acheté avec des jetons';
+    bt=on?'<span class="sk-eq">✓ Équipé</span>':`<button class="btn small go" data-a="meta_eq" data-id="${it.id}">Équiper</button>`}
+  else if(it.cost){const miss=it.cost-m.jetons;how=miss>0?`Il te manque ${miss} jetons`:'Prêt à être acheté';
+    bt=tr+`<button class="btn small buy" data-a="meta_buy" data-id="${it.id}" ${miss>0?'disabled':''} aria-label="Acheter pour ${it.cost} jetons"><span class="sk-tok"></span>${it.cost}</button>`}
+  else if(it.ach){const p=metaAchP(it);how=it.ach.t;bt=tr;
+    if(p[1]>1)bar=`<span class="sk-bar"><i><b style="width:${Math.min(100,Math.round(p[0]/p[1]*100))}%"></b></i>${Math.min(p[0],p[1])}/${p[1]}</span>`}
+  else if(it.pass){how='Pass Empire (bientôt)';bt=tr}
+  else{how=`Premium · ${META_PRICE.premium} (bientôt)`;bt=tr+`<button class="btn small soon" data-a="meta_pay" data-sku="${it.id}">Bientôt</button>`}
+  return `<div class="sk-card r-${it.r||'c'} ${on?'on':''} ${own?'':'lock'}"><div class="sk-pv ${it.k==='theme'?'th':it.k==='avatar'?'av':it.k==='club'?'cl':it.k==='deco'?'dc':'fx'}" ${typeof skPvStyle==='function'?skPvStyle(it):''}>${pre}${own?'':META_LOCK}${fresh&&own?'<span class="sk-new">Nouveau</span>':''}</div>
+    <span class="sk-rar">${META_RAR[it.r]||'Commun'}</span><b class="sk-n">${it.n}</b><span class="sk-how">${how}</span>${bar}<div class="sk-bt">${bt}</div></div>`;
 }
 function metaPassHTML(){
   const pass=metaHasPass(),slots=[1,2,3].map(n=>{const d=metaGet(META_LS.slot+n),lock=n>1&&!pass;
     return `<div class="meta-slot"><span>💾 Emplacement ${n}${n>1?' <span class="tag">👑 Pass</span>':''}<br><span class="hint">${d?'Enregistré le '+new Date(d.at).toLocaleDateString('fr-FR'):'Vide'}</span></span>${lock?'<span class="hint">🔒</span>':`<span class="bs-row"><button class="btn small" data-a="meta_slotsave" data-id="${n}">Enregistrer</button>${d?`<button class="btn small ghost" data-a="meta_slotload" data-id="${n}">Charger</button>`:''}</span>`}</div>`}).join('');
+  const ex=META_ITEMS.filter(i=>i.pass);
   return `<div class="meta-pass"><h3>👑 Pass Empire</h3><p class="meta-price">${META_PRICE.pass_month}</p>
-    <ul><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ Thème exclusif « Or impérial »</li></ul>
-    ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner</button>`}
+    <ul><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
+    <div class="sk-pass">${ex.map(i=>`<div class="sk-pv ${i.k==='theme'?'th':i.k==='avatar'?'av':i.k==='club'?'cl':i.k==='deco'?'dc':'fx'}" ${skPvStyle(i)} title="${i.n}">${skPreview(i)}</div>`).join('')}</div>
+    ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner · bientôt</button>`}
     <p class="hint" style="margin-top:8px">Que du confort : le Pass ne donne pas d’argent ni de puissance dans la partie.</p></div>
     <h3 style="margin:16px 0 6px;text-align:left">Emplacements de sauvegarde</h3>${slots}`;
 }
+const META_FILT=[['all','Tout'],['own','À moi'],['lock','À gagner']];
 function metaShopHTML(note){
-  const m=metaInit(),tab=META_TABS.some(t=>t[0]===m.shopTab)?m.shopTab:'pass';
-  return `<div class="meta-shop"><h2>🛍️ Boutique</h2><p class="hint">🎟️ <b id="meta-jet">${m.jetons} jetons</b> · gagnés en jouant : coffre du jour, sondages, trophées</p>
-  <div class="seg meta-seg" role="tablist">${META_TABS.map(([k,l])=>`<button class="${tab===k?'on':''}" data-a="meta_tab" data-f="${k}">${l}</button>`).join('')}</div>
+  const m=metaInit(),tab=META_TABS.some(t=>t[0]===m.shopTab)?m.shopTab:'pass',f=META_FILT.some(x=>x[0]===m.shopFilter)?m.shopFilter:'all';
+  const cnt=k=>{const l=META_ITEMS.filter(i=>i.k===k);return[l.filter(i=>metaOwn(i)).length,l.length]};
+  const all=META_ITEMS.filter(i=>metaOwn(i)).length;
+  let list=META_ITEMS.filter(i=>i.k===tab).map((it,ix)=>({it,ix})).sort((a,b)=>('crel'.indexOf(a.it.r||'c')-'crel'.indexOf(b.it.r||'c'))||a.ix-b.ix).map(x=>x.it);
+  if(f==='own')list=list.filter(i=>metaOwn(i));else if(f==='lock')list=list.filter(i=>!metaOwn(i));
+  const html=`<div class="meta-shop"><h2>Boutique</h2>
+  <div class="sk-top"><span class="sk-pill jt"><span class="sk-tok"></span><b id="meta-jet">${m.jetons} jetons</b></span><span class="sk-pill">Collection ${all}/${META_ITEMS.length}</span></div>
+  <p class="sk-earn">Les jetons se gagnent en jouant : coffre du jour, votes, trophées, nouvelles villes.</p>
+  <div class="seg meta-seg" role="tablist">${META_TABS.map(([k,l])=>{const c=k==='pass'?null:cnt(k);return `<button class="${tab===k?'on':''}" data-a="meta_tab" data-f="${k}" role="tab" aria-selected="${tab===k}">${l}${c?`<span class="sk-c">${c[0]}/${c[1]}</span>`:'<span class="sk-c">bientôt</span>'}</button>`}).join('')}</div>
   <p class="meta-note" id="meta-note" role="status">${note||''}</p>
-  ${tab==='pass'?metaPassHTML():`<div class="meta-grid">${META_ITEMS.filter(i=>i.k===tab).map(metaItemHTML).join('')}</div>`}
+  ${tab==='pass'?metaPassHTML():`<div class="sk-filt">${META_FILT.map(([k,l])=>`<button class="${f===k?'on':''}" data-a="meta_filt" data-f="${k}">${l}</button>`).join('')}</div>
+  <div class="sk-grid">${list.map(metaItemHTML).join('')||`<p class="sk-empty">${f==='own'?'Rien ici pour l’instant.':'Tout est à toi. Bravo.'}</p>`}</div>`}
   <button class="btn big" style="margin-top:14px" data-a="close">Fermer</button></div>`;
+  if(tab!=='pass'){const seen=new Set(list.map(i=>i.id));m.fresh=m.fresh.filter(id=>!seen.has(id))}
+  return html;
 }
-function metaOpenShop(note){metaTrophyPay();modal(metaShopHTML(note))}
+function metaOpenShop(note,top){metaTrophyPay();const sh=document.querySelector('#layer .sheet'),y=!top&&sh&&sh.querySelector('.meta-shop')?sh.scrollTop:0;
+  modal(metaShopHTML(note));if(y){const n=document.querySelector('#layer .sheet');if(n)n.scrollTop=y}}
 function metaTry(id){const it=META_BY[id];if(!it)return;clearTimeout(META_PREV_T);META_PREVIEW={k:it.k,id};metaApply();render();
   if(it.k==='rain')metaRain();
   META_PREV_T=setTimeout(()=>{META_PREVIEW=null;metaApply();render();if(modalOpen&&$('.meta-shop'))metaOpenShop()},15000);
-  metaOpenShop(`👀 Essai de « ${it.n} » pendant 15 secondes${it.k==='club'?' : regarde le stade sur la carte':it.k==='deco'?' : regarde la carte':''}.`)}
-function metaEquip(id){const it=META_BY[id];if(!it||!metaOwn(it))return;clearTimeout(META_PREV_T);META_PREVIEW=null;metaInit().eq[it.k]=id;metaSave();metaApply();render();metaOpenShop(`✓ « ${it.n} » équipé.`)}
+  metaOpenShop(`Essai de « ${it.n} » pendant 15 secondes${it.k==='club'?' : regarde le stade sur la carte':it.k==='deco'?' : ferme la boutique pour voir la carte':it.k==='avatar'?' : regarde ta fiche dans Vie':''}.`)}
+function metaEquip(id){const it=META_BY[id];if(!it||!metaOwn(it))return;clearTimeout(META_PREV_T);META_PREVIEW=null;metaInit().eq[it.k]=id;metaSave();metaApply();render();if(it.k==='rain')metaRain();metaOpenShop(`✓ « ${it.n} » équipé.`)}
 function metaBuy(id){const it=META_BY[id],m=metaInit();if(!it||!it.cost||m.owned.includes(id))return;
   if(m.jetons<it.cost)return metaOpenShop('Pas assez de jetons pour l’instant.');
-  m.jetons-=it.cost;m.owned.push(id);m.eq[it.k]=id;META_PREVIEW=null;metaSave();metaApply();render();sfx('rank');if(it.k==='rain')metaRain();metaOpenShop(`🎉 « ${it.n} » acheté et équipé !`)}
+  m.jetons-=it.cost;m.owned.push(id);m.eq[it.k]=id;META_PREVIEW=null;metaSave();metaApply();render();sfx('rank');metaRain();metaOpenShop(`« ${it.n} » est à toi, et déjà équipé.`)}
 async function metaPay(sku){const r=await BACKEND.purchase(sku);
   if(r&&r.ok){const e=await BACKEND.entitlements();metaInit().ent=e;metaSave();metaApply();return metaOpenShop('Merci !')}
-  toast('💳 Paiement bientôt disponible.');if($('.meta-shop'))metaOpenShop('💳 Paiement bientôt disponible. Rien n’a été débité.');return r}
-function metaTrophyPay(){const m=metaInit(),n=S.trophies.length;if(n>m.trophyPaid){const k=n-m.trophyPaid;m.trophyPaid=n;metaGain(20*k,k>1?`${k} trophées`:'nouveau trophée')}else if(n<m.trophyPaid)m.trophyPaid=n}
+  toast('💳 Paiement bientôt disponible.');if($('.meta-shop'))metaOpenShop('Paiement bientôt disponible. Rien n’a été débité.');return r}
+/* Jetons gagnés en jouant : trophées et nouvelles villes ; puis déblocage des objets par succès */
+function metaTrophyPay(){const m=metaInit(),n=S.trophies.length;if(n>m.trophyPaid){const k=n-m.trophyPaid;m.trophyPaid=n;metaGain(20*k,k>1?`${k} trophées`:'nouveau trophée')}else if(n<m.trophyPaid)m.trophyPaid=n;
+  const c=S.city||0;if(m.cityPaid==null||c<m.cityPaid)m.cityPaid=c;else if(c>m.cityPaid){const k=c-m.cityPaid;m.cityPaid=c;metaGain(40*k,`bienvenue à ${CITIES[c]?CITIES[c].n:'ta nouvelle ville'}`)}
+  metaUnlockScan()}
 
 /* ---------- Entrées de navigation : HUD + onglet Empire (injectées, sans toucher au rendu existant) ---------- */
 function metaHud(force){const r=document.querySelector('#hud .hud-r .bs-row');if(!r)return;let x=r.querySelector('.meta-hud');
@@ -4250,7 +4442,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
   if(!a.startsWith('meta_'))return;
   switch(a){
     case 'meta_shop':metaOpenShop();break;
-    case 'meta_tab':metaInit().shopTab=b.dataset.f;metaOpenShop();break;
+    case 'meta_tab':metaInit().shopTab=b.dataset.f;metaOpenShop(null,true);break;
+    case 'meta_filt':metaInit().shopFilter=b.dataset.f;metaOpenShop();break;
     case 'meta_try':metaTry(id);break;
     case 'meta_eq':metaEquip(id);break;
     case 'meta_buy':metaBuy(id);break;
@@ -4283,6 +4476,110 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b
   },0);
 })();
 /* ===== FIN AGENT META ===== */
+/* ===== AGENT SKINS ===== */
+/* Rendu des objets de la boutique (catalogue : META_ITEMS dans AGENT META) :
+   palettes des thèmes (CSS généré, clair + sombre), aperçus de la vitrine, décos sur la carte, pluie d'effets. */
+(function skThemeCSS(){
+  const L=['--bg','--surface','--surface2','--line','--ink','--muted','--sticker','--pink'],v=(a,keys)=>keys.map((k,i)=>a[i]?`${k}:${a[i]}`:'').filter(Boolean).join(';');
+  let css='',dk='',dk2='';
+  META_ITEMS.forEach(it=>{if(it.k!=='theme'||it.id==='th_classic'||!it.pal)return;const n=it.id.slice(3),l=it.pal.l,d=it.pal.d;
+    css+=`:root[data-skin="${n}"]{${v(l,L)};--me:${l[4]};--them:${l[1]}}\n`;
+    const dv=`${v(d,L)};--me:${d[4]};--me-ink:${d[0]};--them:${d[2]}`;
+    dk+=`:root[data-skin="${n}"]:not([data-theme="light"]){${dv}}\n`;dk2+=`:root[data-theme="dark"][data-skin="${n}"]{${dv}}\n`});
+  const st=document.createElement('style');st.id='sk-theme-css';st.textContent=css+`@media (prefers-color-scheme: dark){\n${dk}}\n`+dk2;document.head.appendChild(st);
+})();
+/* Petit générateur pseudo-aléatoire stable (mêmes aperçus à chaque ouverture) */
+function skRng(seed){let h=metaHash(seed);return()=>{h=Math.imul(h^h>>>15,2246822507)^Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}}
+const SK_SKY={day:'linear-gradient(180deg,#BFE3F5 0%,#E4F3F4 58%,#A7D08C 59%,#8DBF73 100%)',dusk:'linear-gradient(180deg,#3B3F72 0%,#C76D7E 50%,#F2B07E 58%,#6E8F5A 59%,#5A7A49 100%)',
+  night:'linear-gradient(180deg,#0F1530 0%,#25305A 58%,#2F4A33 59%,#243B28 100%)',snow:'linear-gradient(180deg,#9FB7CC 0%,#D9E4EC 58%,#F4F7FA 59%,#E3EAF0 100%)'};
+function skPvStyle(it){
+  if(it.k==='avatar'){const g=it.g||['#FFF1A6','#F7E733'];return `style="--pvb:linear-gradient(150deg,${g[0]},${g[1]})"`}
+  if(it.k==='deco')return `style="--sky:${SK_SKY[it.sky]||SK_SKY.day}"`;
+  return '';
+}
+function skMock(p,dark){const a=dark?p.d:p.l,l=p.l;return `<div class="sk-mk" style="--b:${a[0]};--s:${a[1]};--s2:${a[2]};--l:${a[3]};--i:${a[4]};--m:${a[5]};--k:${l[6]};--p:${l[7]}"><div class="a"><i class="c"></i><i class="k"></i></div><div class="s"><i class="t"></i><i class="u"></i><span class="d"><i></i><i></i></span><i class="p"></i></div></div>`}
+function skJersey(c1,c2,pat,uid){
+  const id='skj'+uid,sh='M30 12 L42 7 Q50 15 58 7 L70 12 L91 27 L81 42 L72 36 L72 92 L28 92 L28 36 L19 42 L9 27 Z';let pt='';
+  if(pat==='stripes')pt=[34,48,62].map(x=>`<rect x="${x}" y="0" width="7" height="100" fill="${c2}"/>`).join('');
+  else if(pat==='hoops')pt=[30,48,66,84].map(y=>`<rect x="0" y="${y}" width="100" height="8" fill="${c2}"/>`).join('');
+  else if(pat==='halves')pt=`<rect x="50" y="0" width="50" height="100" fill="${c2}"/>`;
+  else if(pat==='sash')pt=`<polygon points="22,18 36,10 82,92 66,100" fill="${c2}"/>`;
+  else if(pat==='chevron')pt=`<polyline points="22,30 50,52 78,30" fill="none" stroke="${c2}" stroke-width="9"/>`;
+  else if(pat==='tri')pt=`<rect x="28" y="0" width="15" height="100" fill="${c1}"/><rect x="43" y="0" width="14" height="100" fill="#FFFFFF"/><rect x="57" y="0" width="16" height="100" fill="${c2}"/>`;
+  const num=(pat==='plain'||pat==='collar')?`<text x="50" y="68" text-anchor="middle" font-family="Bricolage Grotesque,system-ui,sans-serif" font-weight="800" font-size="22" fill="${c2}">10</text>`:'';
+  return `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><clipPath id="${id}"><path d="${sh}"/></clipPath></defs><g clip-path="url(#${id})"><rect width="100" height="100" fill="${c1}"/>${pt}<path d="M19 42 L9 27 L13 24 L23 39 Z M81 42 L91 27 L87 24 L77 39 Z" fill="${c2}" opacity=".9"/></g>
+    <path d="M42 7 Q50 15 58 7 Q50 22 42 7 Z" fill="${c2}"/>${num}<path d="${sh}" fill="none" stroke="rgba(0,0,0,.28)" stroke-width="2" stroke-linejoin="round"/><path d="M28 36 L28 92" stroke="rgba(0,0,0,.12)" stroke-width="6"/></svg>`;
+}
+/* Guirlande en haut : fanions, ampoules ou lampions, sur des arcs */
+function skGarland(it,W,mini){
+  const H=mini?40:66,sag=mini?11:22,y0=mini?3:4,n=Math.max(1,Math.round(W/(mini?150:260))),seg=W/n,cols=skDecoCols(it);let wire='',items='',k=0;
+  const yAt=t=>y0+sag*4*t*(1-t);
+  for(let s=0;s<n;s++){const x0=s*seg;wire+=`M${x0.toFixed(1)} ${y0} Q${(x0+seg/2).toFixed(1)} ${(y0+sag*2).toFixed(1)} ${(x0+seg).toFixed(1)} ${y0} `;
+    const gap=it.gar==='lanterns'?(mini?34:64):it.gar==='bulbs'?(mini?14:26):(mini?13:24),cnt=Math.max(2,Math.floor(seg/gap));
+    for(let j=1;j<cnt;j++){const t=j/cnt,x=x0+seg*t,y=yAt(t),c=cols[k++%cols.length];
+      if(it.gar==='flags'){const w=mini?5:8,h=mini?11:18;items+=`<path d="M${(x-w).toFixed(1)} ${(y-.5).toFixed(1)} L${(x+w).toFixed(1)} ${(y-.5).toFixed(1)} L${x.toFixed(1)} ${(y+h).toFixed(1)} Z" fill="${c}"/>`}
+      else if(it.gar==='bulbs'){const r=mini?2.6:4.2;items+=`<g class="sk-tw" style="animation-delay:${(-(k%5)*.37).toFixed(2)}s"><circle cx="${x.toFixed(1)}" cy="${(y+r+2).toFixed(1)}" r="${r*2.6}" fill="${c}" opacity=".28"/><ellipse cx="${x.toFixed(1)}" cy="${(y+r+2).toFixed(1)}" rx="${r*.8}" ry="${r*1.15}" fill="${c}"/></g><rect x="${(x-1.2).toFixed(1)}" y="${(y-.5).toFixed(1)}" width="2.4" height="2.6" fill="#3A3A3A"/>`}
+      else{const r=mini?6:11,cy=y+(mini?5:9)+r;items+=`<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${x.toFixed(1)}" y2="${(cy-r).toFixed(1)}" stroke="#3A2A20" stroke-width="1"/><circle cx="${x.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r*1.9}" fill="${c}" opacity=".18"/><ellipse cx="${x.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${r}" ry="${r*.9}" fill="${c}"/><ellipse cx="${x.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${r*.45}" ry="${r*.9}" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="1"/><rect x="${(x-r*.45).toFixed(1)}" y="${(cy-r*.95).toFixed(1)}" width="${(r*.9).toFixed(1)}" height="${mini?2:3}" fill="#3A2A20"/><rect x="${(x-r*.45).toFixed(1)}" y="${(cy+r*.8).toFixed(1)}" width="${(r*.9).toFixed(1)}" height="${mini?2:3}" fill="#3A2A20"/>`}}}
+  const sh=it.gar==='lanterns'?(mini?26:44):0;
+  return `<svg class="sk-gar" viewBox="0 0 ${W.toFixed(0)} ${H+sh}" height="${H+sh}" preserveAspectRatio="none" aria-hidden="true"><path d="${wire}" fill="none" stroke="${it.gar==='flags'?'#F4F1E6':'#3A3A3A'}" stroke-width="${mini?1:1.6}"/>${items}</svg>`;
+}
+function skDecoCols(it){if(it.club){const c=metaEq('club');return[c.sw,c.c2||'#FFFFFF']}return it.cols||['#FFD23F']}
+/* Coins du bas : ballons ou sapins */
+function skCorner(it,side,mini){const s=mini?.42:1,cols=skDecoCols(it);
+  if(it.cor==='bal'){const b=[[22,30,cols[0]],[44,20,cols[1%cols.length]],[62,36,cols[2%cols.length]],[38,44,cols[3%cols.length]]];
+    return `<svg class="sk-cor ${side} bal" width="${86*s}" height="${130*s}" viewBox="0 0 86 130" aria-hidden="true">${b.map(([x,y,c])=>`<path d="M${x} ${y+18} Q${x+4} ${y+60} 44 128" stroke="rgba(60,60,60,.55)" stroke-width="1" fill="none"/><ellipse cx="${x}" cy="${y}" rx="15" ry="18" fill="${c}"/><path d="M${x-2} ${y+17} l2 4 l2 -4 Z" fill="${c}"/><ellipse cx="${x-5}" cy="${y-6}" rx="4" ry="6" fill="#fff" opacity=".45"/>`).join('')}</svg>`}
+  const tree=(x,h,w)=>`<polygon points="${x},${120-h} ${x-w/2},${120-h*.45} ${x+w/2},${120-h*.45}" fill="#2F6B4A"/><polygon points="${x},${120-h*.75} ${x-w*.62},${116-h*.1} ${x+w*.62},${116-h*.1}" fill="#2A5F42"/><rect x="${x-3}" y="${116-h*.1}" width="6" height="${h*.1+4}" fill="#6B4A2F"/><polygon points="${x},${120-h} ${x-w*.2},${120-h*.82} ${x+w*.2},${120-h*.82}" fill="#fff"/>`;
+  return `<svg class="sk-cor ${side}" width="${96*s}" height="${124*s}" viewBox="0 0 96 124" aria-hidden="true">${tree(30,96,44)}${tree(68,70,34)}<ellipse cx="48" cy="121" rx="46" ry="4" fill="#fff" opacity=".9"/></svg>`;
+}
+/* Particules d'une déco (carte : animées ; aperçu : figées) */
+function skParticles(it,mini){
+  const pt=it.pt;if(!pt)return '';const rnd=skRng(it.id+(mini?'m':'M')),N=mini?(pt==='shoot'?2:8):(pt==='shoot'?4:pt==='fly'?16:22),cols=skDecoCols(it);let h='';
+  for(let i=0;i<N;i++){const x=(rnd()*96).toFixed(1),y=(mini?8+rnd()*62:rnd()*70).toFixed(1),c=cols[i%cols.length];
+    const cls=pt==='snow'?'px-snow':pt==='petal'?'px-petal':pt==='leaf'?'px-leaf':pt==='fly'?'px-fly':pt==='shoot'?'px-shoot':'px-conf';
+    const z=pt==='snow'?(mini?3+rnd()*3:3+rnd()*5):pt==='fly'?(mini?5:7):(mini?7:9+rnd()*5),dur=(pt==='snow'?9:pt==='leaf'?11:8)+rnd()*7;
+    const kind=pt==='fly'?' fly':pt==='shoot'?' shoot':'';
+    const pos=mini||pt==='fly'||pt==='shoot'?`top:${pt==='shoot'?(mini?14+rnd()*18:4+rnd()*30).toFixed(1):y}%;`:'';
+    const anim=mini?'':pt==='shoot'?`animation-delay:${(rnd()*6).toFixed(2)}s;animation-duration:${(4.5+rnd()*3).toFixed(1)}s;`:pt==='fly'?`animation-delay:${(-rnd()*7).toFixed(2)}s;`:`animation-duration:${dur.toFixed(1)}s;animation-delay:${(-rnd()*dur).toFixed(2)}s;`;
+    const rot=mini?`transform:rotate(${(rnd()*80-40).toFixed(0)}deg);`:'';
+    h+=`<span class="sk-mp${kind}" style="left:${pt==='shoot'?(30+rnd()*65).toFixed(1):x}%;${pos}${anim}"><i class="px ${cls}" style="--z:${z.toFixed(1)}px;--c:${c};${rot}${mini||pt==='fly'?'':`animation-delay:${(-rnd()*2.4).toFixed(2)}s;`}"></i></span>`}
+  return h;
+}
+function skDecoHTML(it,W,mini){return (it.gar?skGarland(it,W,mini):'')+(it.cor?skCorner(it,'l',mini)+skCorner(it,'r',mini):'')+skParticles(it,mini)}
+function skDecoRender(){const wrap=$('#mapwrap');if(!wrap)return;let d=$('#meta-deco');const dc=metaEq('deco');
+  if(!d){d=document.createElement('div');d.id='meta-deco';d.setAttribute('aria-hidden','true');wrap.appendChild(d)}
+  const W=Math.max(320,wrap.clientWidth||window.innerWidth),key=dc.id+'|'+Math.round(W/40)+'|'+(dc.club?metaEq('club').id:'');
+  if(d.dataset.k===key)return;d.dataset.k=key;
+  if(dc.id==='dc_none'){d.innerHTML='';d.hidden=true;return}
+  d.hidden=false;d.className=dc.sky==='night'||dc.sky==='dusk'?dc.sky:'';d.innerHTML=skDecoHTML(dc,W,false);
+}
+let SK_RS=0;window.addEventListener('resize',()=>{clearTimeout(SK_RS);SK_RS=setTimeout(()=>{try{skDecoRender()}catch(e){}},250)});
+/* Forme d'une particule d'effet */
+function skFx(it,rnd,i,mini){const f=it.fx||'coin',cols=it.cols||['#FFD54A'],c=cols[i%cols.length];
+  const z=f==='bill'?(mini?11:16+rnd()*6):f==='bub'?(mini?10+rnd()*10:14+rnd()*20):f==='conf'?(mini?12:14+rnd()*6):(mini?13+rnd()*5:18+rnd()*14);
+  return `<i class="px px-${f==='spark'?'spark':f}" style="--z:${z.toFixed(1)}px;--c:${c}"></i>`}
+function skPreview(it){
+  if(it.k==='theme')return `<div class="sk-th" style="position:absolute;inset:0">${skMock(it.pal,false)}${skMock(it.pal,true)}</div>`;
+  if(it.k==='avatar'){const g=it.g;return `<span class="sk-av" style="--g:${g?`linear-gradient(150deg,${g[0]},${g[1]})`:'var(--sticker)'};--ring:${it.ring||'#1E2B2A'}">${it.id==='av_none'?(metaInit().baseAv&&metaInit().baseAv.av||S.hero.av||it.e):it.e}</span>`}
+  if(it.k==='club')return skJersey(it.sw,it.c2||'#fff',it.pat||'plain',it.id);
+  if(it.k==='deco'){const house=`<svg class="sk-house" viewBox="0 0 84 40" aria-hidden="true"><rect x="8" y="18" width="30" height="22" fill="#F4E9D8"/><polygon points="4,20 23,4 42,20" fill="#C8553D"/><rect x="19" y="27" width="8" height="13" fill="#6B4A2F"/><rect x="46" y="12" width="30" height="28" fill="#DCE6EE"/><rect x="44" y="9" width="34" height="5" fill="#7C8A96"/><rect x="51" y="18" width="7" height="6" fill="#8EC5E8"/><rect x="64" y="18" width="7" height="6" fill="#8EC5E8"/><rect x="51" y="29" width="7" height="6" fill="#8EC5E8"/><rect x="64" y="29" width="7" height="6" fill="#8EC5E8"/></svg>`;
+    return house+(it.id==='dc_none'?'':skDecoHTML(it,150,true))}
+  /* effet : quelques particules figées */
+  const rnd=skRng(it.id);let h='';
+  if(it.fx==='spark'){[[34,40,0],[72,30,1],[56,64,2]].forEach(([cx,cy,b])=>{for(let j=0;j<10;j++){const a=j/10*Math.PI*2,r=12+b*3,c=it.cols[(j+b)%it.cols.length];h+=`<i class="px px-spark" style="left:calc(${cx}% + ${(Math.cos(a)*r).toFixed(1)}px);top:calc(${cy}% + ${(Math.sin(a)*r).toFixed(1)}px);--c:${c}"></i>`}});return h}
+  for(let i=0;i<7;i++){const x=6+(i*13)%84+rnd()*6,y=8+rnd()*64;h+=`<span style="position:absolute;left:${x.toFixed(0)}%;top:${y.toFixed(0)}%;transform:rotate(${(rnd()*70-35).toFixed(0)}deg)">${skFx(it,rnd,i,true)}</span>`}
+  return h;
+}
+/* Pluie d'effet plein écran (gains, coffre, achat) */
+function skRain(it){const box=document.createElement('div');box.className='meta-rain';box.setAttribute('aria-hidden','true');const rnd=Math.random;let h='';
+  if(it.fx==='spark'){for(let b=0;b<6;b++){const x=10+rnd()*80,y=12+rnd()*45,dl=(b*.26+rnd()*.15).toFixed(2),R=90+rnd()*70;
+      h+=`<span class="bst" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%">`;
+      for(let j=0;j<22;j++){const a=j/22*Math.PI*2+rnd()*.2,r=R*(.7+rnd()*.3);h+=`<i class="px px-spark" style="--c:${it.cols[(j+b)%it.cols.length]};--bx:${(Math.cos(a)*r).toFixed(0)}px;--by:${(Math.sin(a)*r+20).toFixed(0)}px;animation-delay:${dl}s"></i>`}
+      h+='</span>'}}
+  else for(let i=0;i<24;i++){const dur=(it.up?2.2:1.7)+rnd()*1.3,dl=rnd()*.9;
+    h+=`<span class="pf${it.up?' up':''}" style="left:${(rnd()*96).toFixed(1)}%;animation-duration:${dur.toFixed(2)}s;animation-delay:${dl.toFixed(2)}s;--dx:${(rnd()*80-40).toFixed(0)}px;--rot:${(rnd()*600-300).toFixed(0)}deg">${skFx(it,rnd,i,false).replace('style="','style="animation-duration:'+(.6+rnd()*.8).toFixed(2)+'s;')}</span>`}
+  box.innerHTML=h;document.body.appendChild(box);setTimeout(()=>box.remove(),3600);
+}
+/* ===== FIN AGENT SKINS ===== */
 /* ===== AGENT GRAPHISME ===== */
 /* Montée en qualité visuelle par ville + aperçu des villes futures. Tout passe par des enveloppes (wrap) de fonctions existantes. */
 const GFX={off:{},force:null,thumb:false,parts:[],sig:'',last:performance.now(),lastCity:null,vig:null,vigK:'',spr:{},thumbs:{}};
