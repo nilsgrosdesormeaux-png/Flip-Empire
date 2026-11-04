@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-0941">
+<meta name="fe-build" content="2026-11-04-0946">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3932,7 +3932,7 @@ mktCapCost=()=>Math.round(assetDef(0).p*15*Math.pow(6,S.mkt.cap));
 franchise=(f=>function(){const c0=S.city;f.apply(this,arguments);if(S.city!==c0&&S.cash<200*cityCost(S.city)){S.cash=200*cityCost(S.city);dispCash=S.cash}})(franchise);
 newGame=(f=>function(){const g=f.apply(this,arguments);g.immo={idx:1,tgt:1,hist:[1],loans:{},ten:{},cond:{},iss:{},log:[]};g.ecoV=1;return g})(newGame);
 /* Ancienne sauvegarde (prix identiques dans toutes les villes ; S est déjà chargé ici) : argent et gains de la ville remis à l’échelle des nouveaux prix */
-(function(){const o=S;if(!o||o.ecoV)return;const k=cityCost(o.city||0);
+(function(){const o=S;if(!o||o.ecoV)return;const c0=(o.cityV==null&&(o.city|0)>=8)?(o.city|0)+3:(o.city||0);const k=cityCost(c0);
   if(isFinite(k)&&k>1){if(isFinite(o.cash)&&o.cash>0)o.cash*=k;if(isFinite(o.lifetime)&&o.lifetime>0)o.lifetime*=k}o.ecoV=1;if(!o.immo)o.immo={}})();
 /* Immobilier : prix ×12 × cityDiff^0,8 par ville (très cher en fin de voyage), rendement qui baisse doucement avec la ville */
 propBase=o=>(o.t==='apt'?9000:900)*o.f*cityRev(S.city||0)*Math.pow(cityDiff(S.city||0),.8)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
@@ -6748,7 +6748,7 @@ let feUpdating=false;
 async function feCheckUpdate(){
   if(feUpdating||!FE_BUILD||!location.protocol.startsWith('http'))return;
   try{const r=await fetch('./?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
-    const m=(await r.text()).match(/name="fe-build" content="2026-11-04-0941"]+)"/);const v=m&&m[1];
+    const m=(await r.text()).match(/name="fe-build" content="([^"]+)"/);const v=m&&m[1];
     if(!v||v===FE_BUILD)return;
     const busy=()=>(typeof MX!=='undefined'&&MX&&MX.phase&&MX.phase!=='end');
     if(busy()){setTimeout(feCheckUpdate,30000);return}
