@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1445)
+- Objectif bourse trop dur : il demandait 4,65 Md € à Londres (mesuré : impossible à atteindre). Maintenant proportionnel à l'entrepôt : prix × capacité × (0,4 + 0,1 × ville) → 24 k € à Londres, 1 440 € à Ta ville.
+- À vérifier en jouant : si la bourse reste trop facile ou trop dure, ajuster le coefficient dans mktGoal2.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1137)
 - Bloc TUTORIEL avant BOOT : tutoriel de départ (4 étapes) et onglets débloqués petit à petit (UNL : objectifs, vie, immo+bourse, club, mairie) ; S.unl et S.tut ; boutons Boutique/Sondage du bandeau et résultat du sondage masqués au début.
 - Testé : vraie création de partie au clic, rechargement en plein tutoriel, ancienne sauvegarde et import d'ancien code = tout débloqué, franchise = tout reste débloqué.
