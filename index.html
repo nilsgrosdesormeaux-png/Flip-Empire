@@ -2305,7 +2305,7 @@ function drawMairie(){
   const top=iso(M.x+1,M.y+1,70);ctx.strokeStyle=shade('#555',1);ctx.lineWidth=1.2;line(top,[top[0],top[1]-20]);
   const wave=Math.sin(T*4)*1.5,fy=top[1]-20;
   if(S.pol.office==='maire'){ctx.fillStyle='#F7E733';ctx.beginPath();ctx.moveTo(top[0],fy);ctx.lineTo(top[0]+14,fy+3+wave);ctx.lineTo(top[0],fy+8);ctx.closePath();ctx.fill();emoji(S.hero.av,top[0]+6,fy+4,6)}
-  else if(TH_.flag==='fr'||S.city<=3){FLAGS.fr.forEach((col,i)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(top[0]+i*4.6,fy+wave*i/3);ctx.lineTo(top[0]+(i+1)*4.6,fy+wave*(i+1)/3);ctx.lineTo(top[0]+(i+1)*4.6,fy+8+wave*(i+1)/3);ctx.lineTo(top[0]+i*4.6,fy+8+wave*i/3);ctx.closePath();ctx.fill()})}
+  else if(TH_.flag==='fr'||S.city<=4){FLAGS.fr.forEach((col,i)=>{ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(top[0]+i*4.6,fy+wave*i/3);ctx.lineTo(top[0]+(i+1)*4.6,fy+wave*(i+1)/3);ctx.lineTo(top[0]+(i+1)*4.6,fy+8+wave*(i+1)/3);ctx.lineTo(top[0]+i*4.6,fy+8+wave*i/3);ctx.closePath();ctx.fill()})}
   else{ctx.fillStyle='#4A90C2';ctx.fillRect(top[0],fy,13,8)}
   badge([top[0],top[1]+10],'🏛️',-2);
   HITS.push({hex:quadHex(M,70),kind:'mairie',id:'mairie',top:[top[0],top[1]-20]});
@@ -2458,7 +2458,7 @@ function buyProp(pid){
 }
 function renovProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l||l>=3)return;const c=renovCost(o,l);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);S.props[pid]=l+1;computeNb();sfx('good');addXP(5);toast(`Rénovée ! Loyer : +${fmt(propRent(o,l+1))} par mois.`)}
 function sellProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l)return;const v=Math.round(propBase(o)*(.7+.3*l));delete S.props[pid];if(S.propUp)delete S.propUp[pid];G.bucket=-1;earn(v);computeNb();sfx('sale');toast(`Vendue pour ${fmt(v)}.`)}
-function upgradeStage(){const n=STAGES[S.stage+1];if(!n)return;if(S.cash<n.cost){toast(`Il te manque ${fmt(n.cost-S.cash)}.`);sfx('no');return}spend(n.cost);S.stage++;sfx('rank');addXP(40);toast(`Nouveau chez-toi : ${n.name.toLowerCase()}. ${n.perk}`)}
+function upgradeStage(){const n=STAGES[S.stage+1];if(!n)return;if(S.cash<n.cost){toast(`Il te manque ${fmt(n.cost-S.cash)}.`);sfx('no');return}spend(n.cost);S.stage++;sfx('rank');addXP(40);toast(`Nouveaux locaux : ${n.name.toLowerCase()}. ${n.perk}`)}
 function checkTrophies(){FXC=[];if(S.stats.reviews5>=50)trophy('t_avis');if(ownedCount()>=10)trophy('t_proprio');if(S.city>=4)trophy('t_monde');if(S.kids.length>=3)trophy('t_famille');if(S.gen>=3)trophy('t_dynastie');if(FXC.length)toast(FXC.join(' '));FXC=[]}
 function franchise(){
   const ns=newStars();if(ns<1||conqDone()<7)return;
@@ -2777,10 +2777,10 @@ function renderSheet(){
   el.hidden=false;
   const x=`<button class="bs-x" data-a="unsel" aria-label="Fermer">✕</button>`;
   if(sel==='qg'){const st=STAGES[S.stage],n=STAGES[S.stage+1];
-    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${S.hero.av}</div><div><h2>Chez ${esc(S.hero.name)} : ${st.name}</h2><p class="hint">${S.partner&&S.partner.stage!=='couple'?`Tu vis avec ${esc(S.partner.name)}`:`Tu vis ${gx(S.hero,'seul','seule')}`}${S.kids.length?` et ${S.kids.length} enfant${S.kids.length>1?'s':''}`:''}.</p></div>${x}</div>
+    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${S.hero.av}</div><div><h2>Les locaux de ${esc(S.hero.name)} : ${st.name}</h2><p class="hint">${S.partner&&S.partner.stage!=='couple'?`Tu vis avec ${esc(S.partner.name)}`:`Tu vis ${gx(S.hero,'seul','seule')}`}${S.kids.length?` et ${S.kids.length} enfant${S.kids.length>1?'s':''}`:''}.</p></div>${x}</div>
       <div class="bs-sec">${gaugeHTML('Énergie',S.energy)}${gaugeHTML('Santé',S.hero.health)}${S.partner?gaugeHTML('Couple',S.partner.rel):''}</div>
       <div class="bs-sec bs-row">${S.event?'<button class="btn pinkb" data-a="openev">Une décision t’attend</button>':''}<button class="btn ghost" data-a="tab" data-t="vie">Ma vie</button></div>
-      ${n?`<div class="bs-sec"><h3>Déménager : ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button></div>`:''}`;return}
+      ${n?`<div class="bs-sec"><h3>Agrandir tes locaux : ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>S’agrandir pour ${fmt(n.cost)}</button></div>`:''}`;return}
   if(sel==='mairie'){const P=S.pol;
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">🏛️</div><div><h2>Hôtel de ville</h2><p class="hint">${P.office==='maire'?`Tu es ${gx(S.hero,'le maire','la maire')}, mandat n°${P.terms}`:P.cand?'Tu es '+gx(S.hero,'candidat','candidate'):`Prochaines élections : ${dateLabel(P.nextElec)}`}</p></div>${x}</div>
       <div class="bs-sec">${P.office==='maire'?`<div class="kv"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Projets réalisés</span><b>${P.projects.length}/${PROJ_ALL.filter(p=>p.id!=='fete').length}</b></div>`:P.cand?gaugeHTML('Intentions de vote',P.dist?pollPct():P.pop):'<p class="hint">Avec assez de réputation, tu pourras te présenter.</p>'}</div>
@@ -2883,9 +2883,9 @@ function vieMoi(){
     ${S.debt?`<div class="kv" style="margin-top:8px"><span>Dette à rembourser</span><b>${fmt(S.debt.amt)} en ${dateLabel(S.debt.due)}</b></div>`:''}
     ${S.share?`<div class="kv"><span>Part des bénéfices reversée</span><b>${Math.round(S.share*100)} %</b></div>`:''}
     ${act.length?`<div class="fxchips" style="margin-top:8px;justify-content:flex-start">${act.map(m=>`<span class="fxchip ${m.m<1?'neg':''}">${m.biz?BIZ_BY[m.biz].e+' ':''}×${fmtM(m.m)} jusqu’en ${dateLabel(m.until)}</span>`).join('')}</div>`:''}</div>
-  <div class="sec-head"><h2>Chez toi</h2><p>${STAGES[S.stage].name}</p></div>
-  <div class="panel">${n?`<div class="kv"><span>Prochain logement</span><b>${n.name}</b></div><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:10px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button>`:'<p>La tour dorée. Difficile de viser plus haut.</p>'}
-    <details class="more"><summary>Tous les logements</summary><ol class="steps">${STAGES.map((x,i)=>`<li class="${i>S.stage+1?'locked':''}"><div class="ic">${x.icon}</div><div><h3>${x.name}${i<=S.stage?' <span class="tag">Atteint</span>':''}</h3><p class="sub">${x.perk}${i>S.stage?' '+fmt(x.cost)+'.':''}</p></div></li>`).join('')}</ol></details></div>
+  <div class="sec-head"><h2>Tes locaux</h2><p>${STAGES[S.stage].name}</p></div>
+  <div class="panel">${n?`<div class="kv"><span>Prochains locaux</span><b>${n.name}</b></div><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:10px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>S’agrandir pour ${fmt(n.cost)}</button>`:'<p>La tour dorée. Difficile de viser plus haut.</p>'}
+    <details class="more"><summary>Toutes les étapes des locaux</summary><ol class="steps">${STAGES.map((x,i)=>`<li class="${i>S.stage+1?'locked':''}"><div class="ic">${x.icon}</div><div><h3>${x.name}${i<=S.stage?' <span class="tag">Atteint</span>':''}</h3><p class="sub">${x.perk}${i>S.stage?' '+fmt(x.cost)+'.':''}</p></div></li>`).join('')}</ol></details></div>
   <div class="sec-head"><h2>Ta fortune</h2><p>${fmt(fortune())}</p></div>
   <div class="panel"><div class="kv"><span>Espérance de vie</span><b>~${lifeExp()} ans</b></div><p class="hint" style="margin-top:4px">Tu es ${wealthRank(fortune())}. L’argent et la santé jouent sur la longévité : en France, les 5 % les plus aisés vivent 13 ans de plus que les 5 % les plus modestes (Insee).</p>
     ${(h.passions||[]).length?`<div class="fxchips" style="justify-content:flex-start">${h.passions.map(k=>`<span class="fxchip">${PASSIONS[k].n} : ${PASSIONS[k].fx}</span>`).join('')}</div>`:''}</div>`;
@@ -5426,10 +5426,10 @@ buildGround=(f=>function(){f();if(TH_.moon)return;const P=cPal(),g=G.cv.getConte
   const ci=Math.min(gfxL(),CP.length-1),curb=shade(P.ink,1);g.lineWidth=.6;
   for(let x=0;x<N;x++)for(let y=0;y<N;y++){const hr=ROADS.includes(y),vr=ROADS.includes(x);if(!(hr||vr)||(WATER&&y>=18))continue;
     g.globalAlpha=.22;g.strokeStyle=curb;
-    if(hr&&!vr){[.14,.86].forEach(v=>{const a=iso(x,y+v),b=iso(x+1,y+v);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()});if(ci>=1&&ci<=4){g.globalAlpha=.12;[.05,.95].forEach(v=>{for(let k=1;k<4;k++){const a=iso(x+k/4,y+(v<.5?0:.86)),b=iso(x+k/4,y+(v<.5?.14:1));g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}})}}
-    if(vr&&!hr){[.14,.86].forEach(v=>{const a=iso(x+v,y),b=iso(x+v,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()});if(ci>=1&&ci<=4){g.globalAlpha=.12;[0,.86].forEach(u0=>{for(let k=1;k<4;k++){const a=iso(x+u0,y+k/4),b=iso(x+u0+.14,y+k/4);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}})}}
+    if(hr&&!vr){[.14,.86].forEach(v=>{const a=iso(x,y+v),b=iso(x+1,y+v);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()});if(ci>=1&&ci<=5){g.globalAlpha=.12;[.05,.95].forEach(v=>{for(let k=1;k<4;k++){const a=iso(x+k/4,y+(v<.5?0:.86)),b=iso(x+k/4,y+(v<.5?.14:1));g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}})}}
+    if(vr&&!hr){[.14,.86].forEach(v=>{const a=iso(x+v,y),b=iso(x+v,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()});if(ci>=1&&ci<=5){g.globalAlpha=.12;[0,.86].forEach(u0=>{for(let k=1;k<4;k++){const a=iso(x+u0,y+k/4),b=iso(x+u0+.14,y+k/4);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}})}}
     g.globalAlpha=1;
-    if(ci===5&&!(hr&&vr)){g.fillStyle=shade('#E8B931',1);if(hr){poly(g,quadT(x,y+.46,x+1,y+.475),shade('#E8B931',1));poly(g,quadT(x,y+.525,x+1,y+.54),shade('#E8B931',1))}else{poly(g,quadT(x+.46,y,x+.475,y+1),shade('#E8B931',1));poly(g,quadT(x+.525,y,x+.54,y+1),shade('#E8B931',1))}}
+    if(ci===6&&!(hr&&vr)){g.fillStyle=shade('#E8B931',1);if(hr){poly(g,quadT(x,y+.46,x+1,y+.475),shade('#E8B931',1));poly(g,quadT(x,y+.525,x+1,y+.54),shade('#E8B931',1))}else{poly(g,quadT(x+.46,y,x+.475,y+1),shade('#E8B931',1));poly(g,quadT(x+.525,y,x+.54,y+1),shade('#E8B931',1))}}
   }
 })(buildGround);
 /* ===== FIN AGENT CARTE ===== */
@@ -5508,7 +5508,7 @@ drawSky=function(){
     ctx.save();ctx.beginPath();ctx.arc(x,y,34.5,0,7);ctx.clip();ctx.fillStyle='rgba(3,4,11,.5)';ctx.beginPath();ctx.arc(x+22,y+10,40,0,7);ctx.fill();ctx.restore()}
   /* nuages ombrés : blancs le jour, roses au couchant, bleu nuit la nuit */
   if(!moon&&gfxL()>=0){const drift=(GFX.thumb?0:T)*5,cw=c2CloudSpr('w','#FFFFFF','rgba(170,190,215,.55)'),cd=c2CloudSpr('d','#FFE0CC','rgba(232,128,120,.6)'),cn=c2CloudSpr('n','#3B4778','rgba(20,26,58,.7)');
-    const nCl=4+(ci>=3?1:0);for(let i=0;i<nCl;i++){const w=120+(i*37)%70,span=MW+w*2,x=((i*231+drift*(1+i*.22)-cam.x*.06)%span+span)%span-w,y=6+((i*61)%Math.max(24,MH*.24));
+    const nCl=4+(ci>=4?1:0);for(let i=0;i<nCl;i++){const w=120+(i*37)%70,span=MW+w*2,x=((i*231+drift*(1+i*.22)-cam.x*.06)%span+span)%span-w,y=6+((i*61)%Math.max(24,MH*.24));
       const h=w*.47;ctx.globalAlpha=.9*(1-n)*(1-d*.8);if(ctx.globalAlpha>.02)ctx.drawImage(cw,x,y,w,h);ctx.globalAlpha=.9*d*(1-n);if(ctx.globalAlpha>.02)ctx.drawImage(cd,x,y,w,h);ctx.globalAlpha=.75*n;if(ctx.globalAlpha>.02)ctx.drawImage(cn,x,y,w,h)}ctx.globalAlpha=1}
   c2Horizon(ci,par,col(2));
 };
@@ -5552,7 +5552,7 @@ buildGround=(f=>function(){f();const P=cPal(),g=G.cv.getContext('2d'),ci=Math.mi
       continue}
     if(hr||vr)continue;
     const o=OCC[x][y];
-    if(WATER&&y===17){poly(g,P4(x,y,x+1,y+1),shade(sand?'#EBD9B0':ci===4?'#B9AFA2':'#D6C8AE',1));g.globalAlpha=.35;g.strokeStyle=shade('#6E5E4A',1);g.lineWidth=.5;for(let k=1;k<4;k++){const a=iso(x+k/4,y),b=iso(x+k/4,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}const a=iso(x,y+.5),b=iso(x+1,y+.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.globalAlpha=1;
+    if(WATER&&y===17){poly(g,P4(x,y,x+1,y+1),shade(sand?'#EBD9B0':ci===5?'#B9AFA2':'#D6C8AE',1));g.globalAlpha=.35;g.strokeStyle=shade('#6E5E4A',1);g.lineWidth=.5;for(let k=1;k<4;k++){const a=iso(x+k/4,y),b=iso(x+k/4,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}const a=iso(x,y+.5),b=iso(x+1,y+.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();g.globalAlpha=1;
       poly(g,P4(x,y+.86,x+1,y+1),shade('#8E8478',.9));continue}
     if(o==='plot'||o==='civic'||o==='lm')continue;
     /* taches de lumière et d’ombre, touffes */
@@ -5563,7 +5563,7 @@ buildGround=(f=>function(){f();const P=cPal(),g=G.cv.getContext('2d'),ci=Math.mi
     if(!moon&&!sand&&!T0.dome&&R()<.22){const p=iso(x+.2+R()*.6,y+.2+R()*.6),cols=['#FF6F91','#FFD447','#FFFFFF','#B48CFF','#FF9A3C'];for(let k=0;k<5;k++){g.fillStyle=shade(cols[(R()*cols.length)|0],1);g.beginPath();g.arc(p[0]+(R()-.5)*10,p[1]+(R()-.5)*5,1.3,0,7);g.fill()}}
   }
   /* allées des parcs */
-  if(!moon){const pathC=shade(sand?'#F2E2BC':ci===3?'#EFE3C2':'#E8DCC0',1),edge=shade(sand?'#C9A86A':'#B8A880',1);
+  if(!moon){const pathC=shade(sand?'#F2E2BC':ci===4?'#EFE3C2':'#E8DCC0',1),edge=shade(sand?'#C9A86A':'#B8A880',1);
     const c=iso(12,12);g.fillStyle=edge;g.beginPath();g.ellipse(c[0],c[1],46,23,0,0,7);g.fill();g.fillStyle=pathC;g.beginPath();g.ellipse(c[0],c[1],44,22,0,0,7);g.fill();
     [[11,12,11.95,12],[12.05,12,13,12],[12,11,12,11.95],[12,12.05,12,13]].forEach(([a,b,cc,dd])=>{const p=quadT(Math.min(a,cc)-(a===cc?.12:0),Math.min(b,dd)-(b===dd?.12:0),Math.max(a,cc)+(a===cc?.12:0),Math.max(b,dd)+(b===dd?.12:0));poly(g,p,pathC)});
     g.strokeStyle=pathC;g.lineWidth=7;g.lineCap='round';g.beginPath();const s=iso(5.2,11.3),m1=iso(7.4,13),m2=iso(5.5,14.2),e=iso(7.6,15.7);g.moveTo(s[0],s[1]);g.bezierCurveTo(m1[0],m1[1],m2[0],m2[1],e[0],e[1]);g.stroke();g.lineCap='butt';
@@ -5643,7 +5643,7 @@ function c2Furnish(ci){
     if(kind==='bush'&&R()<.6){DECOR.push({t:'fountain',k2:'bush',x:x+.2+R()*.6,y:y+.2+R()*.6,s:.6+R()*.3,v:(R()*3)|0,fl:R()<.5?pk(R,FL):null})}
   }
   /* haies fleuries au pied des maisons dans les villes « jardin » */
-  if(ci<=4){DECOR.forEach(o=>{if(o.t==='house'&&R()<.35)DECOR.push({t:'fountain',k2:'bush',x:o.x+o.w+.08,y:o.y+o.d*(.3+R()*.4),s:.5+R()*.2,v:(R()*3)|0,fl:R()<.6?pk(R,FL):null})})}
+  if(ci<=5){DECOR.forEach(o=>{if(o.t==='house'&&R()<.35)DECOR.push({t:'fountain',k2:'bush',x:o.x+o.w+.08,y:o.y+o.d*(.3+R()*.4),s:.5+R()*.2,v:(R()*3)|0,fl:R()<.6?pk(R,FL):null})})}
 }
 
 /* 7. Eau vivante : reflets du ciel, scintillements le jour, reflets des lumières la nuit */
@@ -5664,8 +5664,8 @@ drawHouse=function(o){const r=c2House(o);
     if(NIGHT>.5)cGlow(p[0],p[1],rx*2.2,ry*1.6,.35*NIGHT);
     return r}
   const ci=Math.min(gfxL(),CP.length-1);if(o.t==='apt'&&NIGHT>.4&&r.fL){const hh=o.f*FH;
-    if(ci===7){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.8*NIGHT;q(r.fL,0,1,hh-3,hh-1,'#FFC86A');q(r.fR,0,1,hh-3,hh-1,'#E0A040');ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
-    else if((ci===5||ci===6)&&o.f>=7&&Math.sin(T*2.5+o.x)>.2){const t=iso(o.x+o.w/2,o.y+o.d/2,hh+6);ctx.fillStyle='#FF4D4D';ctx.beginPath();ctx.arc(t[0],t[1],1.8,0,7);ctx.fill();cGlow(t[0],t[1],14,14,.7)}}
+    if(ci===8){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.8*NIGHT;q(r.fL,0,1,hh-3,hh-1,'#FFC86A');q(r.fR,0,1,hh-3,hh-1,'#E0A040');ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
+    else if((ci===6||ci===7)&&o.f>=7&&Math.sin(T*2.5+o.x)>.2){const t=iso(o.x+o.w/2,o.y+o.d/2,hh+6);ctx.fillStyle='#FF4D4D';ctx.beginPath();ctx.arc(t[0],t[1],1.8,0,7);ctx.fill();cGlow(t[0],t[1],14,14,.7)}}
   if(TH_.dome||!cLod()||(S.props&&S.props[o.pid])||((S.propUp||{})[o.pid])||o.roof||cPal().sig==='zinc')return r;
   const sd=cHash(o)%7,h=o.f*FH;
   if(sd===1||sd===4){const x0=o.x+o.w*.12,y0=o.y+o.d*.58,x1=o.x+o.w*.5,y1=o.y+o.d*.9;poly(ctx,quadT(x0,y0,x1,y1,h+.4),shade('#7A5536',1));poly(ctx,quadT(x0+.03,y0+.03,x1-.03,y1-.03,h+1.6),shade(cPal().leaf[sd%2],1));
@@ -7099,8 +7099,8 @@ c2Horizon=function(ci,par,hz){
   const top=toScreen(iso(0,0)[0],iso(0,0)[1])[1],base=top+14*cam.z,ha=clamp((base-70)/90,0,1);if(ha<=0)return;
   const key=ci+'|'+G.bucket+'|'+Math.round(MW);
   if(C2H.key!==key){C2H.key=key;const W=Math.ceil(MW*2.4),H=130,cv=C2H.cv||document.createElement('canvas');cv.width=W;cv.height=H;C2H.cv=cv;const g=cv.getContext('2d'),R=mulberry(77+ci),by=H-8;
-    const far=c2Rgb(c2Lerp3(c2Lerp3(c2Hex(['#A4CFA6','#A6C8B8','#C2B79C','#AEB9CA','#A9B2BE','#94A8C2','#A8BCD2','#EACDA2','#7FAF8A','#9FB0C0','#1F6F8A','#3A3654','#B0704E'][ci]),c2Hex('#E4A08E'),DUSK*.5),[24,32,70],NIGHT*.82));
-    const near=c2Rgb(c2Lerp3(c2Lerp3(c2Hex(['#86BE86','#8BBA9C','#CC9C78','#97A4B6','#929AA6','#7A8EAB','#8AA2C0','#E2BC8A','#5E9A6A','#8496AA','#165A72','#2C2944','#93573C'][ci]),c2Hex('#C9867A'),DUSK*.5),[18,24,58],NIGHT*.84));
+    const far=c2Rgb(c2Lerp3(c2Lerp3(c2Hex(['#A4CFA6','#A6C8B8','#C2B79C','#B9C8C2','#AEB9CA','#A9B2BE','#94A8C2','#A8BCD2','#EACDA2','#7FAF8A','#9FB0C0','#1F6F8A','#3A3654','#B0704E'][ci]),c2Hex('#E4A08E'),DUSK*.5),[24,32,70],NIGHT*.82));
+    const near=c2Rgb(c2Lerp3(c2Lerp3(c2Hex(['#86BE86','#8BBA9C','#CC9C78','#9FB4AE','#97A4B6','#929AA6','#7A8EAB','#8AA2C0','#E2BC8A','#5E9A6A','#8496AA','#165A72','#2C2944','#93573C'][ci]),c2Hex('#C9867A'),DUSK*.5),[18,24,58],NIGHT*.84));
     const layer=(fill,amp,step,kind,off)=>{g.fillStyle=fill;g.beginPath();g.moveTo(0,H);g.lineTo(0,by-off);let x=0;
       for(let it=0;it<400&&x<W;it++){const h=amp*(.45+R()*.55);
         if(kind==='hill'){const w=step*(1+R());g.quadraticCurveTo(x+w/2,by-off-h*1.6,x+w,by-off);x+=w}
@@ -7112,10 +7112,10 @@ c2Horizon=function(ci,par,hz){
         else if(kind==='mesa'){const w=step*(1.2+R()*1.4),hh=h*(R()<.25?1.7:1);g.lineTo(x+w*.15,by-off-hh);g.lineTo(x+w*.85,by-off-hh);g.lineTo(x+w,by-off);x+=w+R()*10;g.lineTo(x,by-off)}
         else{const w=step*(1+R());g.lineTo(x+w*.3,by-off-h*.5);g.quadraticCurveTo(x+w*.5,by-off-h,x+w*.7,by-off-h*.5);g.lineTo(x+w,by-off);x+=w}}
       g.lineTo(W,H);g.closePath();g.fill()};
-    const K=[['hill','hill'],['hill','hill'],['hill','city'],['hill','city'],['city','city'],['tower','tower'],['city','tower'],['dune','tower'],['peaks','city'],['tower','tower'],['reef','reef'],['crater','crater'],['mesa','crater']][ci]||['crater','crater'];
-    const AF={5:46,7:46,8:58,9:52,10:40,12:50}[ci]||30,SF={8:46,10:16,12:44}[ci]||(ci>=5?18:38),AN={5:34,7:26,8:16,9:30,10:30}[ci]||18,SN=ci===10?12:ci>=4?14:30;
+    const K=[['hill','hill'],['hill','hill'],['hill','city'],['hill','city'],['hill','city'],['city','city'],['tower','tower'],['city','tower'],['dune','tower'],['peaks','city'],['tower','tower'],['reef','reef'],['crater','crater'],['mesa','crater']][ci]||['crater','crater'];
+    const AF={6:46,8:46,9:58,10:52,11:40,13:50}[ci]||30,SF={9:46,11:16,13:44}[ci]||(ci>=6?18:38),AN={6:34,8:26,9:16,10:30,11:30}[ci]||18,SN=ci===11?12:ci>=5?14:30;
     layer(far,AF,SF,K[0],12);layer(near,AN,SN,K[1],0);
-    if(ci===6||ci===4||ci===5||ci===8||ci===9){g.fillStyle=NIGHT>.45?'rgba(255,214,120,.8)':'rgba(255,255,255,0)';if(NIGHT>.45)for(let i=0;i<120;i++){g.fillRect(R()*W,by-R()*40,1.5,1.5)}}
+    if(ci===7||ci===5||ci===6||ci===9||ci===10){g.fillStyle=NIGHT>.45?'rgba(255,214,120,.8)':'rgba(255,255,255,0)';if(NIGHT>.45)for(let i=0;i<120;i++){g.fillRect(R()*W,by-R()*40,1.5,1.5)}}
     const fg=g.createLinearGradient(0,by-46,0,H);fg.addColorStop(0,'rgba(0,0,0,0)');fg.addColorStop(.85,hz);fg.addColorStop(1,hz);g.globalCompositeOperation='source-atop';g.fillStyle=fg;g.fillRect(0,0,W,H);g.globalCompositeOperation='source-over'}
   ctx.save();ctx.globalAlpha=ha;ctx.beginPath();ctx.rect(0,0,MW,Math.max(0,base));ctx.clip();ctx.drawImage(C2H.cv,MW/2-par*.6-C2H.cv.width/2,base-C2H.cv.height+8);ctx.restore();
 };
@@ -7172,6 +7172,76 @@ function vlOwnMarks(o,r,ff,l){if(!r||!r.fL)return;const h=ff*FH,gold='#E0B84A',P
   const t=r.top;if(!t)return;const ph=l>=3?14:9;ctx.strokeStyle=shade('#5A5F66',1);ctx.lineWidth=.9;line(t,[t[0],t[1]-ph]);ctx.fillStyle=shade(l>=3?gold:'#D1495B',1);
   ctx.beginPath();ctx.moveTo(t[0],t[1]-ph);ctx.lineTo(t[0]+7+Math.sin(T*3+o.x)*.8,t[1]-ph+2.2);ctx.lineTo(t[0],t[1]-ph+4.4);ctx.closePath();ctx.fill()}
 /* ===== FIN AGENT VILLES ===== */
+/* ===== AGENT MARSEILLE ===== */
+/* Marseille entre Lyon et Paris (indice 3). Toutes les tables par ville reçoivent une entrée à l’indice 3 ;
+   les tables à clés numériques (calendrier, mobilier) sont décalées d’un cran. Les anciennes sauvegardes
+   (à Paris ou plus loin) avancent d’un cran une seule fois (champ cityV = 3). Ordre final :
+   0 Ta ville, 1 Nantes, 2 Lyon, 3 Marseille, 4 Paris, 5 Londres, 6 New York, 7 Tokyo, 8 Dubaï,
+   9 Rio, 10 Shanghai, 11 Atlantide, 12 Lune, 13 Mars. */
+const MS_AT=3;
+const msIns=(a,v)=>{if(Array.isArray(a))a.splice(MS_AT,0,v)};
+const msShiftKeys=o=>{if(!o)return;Object.keys(o).map(Number).filter(k=>k>=MS_AT).sort((a,b)=>b-a).forEach(k=>{o[k+1]=o[k];delete o[k]})};
+/* ancien indice (avant Marseille) : sert aux conditions écrites avec les anciens numéros */
+const msOld=c=>c<MS_AT?c:c===MS_AT?-1:c-1;
+function msLegacy(fn){return function(){const c=S.city;S.city=msOld(c|0);try{return fn.apply(this,arguments)}catch(e){return false}finally{S.city=c}}}
+
+msIns(CITIES,{n:'Marseille',e:'⚓',t:'Notre-Dame de la Garde, le Vieux-Port et la mer à perte de vue.'});
+msIns(CITY_BIZ,[
+  ['🐟','Poissonnerie du Vieux-Port','les poissons','#2E86AB','Mme Fanny',['Pêche du matin','Bouillabaisse à emporter','Livraison aux restaurants']],
+  ['🧼','Savonnerie artisanale','les savons','#5FA883','Marius le savonnier',['Huile d’olive de Provence','Coffrets cadeaux','Export au Japon']],
+  ['🧺','Marché de Noailles','les étals','#E59C3B','Tata Zohra',['Épices du monde','Stand de pois chiches','Ouvert le dimanche']],
+  ['🛥️','Bateaux pour les calanques','les sorties','#3D7EA6','Capitaine Titou',['Sorties aux calanques','Plongée au Frioul','Flotte de pointus']],
+  ['🛵','Scooters d’occasion','les scooters','#D1495B','Momo de la Belle-de-Mai',['Atelier de réparation','Scooters électriques','Livraison dans toute la ville']],
+  ['🎤','Studio de rap','les morceaux','#1E2B2A','DJ Kemso',['Cabine d’enregistrement','Clip sur la Corniche','Disque de platine']],
+  ['⚽','Boutique du stade','les maillots','#4FA9DC','M. Ruggieri',['Maillots collector','Loges au stade','Tournée en Europe']],
+  ['🛳️','Terminal de croisières','les escales','#2E4057','Mme Castellane',['Nouveau quai','Paquebots géants','Ligne vers la Corse']]]);
+msIns(MKT,{e:'🫒',n:'Huile d’olive',u:'bidon',p:2500,vol:.035,news:[['Le gel ruine les oliveraies de Provence','Un grand chef ne jure que par l’huile locale'],['Récolte record en Espagne','Les épiceries croulent sous les stocks']]});
+/* Grand groupe de chaque ville en bourse, rangé par nom (la liste n’avait que 9 villes) */
+(()=>{const byName={'Ta ville':['🧰','Quincaillerie Morel'],'Nantes':['🚢','Chantiers de l’Estuaire'],'Lyon':['💊','Laboratoires Rhône-Alpes'],'Marseille':['⚓','Armement Phocéen'],'Paris':['👜','Maison Vendôme'],'Londres':['🏦','Thames & Co'],'New York':['🍎','Hudson Tech'],'Tokyo':['🤖','Shibuya Robotics'],'Dubaï':['🛢️','Gulf Energy'],'Rio de Janeiro':['🥥','Copacabana Holding'],'Shanghai':['🏮','Huangpu Industries'],'Atlantide':['🐚','Nacre & Cie'],'La Lune':['🚀','Selene Mining'],'Mars':['🔴','Red Planet Corp']};
+  STOCKS.length=0;CITIES.forEach(c=>STOCKS.push(byName[c.n]||['🏢','Holding '+c.n]))})();
+
+/* Palettes et carte : base lyonnaise, façades claires, tuiles, mer bleue */
+const MS_WALLS=['#F4E6CF','#EED9B6','#F2C98F','#E9B58A','#F7F1E4','#E6CDA8'];
+msIns(CP,Object.assign({},CP[2],{walls:MS_WALLS.slice(),roof:'#C9603A',roof2:'#A94C2E',trim:'#2E86AB',door:'#2E5E7A',glass:'#9FD3E0',walk:'#EFE2CB'}));
+msIns(C2PAL,Object.assign({},C2PAL[2],{walls:MS_WALLS.slice(),roof:'#C9603A',roof2:'#A94C2E',trim:'#2E86AB',door:'#2E5E7A',glass:'#9FD3E0',walk:'#EFE2CB',water:'#1F9AC9'}));
+msIns(C2.sat,1.16);msIns(C2.warm,1.1);
+msIns(C2MAP,{'#C9CDD1':'#EFD8B4','#B4BAC0':'#2E86AB'});
+msIns(C2SKY,['#3FA4EC','#8FD3F5','#FFE6C2']);
+msIns(THEMES,{grass:['#9CC46A','#95BD64'],park:'#86B85A',road:'#555A63',walk:'#EFE2CB',water:'#1F9AC9',houses:MS_WALLS.slice(),roofs:['#C9603A','#A94C2E'],roofP:.85,fl:[2,5],tree:'palm',
+  cars:['#4FA9DC','#E5E5E5','#F2F2F2','#333A45','#D1495B'],lm:[['ndgarde','A'],['cmacgm','B'],['grandport','C']],flag:'fr',ent:['boat']});
+msIns(GFX_FEAT,'Façades claires, tuiles romaines, palmiers et la mer au bout de chaque rue');
+/* Monuments : mêmes dessins que la basilique de Fourvière, la tour Crayon et la grue Titan, sous leur nom marseillais */
+if(LMDRAW.fourviere)LMDRAW.ndgarde=LMDRAW.fourviere;if(LMDRAW.crayon)LMDRAW.cmacgm=LMDRAW.crayon;if(LMDRAW.titan)LMDRAW.grandport=LMDRAW.titan;
+Object.assign(GFX_LM,{ndgarde:'Notre-Dame de la Garde',cmacgm:'Tour CMA CGM',grandport:'Grues du Grand Port'});
+Object.assign(LMKEY,{ndgarde:LMKEY.fourviere,cmacgm:LMKEY.crayon,grandport:LMKEY.titan});
+/* Calendrier et mobilier urbain : clés décalées d’un cran */
+msShiftKeys(CITY_EV);CITY_EV[MS_AT]={5:{m:2,n:'⛵ Fête de la mer ×2'},8:{m:1.5,n:'⚽ Derby au stade ×1,5'}};
+msShiftKeys(VL_FURN);
+/* Conditions écrites avec les anciens numéros de ville (événements, trophées) : on les évalue avec l’ancien numéro */
+Object.keys(EV).forEach(k=>{const e=EV[k];if(e&&typeof e.cond==='function'&&/S\.city/.test(String(e.cond)))e.cond=msLegacy(e.cond)});
+checkTrophies=(f=>function(){const c=S.city;S.city=msOld(c|0);let r;try{r=f.apply(this,arguments)}finally{S.city=c}return r})(checkTrophies);
+/* Objets gagnés en arrivant dans une ville : recalés sur le nom */
+if(typeof META_ITEMS!=='undefined')META_ITEMS.forEach(it=>{if(it.ach&&/^Arrive à /.test(it.ach.t||'')){const i=CITIES.findIndex(c=>'Arrive à '+c.n===it.ach.t);if(i>=0)it.ach=MA.city(i)}});
+/* Une décision propre à Marseille */
+Object.assign(EV,{
+  mrs_pastis:{cat:'business',w:6,cool:36,cond:()=>S.city===MS_AT,def:1,who:'⚓',name:'Un patron de bar du Vieux-Port',title:'Le tournoi de pétanque',
+    text:()=>'Le bar d’en face organise le grand tournoi de l’été. Il cherche un sponsor pour les maillots.',
+    ch:[{t:'Sponsoriser le tournoi',need:120,go:()=>{pay(120);if(chance(.65)){mod(1.6,3);repD(5);return 'Tout le quartier porte ton nom sur le dos. Les ventes suivent.'}repD(2);return 'Le tournoi tourne à la dispute. On se souvient surtout du mistral.'}},
+      {t:'Juste venir jouer',go:()=>{nrg(-5);repD(1);return 'Tu perds en demi-finale, mais tu connais tout le monde maintenant.'}}]}
+});
+if(!EV_POOL.includes('mrs_pastis'))EV_POOL.push('mrs_pastis');
+
+/* Sauvegardes : Paris et après avancent d’un cran, une seule fois */
+function msShiftSave(o){const c=o.city|0;if(c>=MS_AT)o.city=c+1;
+  if(o.meta&&typeof o.meta==='object'&&o.meta.cityPaid!=null&&o.meta.cityPaid>=MS_AT)o.meta.cityPaid++;
+  const b=o.counts&&o.counts.bourse;if(b&&typeof b==='object'){const n={};Object.keys(b).forEach(k=>{const i=+k;n[String(i>=MS_AT?i+1:i)]=b[k]});o.counts.bourse=n}}
+repair=(f=>function(o){const r=f(o);if(r&&typeof r==='object'&&r.cityV!==3){msShiftSave(r);r.cityV=3;r.city=clamp(r.city|0,0,CITIES.length-1)}return r})(repair);
+newGame=(f=>function(){const o=f.apply(this,arguments);o.cityV=3;return o})(newGame);
+/* La partie est déjà chargée (avec 13 villes) : on regarde la version de la sauvegarde brute */
+(()=>{if(!S)return;let raw=null;try{raw=readKey(KEY)||readKey(KEY+'_bak');if(!raw)for(const k of OLD_KEYS){raw=readKey(k);if(raw)break}}catch(e){}
+  if(raw&&typeof raw==='object'&&raw.cityV===3){S.cityV=3;S.city=clamp(raw.city|0,0,CITIES.length-1);return}
+  if(raw&&typeof raw==='object')msShiftSave(S);S.cityV=3;S.city=clamp(S.city|0,0,CITIES.length-1)})();
+/* ===== FIN AGENT MARSEILLE ===== */
 /* ===== AGENT VIVANT ===== */
 /* Vie de la ville : chaque passant a une petite journée (travail, déjeuner, courses, chien, footing, livraisons, bus),
    files d'attente devant les commerces du joueur (plus longues quand ils marchent bien), voitures qui se suivent
@@ -7609,7 +7679,7 @@ function vvCardUpdate(){const e=VV.follow,c=VV.card;if(!e||!e.v||!c||c.hidden)re
    1. un commerce ne s'ouvre que si le précédent a atteint un niveau qui monte avec la ville ;
    2. les objectifs de conquête grandissent avec la ville ;
    3. l'immobilier coûte plus cher dans les villes avancées (rendement un peu plus bas). */
-const bizGate=c=>Math.min(150,10+8*(c||0));
+let BIZ_GATE_K=5; /* était 8 : avec +30 niveaux par ville, Paris et après devenaient interminables (simulé) */const bizGate=c=>Math.min(150,10+BIZ_GATE_K*(c||0));
 function bizGateOk(b){const i=BIZ.indexOf(b);if(i<=0)return true;const pv=BIZ[i-1];return (S.biz[pv.id].lvl|0)>=bizGate(S.city)}
 quote=(f=>function(b){const q=f(b);if(S.biz[b.id].lvl===0&&!bizGateOk(b)){const pv=BIZ[BIZ.indexOf(b)-1];return Object.assign({},q,{ok:false,label:`D’abord ${pv.n} au niveau ${bizGate(S.city)}`})}return q})(quote);
 cityGoal2=()=>Math.max(1000,Math.round(BIZ.reduce((t,b)=>t+b.base*10/b.time,0)*600));
@@ -7740,6 +7810,108 @@ mktSell=(f=>function(n){const before=S.mkt?S.mkt.profit:0;const r=f.apply(this,a
 mktGains=()=>{const b=S.counts&&S.counts.bourse;return b?(b[String(S.city||0)]||0):0};
 conqGoals=(f=>function(){const L=f.apply(this,arguments);return L.map(g=>/à la bourse locale/.test(g.t)?{t:g.t,p:()=>[Math.round(mktGains()),mktGoal2()]}:g)})(conqGoals);
 /* ===== FIN TUTORIEL ===== */
+/* ===== AGENT PROGRESSION ===== */
+/* Économie de voyage (demandes de Nils du 4 novembre) :
+   1. arrivée dans une ville avec un petit capital ; le reste de ta fortune part au trésor de l’empire (non dépensable, petit bonus permanent) ;
+   2. objectif « Gagne X » = à peu près ce que coûte la conquête de la ville ; première ville plus douce ;
+   3. deux objectifs propres à chaque ville ; 4. bourse plus simple ; 5. gérants à 4 × le prix d’ouverture ;
+   6. QG renommé « locaux » ; 8. ticket à gratter plus souvent gagnant. */
+const MGR_K=4,START_K=1.5,TRESOR_MAX=50;
+const pgR2=x=>{if(!(x>0))return 0;const p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p};
+/* Gérants : prix proportionnel à l’ouverture de la boutique */
+let PG_K0=.4,PG_KR=.2,PG_LV0=50,PG_LVA=55,PG_LVB=8,PG_NB=4;
+cityPrices=(f=>function(ci){f(ci);const k=Math.min(1,PG_K0+PG_KR*(ci||0));if(k!==1){BIZ.forEach(b=>{b.cost*=k});UPG.forEach(u=>{u.cost*=k});STAGES.forEach(x=>{x.cost*=k})}BIZ.forEach(b=>{MGR[b.id]=Math.round(b.cost*MGR_K)})})(cityPrices);
+/* Niveau demandé et prix : plus doux au début (prix ×0,4 à Ta ville, ×0,6 à Nantes, ×0,8 à Lyon, normal ensuite) */
+const pgLv=c=>c?Math.min(400,PG_LVA+PG_LVB*c):PG_LV0,pgNb=c=>PG_NB||Math.min(8,4+Math.floor(c/3));
+/* Objectifs propres à chaque ville (rangés par nom) */
+const PG_THEME={
+  'Ta ville':{tag:'Ton quartier : faire ses preuves.',g:[['rev5',15],['props',.10]]},
+  'Nantes':{tag:'Nantes : le port, la Loire et les machines.',g:[['lvl',4],['sat',72]]},
+  'Lyon':{tag:'Lyon : la table et le vin.',g:[['lvl',0],['upg1',4]]},
+  'Marseille':{tag:'Marseille : la mer, le port et le foot.',g:[['lvl',3],['props',.2]]},
+  'Paris':{tag:'Paris : la mode et le luxe.',g:[['lvl',6],['upg1',3]]},
+  'Londres':{tag:'Londres : la City et la clientèle exigeante.',g:[['lvl',7],['rev5',30]]},
+  'New York':{tag:'New York : la pierre et Wall Street.',g:[['props',.3],['lvl',5]]},
+  'Tokyo':{tag:'Tokyo : la tech et le service parfait.',g:[['lvl',5],['staff',8]]},
+  'Dubaï':{tag:'Dubaï : voir grand.',g:[['stage',3],['lvl',6]]},
+  'Rio de Janeiro':{tag:'Rio : le carnaval et la fête.',g:[['lvl',3],['sat',85]]},
+  'Shanghai':{tag:'Shanghai : l’usine du monde.',g:[['lvl',5],['rev5',40]]},
+  'Atlantide':{tag:'Atlantide : les perles et la ville sous la mer.',g:[['lvl',0],['props',.4]]},
+  'La Lune':{tag:'La Lune : tout doit tourner sans toi.',g:[['lvl',6],['mgr',8]]},
+  'Mars':{tag:'Mars : bâtir une colonie.',g:[['lvl',7],['staff',12]]}};
+const pgTheme=c=>PG_THEME[(CITIES[c||0]||{}).n]||{tag:'',g:[['sat',75],['props',.2]]};
+/* Niveau visé par un objectif « commerce phare » */
+function pgThemeLvl(c,i){const lv=pgLv(c),nb=pgNb(c);return i<nb?lv+(i===0?50:10):Math.max(bizGate(c)+10,Math.round(lv*.6))}
+function pgBase(){if(!S.cityBase||S.cityBase.c!==(S.city||0))S.cityBase={c:S.city||0,r5:S.stats.reviews5||0};return S.cityBase}
+const pgStaff=()=>BIZ.reduce((a,b)=>{const s=S.biz[b.id].staff||{};return a+(s.clean|0)+(s.wait|0)+(s.qual|0)},0);
+function pgGoal(c,d){const cn=c?CITIES[c].n:'ta ville',[k,v]=d;
+  if(k==='lvl'){const b=BIZ[v],L=pgThemeLvl(c,v);return {t:`${b.e} ${b.n} au niveau ${L}`,p:()=>[S.biz[b.id].lvl,L]}}
+  if(k==='upg1'){const b=BIZ[v],u=UPG.find(x=>x.biz===b.id&&x.id===b.id+'0');return {t:`Offre-toi « ${u?u.n:'une amélioration'} » pour ${b.n}`,p:()=>[u&&S.upg.includes(u.id)?1:0,1]}}
+  if(k==='props')return {t:`Possède ${Math.round(v*100)} % des bâtiments de ${cn}`,p:()=>[ownedCount(),Math.ceil(propsList().length*v)]};
+  if(k==='sat')return {t:`Atteins ${v} % de satisfaction avec tes 8 affaires`,p:()=>[openIds().length>=8?Math.round(avgSat()):0,v]};
+  if(k==='rev5')return {t:`Récolte ${v} avis 5 étoiles à ${cn}`,p:()=>[Math.max(0,(S.stats.reviews5||0)-pgBase().r5),v]};
+  if(k==='staff')return {t:`Embauche ${v} employés dans tes boutiques`,p:()=>[pgStaff(),v]};
+  if(k==='stage')return {t:`Installe tes locaux : ${STAGES[v].name.toLowerCase()}`,p:()=>[S.stage,v]};
+  if(k==='mgr')return {t:'Un gérant dans chacune de tes 8 affaires',p:()=>[BIZ.filter(b=>S.biz[b.id].lvl&&S.biz[b.id].mgr).length,8]};
+  return {t:'—',p:()=>[1,1]}}
+/* Ce que coûte la conquête : ouvrir les 8, les paliers d’ouverture, les niveaux demandés */
+function cityMaxCost(){
+  const c=S.city||0,g=bizGate(c),lv=pgLv(c),nb=pgNb(c),need=BIZ.map((b,i)=>i<BIZ.length-1?g:1);
+  BIZ.map((b,i)=>({i,k:costN(b,1,lv-1)})).sort((a,b)=>a.k-b.k).slice(0,nb).forEach(x=>{need[x.i]=Math.max(need[x.i],lv)});
+  pgTheme(c).g.forEach(([k,v])=>{if(k==='lvl')need[v]=Math.max(need[v],pgThemeLvl(c,v))});
+  return BIZ.reduce((t,b,i)=>t+b.cost+costN(b,1,Math.max(0,need[i]-1)),0)}
+cityGoal2=()=>Math.max(1000,pgR2(1.1*cityMaxCost()));
+/* Bourse : objectif modeste, à l’échelle des prix de la ville */
+mktGoal2=()=>Math.max(1000,pgR2(1000*cityCost(S.city||0)));
+/* Le produit de la ville se détient par lots de 10 (avant : 20 unités au plus, l’objectif était presque impossible avec lui) */
+assetDef=(f=>function(i,c){const d=f(i,c);if(i===0)d.mul=10;return d})(assetDef);
+conqGoals=function(){
+  const c=S.city||0,cn=c?CITIES[c].n:'ta ville',lv=pgLv(c),nb=pgNb(c),dv=Math.min(DIVS.length-1,2+Math.floor(c/4));
+  return [
+    {t:`Ouvre les 8 affaires de ${cn}`,p:()=>[openIds().length,8]},
+    {t:`Fais grandir ${nb} affaires jusqu’au niveau ${lv}`,p:()=>[BIZ.filter(b=>S.biz[b.id].lvl>=lv).length,nb]},
+    {t:`Gagne ${fmt(cityGoal2())} dans cette ville`,p:()=>[S.lifetime,cityGoal2()]},
+    {t:`Gagne ${fmt(mktGoal2())} à la bourse locale`,p:()=>[Math.round(mktGains()),mktGoal2()]},
+    ...pgTheme(c).g.map(d=>pgGoal(c,d)),
+    c%2===0?{t:'Deviens maire de la ville',p:()=>[S.pol.office?1:0,1]}:{t:`Fais monter ton club jusqu’en ${DIVS[dv]}`,p:()=>[S.club.div,dv]}
+  ];
+};
+/* Trésor de l’empire : ce que tu laisses derrière toi en partant. Il ne se dépense pas : +1 à +5 % de revenus par ville quittée, pour toujours (max +50 %). */
+const startCash=()=>Math.round(BIZ[0].cost*START_K);
+newGame=(f=>function(){const g=f.apply(this,arguments);g.tresor=0;g.tresorB=0;return g})(newGame);
+permMult=(f=>function(){return f.apply(this,arguments)*(1+Math.min(TRESOR_MAX,+S.tresorB||0)/100)})(permMult);
+franchise=(f=>function(){
+  const c0=S.city,g0=cityGoal2(),tb=+S.tresor||0,tB=+S.tresorB||0;let left=Math.max(0,+S.cash||0);
+  try{(S.mkt&&S.mkt.a||[]).forEach(A=>{if(A.qty>0&&A.price>0)left+=A.qty*A.price*.99})}catch(e){}
+  try{const hd=vieHomeDef();if(hd&&hd.price)left+=vieSaleValue()}catch(e){}
+  f.apply(this,arguments);
+  if(S.city===c0)return;
+  const st=startCash();S.cash=st;dispCash=st;
+  const pts=left>=g0?5:left>=g0/10?3:left>0?1:0; /* +5 % si tu pars avec au moins l’objectif de gains de la ville */
+  S.tresor=tb+left;S.tresorB=Math.min(TRESOR_MAX,tB+pts);S.cityBase={c:S.city,r5:S.stats.reviews5||0};
+  try{const sh=document.querySelector('#layer .sheet'),bt=sh&&sh.querySelector('button:last-of-type');if(bt)bt.insertAdjacentHTML('beforebegin',
+    `<p>Tu arrives avec <strong>${fmt(st)}</strong>, de quoi ouvrir ta première boutique. Le reste (${fmt(left)}) part au trésor de l’empire${pts?` : <strong>+${pts} %</strong> sur tes revenus, pour toujours`:''}.</p>`)}catch(e){}
+})(franchise);
+const pgTresorHTML=()=>`<div class="panel"><div class="kv"><span>Trésor de l’empire</span><b>${fmt(S.tresor||0)}</b></div><p class="hint">Ce que tu laisses en quittant une ville. Il ne se dépense pas : il ajoute <b>+${Math.min(TRESOR_MAX,S.tresorB||0)} %</b> à tes revenus (jusqu’à +${TRESOR_MAX} %).</p></div>`;
+vObjectifs=(f=>function(){let h=f();const th=pgTheme(S.city||0);
+  if(th.tag)h=h.replace('<div class="panel conq">',`<div class="panel conq"><p class="hint" style="margin:0 0 8px">${th.tag}</p>`);
+  h=h.replace('Tu repars de zéro dans la nouvelle ville. Famille, trophées et étoiles te suivent.',`Tu arrives avec un petit capital pour ta première boutique. Le reste de ta fortune part au trésor de l’empire. Famille, trophées et étoiles te suivent.`);
+  if((S.tresor||0)>0)h=h.replace('<div class="route">',pgTresorHTML()+'<div class="route">');return h})(vObjectifs);
+/* Locaux (le QG de l’entreprise) : pas le même mot que le logement de la vie */
+[['Garage','Tu stockes tout dans le garage. Énergie +4 par mois.'],['Petit local','Un vrai local avec une vitrine. Énergie +6 par mois, revenus +5 %.']].forEach(([n,p],i)=>{STAGES[i].name=n;STAGES[i].perk=p});
+(()=>{const m=MISSIONS.find(x=>x.id==='m9');if(m){m.t='Loue un petit local';m.h='Touche tes locaux sur la carte.'}if(typeof MTXT!=='undefined')MTXT.m9=['Loue un petit local','Touche tes locaux sur la carte.']})();
+/* Ticket à gratter : gagne une fois sur trois, gains plus petits (même moyenne) */
+if(EV.d_ticket&&typeof LK==='function')EV.d_ticket.ch[0]=LK('Gratter',.35,()=>{money(90);return pick(['Gagné ! Le buraliste n’en revient pas.','Trois cerises. Tu repars avec le sourire.','Petit gain, mais gain quand même.'])},()=> 'Perdu. Comme d’habitude.',2);
+/* Bourse : objectif visible, gros boutons, mode d’emploi en trois lignes */
+vMarche=(f=>function(){let h=f();const g=mktGoal2(),a=Math.round(mktGains()),ok=a>=g,M=S.mkt,A=M.a[M.sel],pl=A.qty?(A.price*.99-A.avg)*A.qty:0;
+  const top=`<div class="panel pg-mk"><div class="kv"><span><b>Objectif de la ville</b></span><b class="${ok?'pos':''}">${ok?'Réussi':fmt(a)+' / '+fmt(g)}</b></div>
+    <div class="obj-bar"><i style="width:${Math.min(100,a/g*100)}%"></i></div>
+    <p class="hint" style="margin-top:6px">1. Choisis une valeur. 2. Achète quand elle baisse. 3. Revends quand elle remonte. Seuls les bénéfices de tes ventes comptent.</p></div>`;
+  const big=`<div class="pg-big"><button class="btn big go" data-a="mbuy" data-n="max">Acheter au max</button><button class="btn big pinkb" data-a="msell" data-n="max" ${A.qty?'':'disabled'}>Tout vendre${A.qty?` (${pl>=0?'+':''}${fmt(pl)})`:''}</button></div>`;
+  h=h.replace('<div class="seg">',top+'<div class="seg">');h=h.replace('<div class="mbtns">',big+'<details class="more"><summary>Acheter ou vendre par petites quantités</summary><div class="mbtns">');
+  return h.replace('<h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>','</details><h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>')})(vMarche);
+(()=>{const st=document.createElement('style');st.textContent='.pg-big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.pg-big .btn{min-height:54px;font-size:1.02rem}.pg-mk .obj-bar{margin-top:6px}';document.head.appendChild(st)})();
+/* ===== FIN AGENT PROGRESSION ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
