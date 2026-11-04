@@ -40,7 +40,8 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 
 ## Demandes du 4 novembre (pas encore faites)
 - FAIT (04b) : retour en partie plafonné, plus de championnats en rafale.
-- Club de foot et Mairie dans des blocs (onglets) à part.
+- FAIT (onglets) : Club, Mairie et Immobilier ont chacun leur onglet en bas (8 onglets : Ville, Affaires, Immo, Club, Mairie, Vie, Objectifs, Empire). La Bourse est dans Affaires. Pastille rose tant qu'un nouvel onglet n'a pas été ouvert ; « ! » pour un match ou une campagne en cours. Boutique et Sondage visibles en haut (à droite des jauges).
+- FAIT : bugs META (charger un emplacement recharge bien la ville ; coffre du jour sans jetons si refusé).
 - Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
 - Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
 - Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).

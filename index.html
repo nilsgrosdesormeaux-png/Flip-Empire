@@ -6462,6 +6462,114 @@ async function feCheckUpdate(){
 setTimeout(feCheckUpdate,2500);setInterval(feCheckUpdate,5*60*1000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')feCheckUpdate()});
 /* ===== FIN FILET DE SÉCURITÉ ===== */
+/* ===== AGENT ONGLETS ===== */
+/* Barre du bas : Ville, Affaires, Immo, Club, Mairie, Vie, Objectifs, Empire.
+   La Bourse passe dans Affaires (onglet interne « Bourse », S.tab reste 'marche').
+   Anciennes valeurs (S.tab 'quetes', Empire→club/mairie, Affaires→patrimoine) redirigées par normTab(). */
+function ongTabs(){return ['ville','gestion','marche','immo','club','mairie','vie','objectifs','empire']}
+const ONG_IC={
+  ville:'<path d="M3 21V10l5-3v14M8 21V4l8 4v13M16 21v-9l5 2v7M2 21h20"/>',
+  gestion:'<path d="M4 9h16l-1.5 11h-13zM8 9V7a4 4 0 0 1 8 0v2"/>',
+  immo:'<path d="M3 11l9-7 9 7M5 9.5V20h14V9.5M10 20v-5.5h4V20"/>',
+  club:'<circle cx="12" cy="12" r="9"/><path d="M12 8l3.3 2.4-1.3 3.9h-4l-1.3-3.9zM12 8V3.2M15.3 10.4l4.4-1.5M14 14.3l2.7 3.8M10 14.3l-2.7 3.8M8.7 10.4L4.3 8.9"/>',
+  mairie:'<path d="M12 3l8.5 5h-17zM5 10.5v7M9.7 10.5v7M14.3 10.5v7M19 10.5v7M3 20.5h18M3.5 10.5h17"/>',
+  vie:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"/>',
+  objectifs:'<path d="M6 21V4M6 4h11l-2 4 2 4H6"/>',
+  empire:'<path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10zM3 21h18"/>'
+};
+const ONG_BAR=[['ville','Ville'],['gestion','Affaires'],['immo','Immo'],['club','Club'],['mairie','Mairie'],['vie','Vie'],['objectifs','Objectifs'],['empire','Empire']];
+function ongSeen(){if(!S.ongSeen||typeof S.ongSeen!=='object'||Array.isArray(S.ongSeen))S.ongSeen={};return S.ongSeen}
+function normTab(){
+  if(S.tab==='quetes'){S.tab=S.qTab==='club'||S.qTab==='mairie'?S.qTab:'objectifs';S.qTab='obj'}
+  if(S.tab==='empire'&&(S.eTab==='club'||S.eTab==='mairie'))S.tab=S.eTab;
+  S.eTab='plus';
+  if(S.tab==='patrimoine'||(S.tab==='gestion'&&S.gTab==='patrimoine')){S.tab='immo';S.gTab='affaires'}
+  if(!['affaires','avis','upg'].includes(S.gTab))S.gTab='affaires';
+  if(!ongTabs().includes(S.tab))S.tab='ville';
+}
+function ongBuildTabs(){const el=$('.tabs-in');if(!el)return;
+  el.innerHTML=ONG_BAR.map(([t,l])=>`<button class="tab" data-a="tab" data-t="${t}"><svg class="e" viewBox="0 0 24 24" aria-hidden="true">${ONG_IC[t]}</svg>${l}<span class="badge" id="b-${t}" hidden></span></button>`).join('')}
+function ongSeg(cur){return segHTML('gtab',cur,[['affaires','Boutiques'],['avis','Clients'],['upg','Améliorer']]).replace('</div>',`<button role="tab" aria-selected="${cur==='bourse'}" class="${cur==='bourse'?'on':''}" data-a="tab" data-t="marche">Bourse</button></div>`)}
+function vGestion(){const g=['affaires','avis','upg'].includes(S.gTab)?S.gTab:'affaires';return ongSeg(g)+({affaires:vAffaires,avis:vAvis,upg:vUpg}[g])()}
+function vImmoTab(){return typeof vImmo==='function'?vImmo():vPatrimoine()}
+function vEmpire(){
+  return `<div class="stats"><div class="stat"><strong>${fmt(S.lifetimeAll)}</strong><span>Gagné au total</span></div><div class="stat"><strong>${S.day}</strong><span>Mois joués</span></div>
+    <div class="stat"><strong>${S.stats.decisions}</strong><span>Décisions</span></div><div class="stat"><strong>${S.stats.reviews5}</strong><span>Avis 5 étoiles</span></div></div>
+  <p class="hint" style="margin-top:14px">Version du jeu : <b>${(document.querySelector('meta[name=fe-build]')||{}).content||'?'}</b></p>
+  <div class="panel" style="margin-top:10px"><div class="switch"><span>Effets sonores</span><button class="btn small ${S.sound?'go':'ghost'}" data-a="sound">${S.sound?'Activés':'Coupés'}</button></div></div>
+  <div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Sauvegarde</h3><p class="hint">Enregistrée toute seule dans ce navigateur. Pour changer d’appareil, copie ton code et colle-le là-bas.</p>
+    <div class="bs-row" style="margin-top:8px"><button class="btn small" data-a="savexp">Copier mon code</button><button class="btn small ghost" data-a="saveimp">Coller un code</button>${installable()?`<button class="btn small go" data-a="install">Installer l’appli</button>`:''}</div>
+    ${isIOS()&&!isStandalone()?`<p class="hint" style="margin-top:8px">Sur iPhone : Partager dans Safari, puis « Sur l’écran d’accueil ».</p>`:''}</div>
+  <div class="foot"><p>Flip Empire, prototype jouable.</p><button class="btn ghost small" data-a="reset">Recommencer une nouvelle vie</button></div>`;
+}
+function renderMain(){
+  normTab();
+  const v={gestion:vGestion,marche:()=>ongSeg('bourse')+vMarche(),immo:vImmoTab,club:vClub,mairie:vMairie,vie:vVie,objectifs:vObjectifs,empire:vEmpire}[S.tab];
+  $('#main').innerHTML=v?v():'';
+  const cur=S.tab==='marche'?'gestion':S.tab;if(['immo','club','mairie'].includes(cur))ongSeen()[cur]=1;
+  document.querySelectorAll('.tab').forEach(t=>{const on=t.dataset.t===cur;t.classList.toggle('on',on);t.setAttribute('aria-current',on?'page':'false')});
+  badges();
+}
+function badges(){
+  const set=(id,show,txt)=>{const e=$(id);if(!e)return;e.hidden=!show;const dot=txt==='';e.classList.toggle('dot',dot);if(show&&e.textContent!==String(txt))e.textContent=txt};
+  const seen=ongSeen(),nw=t=>!seen[t]&&S.started;
+  const cl=readyMissions().length,fr=newStars()>=1&&conqDone()>=7&&S.city<CITIES.length-1;
+  set('#b-objectifs',cl||fr,cl||'!');
+  set('#b-vie',!!S.event,'1');
+  set('#b-gestion',openIds().some(id=>satOf(id)<40)||UPG.some(u=>!S.upg.includes(u.id)&&S.cash>=u.cost&&(!u.biz||S.biz[u.biz].lvl)),'!');
+  const club=!!(S.club&&S.club.match&&!S.club.match.done),mai=!!(S.pol&&S.pol.cand&&Object.keys(S.pol.acts||{}).length<CAMP.length);
+  let im='';try{im=typeof immoBadge==='function'?immoBadge():''}catch(e){}
+  set('#b-club',club||nw('club'),club?'!':'');
+  set('#b-mairie',mai||nw('mairie'),mai?'!':'');
+  set('#b-immo',!!im||nw('immo'),im?String(im):'');
+  set('#b-empire',false,'');
+}
+/* Bandeau : boutons Boutique et Sondage (le conteneur .bs-row cherché par META n'existait pas) */
+var ONG_HUD_IC={shop:'<path d="M5 8h14l-1 12H6zM9 8V6.5a3 3 0 0 1 6 0V8"/>',poll:'<path d="M4 12h16v8H4zM8 12l1.5-7h5L16 12M10 8.5h4"/>'};
+function metaHud(force){const r=document.querySelector('#hud .hgauges');if(!r)return;let x=r.querySelector('.meta-hud');
+  if(x&&!force)return;if(x)x.remove();const voted=!!metaInit().votes[metaWeek()];
+  const ic=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${(ONG_HUD_IC||{})[k]||''}</svg>`;
+  r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn ghost ong-hb" data-a="meta_shop" aria-label="Boutique" title="Boutique">${ic('shop')}</button><button class="btn ghost ong-hb" data-a="meta_poll" aria-label="Sondage de la semaine${voted?'':', pas encore voté'}" title="Sondage">${ic('poll')}${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
+/* Coffre du jour : jetons seulement si le coffre a vraiment été ouvert */
+var ONG_DAILY_OK=false;
+function metaOnDaily(){if(!ONG_DAILY_OK)return;ONG_DAILY_OK=false;const m=metaInit();
+  if(META_JOKER_USE){m.jokers=Math.max(0,m.jokers-META_JOKER_USE);META_JOKER_USE=0}
+  const pos=((S.streak-1)%7)+1;let g=pos===7?10:5;if(metaHasPass())g=Math.ceil(g*1.25);metaGain(g);
+  if(pos===7&&m.jokers<metaJokerMax()){m.jokers++;toast('🃏 Joker de série gagné : un jour manqué te sera pardonné.')}
+  metaSave();metaRain();
+}
+/* Charger un emplacement : on garde le compte (jetons, collection) et on relance la page pour reconstruire la ville */
+function ongSlotLoad(id){BACKEND.loadSlot(id).then(d=>{metaSave();const acc=metaGet(META_LS.acc)||{};
+  if(d&&d.code&&importSave(d.code)){const m=metaInit();META_ACC_KEYS.forEach(k=>{if(acc[k]!==undefined)m[k]=acc[k]});save();metaSave();location.reload()}
+  else metaOpenShop('Cet emplacement est illisible.')})}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a;
+  if(a==='daily')ONG_DAILY_OK=S.lastDaily!==today();
+  else if(a==='gtab')S.tab='gestion';
+  else if(a==='meta_slotload2'){e.stopImmediatePropagation();e.preventDefault();ongSlotLoad(b.dataset.id)}
+},true);
+(function ongBoot(){
+  const st=document.createElement('style');st.textContent=`
+.tabs-in{grid-template-columns:repeat(${ONG_BAR.length},minmax(0,1fr))}
+.tab{min-width:0;white-space:nowrap}
+.badge.dot{min-width:0;width:9px;height:9px;padding:0;top:7px;left:calc(50% + 14px);font-size:0}
+#hud .hgauges .meta-hud{margin-left:auto;align-self:center;background:none;box-shadow:none;padding:0;min-height:0;gap:6px}
+.meta-hud .ong-hb{width:34px;height:34px;min-height:0;padding:0;display:grid;place-items:center;position:relative}
+.ong-hb svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:560px){
+  .tab{font-size:.63rem;padding:6px 0 7px;gap:2px;letter-spacing:0}
+  .tab svg.e{width:40px;height:28px;padding:3px 8px}
+  .badge{left:calc(50% + 6px)}
+  .badge.dot{left:calc(50% + 10px)}
+}
+@media (max-width:370px){.tab{font-size:.58rem}.tab svg.e{width:34px;padding:3px 5px}}
+@media (max-width:420px){.meta-hud{gap:4px}.meta-hud .ong-hb{width:30px;height:30px}.ong-hb svg{width:17px;height:17px}}`;
+  document.head.appendChild(st);
+  ongBuildTabs();
+  const sn=ongSeen();
+  if(S.started&&S.day>3&&!sn._intro)setTimeout(()=>toast('Club, Mairie et Immobilier ont leur propre onglet. La Bourse est dans Affaires.'),2500);
+  sn._intro=1;
+})();
+/* ===== FIN AGENT ONGLETS ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
@@ -6473,7 +6581,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
   genCity(S.city);
   /* Absence : gains plafonnés et écran de retour (voir ryAway, bloc AGENT RYTHME) */
   const away=S.started&&!S.dead?Math.max(0,(Date.now()-(S.lastSeen||Date.now()))/1000):0;
-  dispCash=S.cash;S.tab=S.tab||'ville';normTab();if(!['ville','gestion','vie','objectifs','empire','marche'].includes(S.tab))S.tab='ville';
+  dispCash=S.cash;S.tab=S.tab||'ville';normTab();if(!ongTabs().includes(S.tab))S.tab='ville';
   render();camTo(11,10,true);
   for(let i=0;i<14;i++){spawnPed();const e=ENTS[ENTS.length-1],a=e.pts[0],b=e.pts[1],k=Math.random();e.x=a[0]+(b[0]-a[0])*k;e.y=a[1]+(b[1]-a[1])*k}
   setInterval(tick,100);requestAnimationFrame(frame);
