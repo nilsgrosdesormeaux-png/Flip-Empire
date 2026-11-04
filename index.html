@@ -2387,7 +2387,7 @@ function chRender(){
   if(!CH)return;
   const av=CH.age>=18?CH.av:childAv(CH.av,CH.age);
   const dec=CH.pending?CH_DEC[CH.pending]:null;
-  modal(`<div class="life"><div class="life-head"><span class="life-av">${av}</span><div><h2>${esc(CH.name)}</h2><p class="hint">${CH.fam.e} ${CH.fam.n} · ${gx(CH,'né','née')} à ${esc(CH.place.n)}</p></div><div class="life-age">${CH.age}<small>an${CH.age>1?'s':''}</small></div></div>
+  modal(`<div class="life"><div class="life-head"><span class="life-av">${typeof psAv==='function'?psAv(CH):av}</span><div><h2>${esc(CH.name)}</h2><p class="hint">${CH.fam.e} ${CH.fam.n} · ${gx(CH,'né','née')} à ${esc(CH.place.n)}</p></div><div class="life-age">${CH.age}<small>an${CH.age>1?'s':''}</small></div></div>
     <div class="life-bar"><i style="width:${CH.age/18*100}%"></i></div>
     <div class="life-feed" id="lfeed">${CH.lines.map(l=>`<p class="${l.coh?'coh-line':''}${l.choice?' ch-line':''}"><b>${l.a} an${l.a>1?'s':''}</b> ${l.t}</p>`).join('')}</div>
     ${dec?`<div class="life-dec"><h3>${dec.t}</h3><div class="ev-ch">${dec.ch.map(c=>`<button class="btn ghost ev-btn" data-a="chdec" data-v="${c[1]}">${c[0]}</button>`).join('')}</div></div>`
@@ -2410,7 +2410,7 @@ function finishChildhood(v){
   S.cohort=CH.cohort;S.started=true;S.lastDaily=null;
   S.journal.unshift({day:S.day,who:'👶',name:'Ton enfance',title:`${gx(CH,'Né','Née')} à ${CH.place.n}`,choice:`${CH.fam.n}${CH.study?' · '+CH.study:''}`,res:extra,fx:CH.passions.map(k=>PASSIONS[k].e+' '+PASSIONS[k].n)});
   const fam=CH.fam;CH=null;closeModal();ac();
-  modal(`<div class="reveal-box pop">${S.hero.av}</div><h2>${esc(S.hero.name)}, ${age} ans</h2><p>${extra}</p>
+  modal(`<div class="reveal-box pop">${typeof psHeroAv==='function'?psHeroAv({view:'full',size:180,cls:'full'}):S.hero.av}</div><h2>${esc(S.hero.name)}, ${age} ans</h2><p>${extra}</p>
     <div class="fxchips"><span class="fxchip">💶 ${fmt(S.cash)}</span><span class="fxchip">📣 Réputation ${Math.round(S.rep)}</span><span class="fxchip">🎓 Revenus ×${fmtM(Math.round(talentBonus*100)/100)}</span>${S.hero.passions.map(k=>`<span class="fxchip">${PASSIONS[k].e} ${PASSIONS[k].n}</span>`).join('')}</div>
     <p class="hint" style="margin-top:10px">Ta première boutique t’attend. Touche la bulle 💰 pour encaisser. Ton objectif du moment s’affiche en haut à gauche de la carte.</p>
     <button class="btn big" style="margin-top:16px" data-a="close">Commencer ma vie d’entrepreneur</button>`);
@@ -2524,7 +2524,7 @@ function startEvent(id,data){
 }
 function eventHTML(inline){
   const E=evDef();if(!E)return '';const d=S.event.data;
-  return `<div class="evcard ${inline?'inline':''}"><span class="evcat">${CATS[E.cat||'business']}</span><div class="ev-who"><span class="ev-av">${evWho(E,d)}</span><div><p class="hint">${esc(evName(E,d))}</p><h2>${E.title}</h2></div></div>
+  return `<div class="evcard ${inline?'inline':''}"><span class="evcat">${CATS[E.cat||'business']}</span><div class="ev-who"><span class="ev-av">${typeof psWho==='function'?psWho(evWho(E,d),evName(E,d)):evWho(E,d)}</span><div><p class="hint">${esc(evName(E,d))}</p><h2>${E.title}</h2></div></div>
     <p class="ev-text">${E.text(d)}</p>
     <div class="ev-ch">${E.ch.map((c,i)=>{const need=c.need?costSec(c.need):0,ok=!need||S.cash>=need;return `<button class="btn ${i===0?'':'ghost'} ev-btn" data-a="decide" data-i="${i}" ${ok?'':'disabled'}>${chT(c,d)}${need?` <span class="ev-cost">(${fmt(need)})</span>`:''}</button>`}).join('')}</div>
     <p class="hint" style="margin-top:8px">À décider avant ${dateLabel(S.event.deadline)}. Sans réponse, les choses se feront sans toi.</p>
@@ -2618,7 +2618,7 @@ function election(){
   else{if(p.office)p.office=null;S.rep=clamp(S.rep-3,0,100)}
   S.journal.unshift({day:S.day,who:'🗳️',name:'Élections municipales',title:win?gx(S.hero,'Élu','Élue')+' maire !':gx(S.hero,'Battu','Battue')+' aux élections',choice:`Candidature face à ${oppName}`,res:win?`Tu l’emportes avec ${pct} % des voix. Les rues sont à toi, la mairie aussi.`:`${oppName} l’emporte. Tu obtiens ${pct} % des voix.`,fx:[`🗳️ ${pct} %`]});
   queueModal(`<div class="reveal-box">🗳️</div><h2>Soirée électorale</h2><p class="hint">Dépouillement en cours…</p>
-    <div class="elec"><div class="erow"><span>${S.hero.av} ${esc(S.hero.name)}</span><div class="ebar"><i class="eme" data-w="${pct}"></i></div><b>${pct} %</b></div>
+    <div class="elec"><div class="erow"><span>${typeof psHeroAv==='function'?`<i class="ps-in">${psHeroAv({size:22})}</i>`:S.hero.av} ${esc(S.hero.name)}</span><div class="ebar"><i class="eme" data-w="${pct}"></i></div><b>${pct} %</b></div>
     <div class="erow"><span>🧑‍💼 ${oppName.split(',')[0]}</span><div class="ebar"><i class="eop" data-w="${Math.round((100-pct)*10)/10}"></i></div><b>${Math.round((100-pct)*10)/10} %</b></div></div>
     <div class="verdict ${win?'good':'bad'} vdelay">${win?'🎉 Tu es '+gx(S.hero,'élu','élue')+' maire de '+(S.city?CITIES[S.city].n:'ta ville')+' !':'😔 '+gx(S.hero,'Battu','Battue')+' cette fois. Prochaine élection dans 2 ans.'}</div>
     <button class="btn big" style="margin-top:16px" data-a="close">Continuer</button>`);
@@ -2663,7 +2663,7 @@ function newDay(auto){
 
 /* ================= DEATH AND INHERITANCE ================= */
 function epitaphHTML(e){
-  return `<div class="epi"><div class="epi-av">${e.av}</div><p class="epi-small">${e.born} – ${e.died}</p><h2>${esc(e.name)}</h2>
+  return `<div class="epi"><div class="epi-av">${typeof psAv==='function'?psAv(e,{size:132}):e.av}</div><p class="epi-small">${e.born} – ${e.died}</p><h2>${esc(e.name)}</h2>
     <p class="epi-small">${gx(e,'Né','Née')} à ${esc(e.place||'?')} · ${e.fam?esc(e.fam):''}</p>
     <div class="epi-body">
       <p>${gx(e,'Mort','Morte')} ${e.cause} à <strong>${e.age} ans</strong>${e.city?`, à ${esc(e.city)}`:''}.</p>
@@ -2686,7 +2686,7 @@ function death(){
 function heirsHTML(){
   const kids=S.kids.slice().sort((a,b)=>b.talent-a.talent);
   return `<h2>Qui reprend l’empire ?</h2><p class="hint">Les droits de succession emportent une partie de la fortune et des affaires. Plus l’héritier est talentueux, mieux il conserve l’empire.</p>
-    <div class="crlist" style="margin-top:12px">${kids.length?kids.map(k=>`<button class="crcard" data-a="inherit" data-v="${esc(k.name)}"><span class="cre">${k.age>=18?k.adult:kidAv(k)}</span><span><strong>${esc(k.name)}, ${Math.max(18,k.age)} ans</strong><span class="hint">${k.job==='entreprise'?'Travaille déjà dans l’entreprise':k.job==='etudes'?gx(k,'Diplômé','Diplômée')+' d’une grande école':k.job==='libre'?'Revient d’un tour du monde':k.age>=18?gx(k,'Prêt','Prête')+' à reprendre le flambeau':'Encore jeune, un tuteur l’accompagnera'}</span><span class="crfx">🎓 Talent ${k.talent}/100</span></span></button>`).join('')
+    <div class="crlist" style="margin-top:12px">${kids.length?kids.map(k=>`<button class="crcard" data-a="inherit" data-v="${esc(k.name)}"><span class="cre">${typeof psAv==='function'?psAv(k,{size:44}):k.age>=18?k.adult:kidAv(k)}</span><span><strong>${esc(k.name)}, ${Math.max(18,k.age)} ans</strong><span class="hint">${k.job==='entreprise'?'Travaille déjà dans l’entreprise':k.job==='etudes'?gx(k,'Diplômé','Diplômée')+' d’une grande école':k.job==='libre'?'Revient d’un tour du monde':k.age>=18?gx(k,'Prêt','Prête')+' à reprendre le flambeau':'Encore jeune, un tuteur l’accompagnera'}</span><span class="crfx">🎓 Talent ${k.talent}/100</span></span></button>`).join('')
       :`<button class="crcard" data-a="inherit" data-v="__neveu"><span class="cre">🧑🏽</span><span><strong>Ton neveu ou ta nièce</strong><span class="hint">Sans enfant, c’est la famille éloignée qui hérite. Les pertes sont lourdes.</span><span class="crfx">🎓 Talent 35/100</span></span></button>`}</div>`;
 }
 function inherit(name){
@@ -2699,7 +2699,7 @@ function inherit(name){
   S.pol.office=null;S.pol.cand=false;S.pol.pop=0;S.pol.nextElec=S.day+12;S.flags.lastKid=-99;S.share=0;
   FXC=[];checkTrophies();
   S.journal.unshift({day:S.day,who:S.hero.av,name:'Succession',title:`${S.hero.name} reprend l’empire`,choice:`Génération ${S.gen}`,res:`Droits de succession : ${fmt(lostCash)} et ${Math.round((1-keepLvl)*100)} % des niveaux d’affaires perdus.`,fx:[`👑 Génération ${S.gen}`]});
-  modal(`<div class="reveal-box pop">${S.hero.av}</div><h2>${esc(S.hero.name)}, ${S.hero.age} ans, génération ${S.gen}</h2><p>Tu reprends l’empire familial. ${fmt(lostCash)} sont partis en droits de succession, et chaque affaire a perdu ${Math.round((1-keepLvl)*100)} % de ses niveaux.</p><p class="hint" style="margin-top:8px">Les propriétés, les améliorations, les trophées et le club restent dans la famille. À toi de faire mieux que tes parents.</p><button class="btn big" style="margin-top:16px" data-a="close">Relever le défi</button>`);
+  modal(`<div class="reveal-box pop">${typeof psHeroAv==='function'?psHeroAv({view:'full',size:180,cls:'full'}):S.hero.av}</div><h2>${esc(S.hero.name)}, ${S.hero.age} ans, génération ${S.gen}</h2><p>Tu reprends l’empire familial. ${fmt(lostCash)} sont partis en droits de succession, et chaque affaire a perdu ${Math.round((1-keepLvl)*100)} % de ses niveaux.</p><p class="hint" style="margin-top:8px">Les propriétés, les améliorations, les trophées et le club restent dans la famille. À toi de faire mieux que tes parents.</p><button class="btn big" style="margin-top:16px" data-a="close">Relever le défi</button>`);
   render();
 }
 
@@ -2777,7 +2777,7 @@ function renderSheet(){
   el.hidden=false;
   const x=`<button class="bs-x" data-a="unsel" aria-label="Fermer">✕</button>`;
   if(sel==='qg'){const st=STAGES[S.stage],n=STAGES[S.stage+1];
-    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${S.hero.av}</div><div><h2>Les locaux de ${esc(S.hero.name)} : ${st.name}</h2><p class="hint">${S.partner&&S.partner.stage!=='couple'?`Tu vis avec ${esc(S.partner.name)}`:`Tu vis ${gx(S.hero,'seul','seule')}`}${S.kids.length?` et ${S.kids.length} enfant${S.kids.length>1?'s':''}`:''}.</p></div>${x}</div>
+    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${typeof psHeroAv==='function'?psHeroAv():S.hero.av}</div><div><h2>Les locaux de ${esc(S.hero.name)} : ${st.name}</h2><p class="hint">${S.partner&&S.partner.stage!=='couple'?`Tu vis avec ${esc(S.partner.name)}`:`Tu vis ${gx(S.hero,'seul','seule')}`}${S.kids.length?` et ${S.kids.length} enfant${S.kids.length>1?'s':''}`:''}.</p></div>${x}</div>
       <div class="bs-sec">${gaugeHTML('Énergie',S.energy)}${gaugeHTML('Santé',S.hero.health)}${S.partner?gaugeHTML('Couple',S.partner.rel):''}</div>
       <div class="bs-sec bs-row">${S.event?'<button class="btn pinkb" data-a="openev">Une décision t’attend</button>':''}<button class="btn ghost" data-a="tab" data-t="vie">Ma vie</button></div>
       ${n?`<div class="bs-sec"><h3>Agrandir tes locaux : ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>S’agrandir pour ${fmt(n.cost)}</button></div>`:''}`;return}
@@ -2876,7 +2876,7 @@ function vVie(){
 }
 function vieMoi(){
   const h=S.hero,act=S.mods.filter(m=>m.until>=S.day),o=ORIGINS.find(x=>x.id===h.origin)||ORIGINS[0],n=STAGES[S.stage+1];
-  return `<div class="herocard"><div class="hero-av">${h.av}</div><div><h2>${esc(h.name)}, ${h.age} ans</h2><p class="hint">${o.n}, génération ${S.gen}. ${RANKS[rankIdx()][1]}${S.pol.office?', maire':''}.</p><p class="hint">${S.city?'À '+CITIES[S.city].n:'Dans ta ville'}, ${STAGES[S.stage].name.toLowerCase()}.</p></div></div>
+  return `<div class="herocard"><div class="hero-av">${typeof psAv==='function'?psAv(h):h.av}</div><div><h2>${esc(h.name)}, ${h.age} ans</h2><p class="hint">${o.n}, génération ${S.gen}. ${RANKS[rankIdx()][1]}${S.pol.office?', maire':''}.</p><p class="hint">${S.city?'À '+CITIES[S.city].n:'Dans ta ville'}, ${STAGES[S.stage].name.toLowerCase()}.</p></div></div>
   ${S.event?`<div class="sec-head"><h2>À décider</h2></div>${eventHTML(true)}`:''}
   <div class="panel">${gaugeHTML('Énergie',S.energy)}${gaugeHTML('Santé',h.health)}${gaugeHTML('Réputation',S.rep)}${gaugeHTML('Clients',avgSat())}
     <p class="hint" style="margin-top:6px">Sous 20 d’énergie, tu gagnes 20 % de moins et ta santé trinque. Chaque boutique sans gérant te pompe 2 d’énergie par mois.</p>
@@ -2894,14 +2894,14 @@ function vieFamille(){
   const h=S.hero;
   return `${vieHTML()}
   <div class="sec-head"><h2>Ta lignée</h2><p>Génération ${S.gen}</p></div>
-  <div class="panel">${S.dynasty.map(g=>`<div class="famrow"><span class="fam-av">${g.av}</span><div><strong>${esc(g.name)}</strong> <span class="hint">mort à ${g.age} ans à ${g.city}</span><p class="hint">${fmt(g.fortune)}, ${g.open} affaires, ${g.props} bâtiments${g.mayor?', maire':''}, ${g.kids} enfant${g.kids>1?'s':''}</p></div></div>`).join('')}
-    <div class="famrow"><span class="fam-av">${h.av}</span><div><strong>${esc(h.name)}</strong> <span class="hint">${h.age} ans, toujours là</span></div></div></div>
+  <div class="panel">${S.dynasty.map(g=>`<div class="famrow"><span class="fam-av">${typeof psAv==='function'?psAv(g):g.av}</span><div><strong>${esc(g.name)}</strong> <span class="hint">mort à ${g.age} ans à ${g.city}</span><p class="hint">${fmt(g.fortune)}, ${g.open} affaires, ${g.props} bâtiments${g.mayor?', maire':''}, ${g.kids} enfant${g.kids>1?'s':''}</p></div></div>`).join('')}
+    <div class="famrow"><span class="fam-av">${typeof psAv==='function'?psAv(h):h.av}</span><div><strong>${esc(h.name)}</strong> <span class="hint">${h.age} ans, toujours là</span></div></div></div>
   ${(S.cohort||[]).length?`<div class="sec-head"><h2>Nés la même seconde</h2><p>Trois autres vies</p></div>
   <div class="panel">${S.cohort.map(c=>{const ev=cohortAt(c,h.age),last=ev[ev.length-1],dead=c.death<=h.age;return `<details class="coh"><summary><span class="fam-av">${c.f}</span><span><strong>${esc(c.name)}</strong> <span class="hint">${esc(c.city)}, ${esc(c.c)}</span><span class="hint" style="display:block">${dead?`Mort${c.death<5?' en bas âge':` à ${c.death} ans`}`:`${h.age} ans. ${esc(last.t)}`}</span></span></summary><ul>${ev.map(e=>`<li><b>${e.a} ans</b> ${esc(e.t)}</li>`).join('')}</ul></details>`}).join('')}</div>`:''}`;
 }
 function vieJournal(){
   return `<div class="sec-head"><h2>Ton histoire</h2><p>${S.stats.decisions} décisions</p></div>
-  ${S.journal.length?S.journal.map(j=>`<div class="jentry"><div class="j-who">${j.who}</div><div><p class="hint">${dateLabel(j.day)}, ${esc(j.name)}</p><h3>${j.title}</h3><p class="j-choice">${esc(j.choice)}</p><p>${j.res}</p>${j.fx.length?`<div class="fxchips">${j.fx.map(f=>`<span class="fxchip ${/−|×0|💔/.test(f)?'neg':''}">${f}</span>`).join('')}</div>`:''}</div></div>`).join(''):'<div class="empty">Rien d’écrit pour l’instant. Ta première décision ouvrira le carnet.</div>'}`;
+  ${S.journal.length?S.journal.map(j=>`<div class="jentry"><div class="j-who">${typeof psWho==='function'?psWho(j.who,j.name):j.who}</div><div><p class="hint">${dateLabel(j.day)}, ${esc(j.name)}</p><h3>${j.title}</h3><p class="j-choice">${esc(j.choice)}</p><p>${j.res}</p>${j.fx.length?`<div class="fxchips">${j.fx.map(f=>`<span class="fxchip ${/−|×0|💔/.test(f)?'neg':''}">${f}</span>`).join('')}</div>`:''}</div></div>`).join(''):'<div class="empty">Rien d’écrit pour l’instant. Ta première décision ouvrira le carnet.</div>'}`;
 }
 function vQuetes(){
   const ms=MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,4),P=S.pol,C=S.club;
@@ -3090,7 +3090,7 @@ document.addEventListener('click',e=>{
     case 'cro':CR.origin=b.dataset.v;modal(crHTML());full=false;break;
     case 'crs':CR.sit=b.dataset.v;modal(crHTML());full=false;break;
     case 'start':applyStart();closeModal();ac();
-      queueModal(`<div class="reveal-box pop">${S.hero.av}</div><h2>${esc(S.hero.name)}, une boutique de sneakers et pas mal d’ambition</h2><p>Touche la bulle au-dessus de ta boutique pour encaisser.</p><p class="hint">En haut de la carte : ton objectif. Il passe au vert quand c’est fait ; touche-le pour récupérer l’argent.</p><button class="btn big" style="margin-top:16px" data-a="close">Au boulot</button>`);dailyModal();break;
+      queueModal(`<div class="reveal-box pop">${typeof psHeroAv==='function'?psHeroAv({view:'full',size:180,cls:'full'}):S.hero.av}</div><h2>${esc(S.hero.name)}, une boutique de sneakers et pas mal d’ambition</h2><p>Touche la bulle au-dessus de ta boutique pour encaisser.</p><p class="hint">En haut de la carte : ton objectif. Il passe au vert quand c’est fait ; touche-le pour récupérer l’argent.</p><button class="btn big" style="margin-top:16px" data-a="close">Au boulot</button>`);dailyModal();break;
     case 'close':closeModal();break;
     case 'heirs':modal(heirsHTML());full=false;break;
     case 'inherit':inherit(b.dataset.v);break;
@@ -4378,16 +4378,16 @@ function vieHTML(){const v=V(),P=S.partner,fh=famHappy(),h=vieHomeDef(),hm=v.hom
   s+=`<ol class="vie-steps" aria-label="Étapes de la relation">${VIE_STEPS.map((x,j)=>`<li class="${j<stIdx?'done':j===stIdx?'now':''}"><i></i><span>${x[1]}</span></li>`).join('')}</ol>`;
   const dateBtns=tgt=>`<div class="bs-row" style="margin-top:8px">${VIE_DATES.filter(d=>(!d.home||(P&&P.stage!=='couple'))&&(!d.couple||P)).map(d=>{const c=vieCost(d.c);return vieBtn('date',`${d.e} ${d.n} <span class="vie-c">${c?fmt(c):'gratuit'}, ${d.ft} ⏳</span>`,{v:d.id,dis:v.ft<d.ft||S.cash<c})}).join('')}</div>`;
   if(P){const t=prTrait(P.trait,P),ns=vieNextStep();
-    s+=`<div class="famrow"><span class="fam-av">${P.av}</span><div style="flex:1"><strong>${esc(P.name)}</strong><span class="hint">, ${P.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${P.compat} % compatibles</span></div>${gaugeHTML('❤️ Couple',P.rel)}<p class="hint">${t.t} Ensemble depuis ${Math.max(0,S.day-P.since)} mois.</p></div></div>
+    s+=`<div class="famrow"><span class="fam-av">${typeof psAv==='function'?psAv(P):P.av}</span><div style="flex:1"><strong>${esc(P.name)}</strong><span class="hint">, ${P.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${P.compat} % compatibles</span></div>${gaugeHTML('❤️ Couple',P.rel)}<p class="hint">${t.t} Ensemble depuis ${Math.max(0,S.day-P.since)} mois.</p></div></div>
     <p class="hint" style="margin-top:8px"><b>Sorties</b> : elles renforcent le couple. Sans attention, il s’use chaque mois.</p>${dateBtns(P)}`;
     if(ns){if(P.stage==='fiance'){s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('step',`💒 Mariage simple (${fmt(ns.cost)})`,{cls:'go',v:'simple',dis:!ns.ok||S.cash<ns.cost})}${vieBtn('step',`🎉 Grand mariage (${fmt(ns.costBig)})`,{cls:'pinkb',v:'grand',dis:!ns.ok||S.cash<ns.costBig})}</div>${ns.ok?'':`<p class="hint">${ns.why}</p>`}`}
       else s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('step',ns.n,{cls:'go',dis:!ns.ok})}</div>${ns.ok?'':`<p class="hint">${ns.why}</p>`}`}
     s+=vieConfirm==='break'?`<div class="vie-warn"><b>Vraiment rompre ?</b> ${P.stage==='marie'?`Le divorce te coûtera 25 % de ton argent (${fmt(Math.round(S.cash*.25))}).`:'Énergie −15, les enfants le vivront mal.'}<div class="bs-row" style="margin-top:6px">${vieBtn('brk2','Oui, rompre',{cls:''})}${vieBtn('nobrk','Non')}</div></div>`:`<div style="margin-top:10px;text-align:right">${vieBtn('break','💔 Rompre')}</div>`}
   else if(v.crush){const c=v.crush,t=prTrait(c.trait,c);
-    s+=`<div class="famrow"><span class="fam-av">${c.av}</span><div style="flex:1"><strong>${esc(c.name)}, ${c.age} ans</strong><span class="hint">, ${c.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${c.compat} % compatibles</span></div>${gaugeHTML('💞 Complicité',c.rel)}<p class="hint">Proposez-vous des rendez-vous. À 50 de complicité, tu peux te déclarer.</p></div></div>${dateBtns(c)}
+    s+=`<div class="famrow"><span class="fam-av">${typeof psAv==='function'?psAv(c):c.av}</span><div style="flex:1"><strong>${esc(c.name)}, ${c.age} ans</strong><span class="hint">, ${c.job}</span><div class="vie-tags"><span class="fxchip">${t.e} ${t.n}</span><span class="fxchip">🧩 ${c.compat} % compatibles</span></div>${gaugeHTML('💞 Complicité',c.rel)}<p class="hint">Proposez-vous des rendez-vous. À 50 de complicité, tu peux te déclarer.</p></div></div>${dateBtns(c)}
     <div class="bs-row" style="margin-top:10px">${vieBtn('declare','💌 Se déclarer',{cls:'go',dis:c.rel<50})}${vieBtn('forget','Laisser tomber')}</div>`}
   else if(v.search){const pl=VIE_PLACES.find(x=>x.id===v.search.where);
-    s+=`<p class="hint">${pl.e} ${pl.n} : ${v.search.list.length} personnes t’ont tapé dans l’œil. Choisis qui revoir.</p><div class="vie-cards">${v.search.list.map((p,j)=>{const t=prTrait(p.trait,p);return `<div class="vie-card"><div class="vie-cav">${p.av}</div><strong>${esc(p.name)}, ${p.age} ans</strong><span class="hint">${p.job}</span><span class="hint">${t.e} ${t.n}</span><span class="hint">${PASSIONS[p.pass]?PASSIONS[p.pass].e+' '+PASSIONS[p.pass].n:''}</span>${gaugeHTML('🧩 Compat.',p.compat)}${vieBtn('meet','☕ Revoir',{cls:'go',i:j})}</div>`}).join('')}</div><div style="margin-top:8px">${vieBtn('skip','Personne ne me plaît')}</div>`}
+    s+=`<p class="hint">${pl.e} ${pl.n} : ${v.search.list.length} personnes t’ont tapé dans l’œil. Choisis qui revoir.</p><div class="vie-cards">${v.search.list.map((p,j)=>{const t=prTrait(p.trait,p);return `<div class="vie-card"><div class="vie-cav">${typeof psAv==='function'?psAv(p,{size:56}):p.av}</div><strong>${esc(p.name)}, ${p.age} ans</strong><span class="hint">${p.job}</span><span class="hint">${t.e} ${t.n}</span><span class="hint">${PASSIONS[p.pass]?PASSIONS[p.pass].e+' '+PASSIONS[p.pass].n:''}</span>${gaugeHTML('🧩 Compat.',p.compat)}${vieBtn('meet','☕ Revoir',{cls:'go',i:j})}</div>`}).join('')}</div><div style="margin-top:8px">${vieBtn('skip','Personne ne me plaît')}</div>`}
   else{s+=`<p class="hint">Où chercher l’amour ce mois-ci ? Une sortie par mois.</p><div class="vie-places">${VIE_PLACES.map(pl=>{const c=vieCost(pl.c),lock=pl.rep&&S.rep<pl.rep;return `<button class="vie-place" data-a="vie_search" data-v="${pl.id}" ${lock||v.lastSearch===S.day||S.cash<c?'disabled':''}><span class="vie-pe">${pl.e}</span><span><strong>${pl.n}</strong><span class="hint">${pl.t}</span><span class="vie-c">${fmt(c)}, ⚡ −${pl.nrg}</span></span></button>`}).join('')}</div>${v.lastSearch===S.day?'<p class="hint" style="margin-top:6px">Déjà sorti ce mois-ci. Reviens le mois prochain.</p>':''}`}
   s+='</div>';
   // enfants
@@ -4400,7 +4400,7 @@ function vieHTML(){const v=V(),P=S.partner,fh=famHappy(),h=vieHomeDef(),hm=v.hom
   else s+=`<div class="bs-row">${vieBtn('baby',`🍼 ${S.kids.length?'Avoir un autre enfant':'Avoir un enfant'}`,{cls:'go',dis:!br.ok})}</div>${br.ok?`<p class="hint" style="margin-top:4px">Chaque enfant coûte ~${fmt(kidCost())} par mois jusqu’à 18 ans, plus l’école et les activités.</p>`:`<p class="hint" style="margin-top:4px">${br.why}</p>`}`;
   if(S.kids.length)s+=`<div class="bs-row" style="margin-top:10px">${vieBtn('holiday',`🏝️ Vacances en famille (${fmt(vieCost(300+200*S.kids.length))}, 2 ⏳)`,{dis:v.ft<2})}</div>`;
   s+=S.kids.map((k,j)=>{const kid=k.age<18,young=k.age<3,opts=Object.keys(VIE_SCH).filter(x=>!!VIE_SCH[x].young===young),ex=vieKidExtra(k);
-    return `<div class="famrow vie-kid"><span class="fam-av">${kidAv(k)}</span><div style="flex:1"><strong>${esc(k.name)}</strong><span class="hint"> ${k.age} an${k.age>1?'s':''}${k.job==='entreprise'?', travaille avec toi':k.job==='etudes'?', en grande école':k.job==='libre'?', fait sa vie':''}</span>${gaugeHTML('🎓 Talent',k.talent)}${kid?gaugeHTML('🧸 Lien',k.bond):''}
+    return `<div class="famrow vie-kid"><span class="fam-av">${typeof psAv==='function'?psAv(k):kidAv(k)}</span><div style="flex:1"><strong>${esc(k.name)}</strong><span class="hint"> ${k.age} an${k.age>1?'s':''}${k.job==='entreprise'?', travaille avec toi':k.job==='etudes'?', en grande école':k.job==='libre'?', fait sa vie':''}</span>${gaugeHTML('🎓 Talent',k.talent)}${kid?gaugeHTML('🧸 Lien',k.bond):''}
     ${kid?`<div class="bs-row" style="margin-top:6px">${vieBtn('ktime','🧸 Passer du temps (1⏳)',{cls:'go',i:j,dis:v.ft<1})}</div>
     <div class="vie-opt"><span class="hint">${young?'Garde':'École'} :</span>${opts.map(o=>`<button class="vie-chip ${k.school===o?'on':''}" data-a="vie_kschool" data-i="${j}" data-v="${o}">${VIE_SCH[o].n}${VIE_SCH[o].c?` +${fmt(Math.round(kidCost()*VIE_SCH[o].c))}`:''}</button>`).join('')}</div>
     ${k.age>=4?`<div class="vie-opt"><span class="hint">Activité :</span><button class="vie-chip ${!k.act?'on':''}" data-a="vie_kact" data-i="${j}" data-v="none">Aucune</button>${Object.keys(VIE_ACTS).map(o=>`<button class="vie-chip ${k.act===o?'on':''}" data-a="vie_kact" data-i="${j}" data-v="${o}">${VIE_ACTS[o].e} ${VIE_ACTS[o].n}</button>`).join('')}</div>`:''}
@@ -6091,7 +6091,7 @@ EV.elec_annonce={sched:true,cat:'pol',def:1,who:'🗳️',name:'La préfecture',
 /* ---------- moteur : affichage des chances, choix des événements ---------- */
 function eventHTML(inline){
   const E=evDef();if(!E)return '';prepEv(E);const d=S.event.data;let clue='';try{clue=E.clue?E.clue(d):''}catch(e){clue=''}
-  return `<div class="evcard ${inline?'inline':''}"><span class="evcat">${CATS[E.cat||'business']||CATS.business}</span><div class="ev-who"><span class="ev-av">${evWho(E,d)}</span><div><p class="hint">${esc(evName(E,d))}</p><h2>${E.title}</h2></div></div>
+  return `<div class="evcard ${inline?'inline':''}"><span class="evcat">${CATS[E.cat||'business']||CATS.business}</span><div class="ev-who"><span class="ev-av">${typeof psWho==='function'?psWho(evWho(E,d),evName(E,d)):evWho(E,d)}</span><div><p class="hint">${esc(evName(E,d))}</p><h2>${E.title}</h2></div></div>
     <p class="ev-text">${E.text(d)}</p>${clue?`<p class="dec-clue">🔎 ${clue}</p>`:''}
     <div class="ev-ch">${E.ch.map((c,i)=>{const need=c.need?costSec(c.need):0,bn=c.bneed?costSec(c.bneed):0,ok=(!need||S.cash>=need)&&(!bn||S.pol.budget>=bn);let o;try{o=chOdds(E,c,d)}catch(e){o={cls:'risk',h:'🎲 issue incertaine'}}
       return `<button class="btn ${i===0?'':'ghost'} ev-btn" data-a="decide" data-i="${i}" ${ok?'':'disabled'}>${chT(c,d)}${need?` <span class="ev-cost">(${fmt(need)})</span>`:''}${bn?` <span class="ev-cost">(budget de la ville : ${fmt(bn)})</span>`:''}<span class="dec-odds ${o.cls}">${o.h}</span></button>`}).join('')}</div>
@@ -8170,6 +8170,328 @@ vMarche=(f=>function(){let h=f();const g=mktGoal2(),a=Math.round(mktGains()),ok=
   return h.replace('<h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>','</details><h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>')})(vMarche);
 (()=>{const st=document.createElement('style');st.textContent='.pg-big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.pg-big .btn{min-height:54px;font-size:1.02rem}.pg-mk .obj-bar{margin-top:6px}';document.head.appendChild(st)})();
 /* ===== FIN AGENT PROGRESSION ===== */
+/* ===== AGENT PERSOS ===== */
+/* Personnages dessinés (SVG) à la place des emojis de personnes : héros, couple, enfants, rencontres, gérants,
+   lignée, événements, journal. Un seul générateur : charSVG(desc, opt). Chaque personne reçoit une description
+   déterministe tirée de son prénom (et de son ancien emoji pour le teint et les cheveux) : rien à migrer.
+   Le héros peut changer de look : S.hero.ch = {name, sk, hs, hc, fh, tp, tc, hat, face, bg} (optionnel).
+   Les costumes de la boutique (ids av_*) deviennent des tenues/accessoires du même personnage.
+   Passants et véhicules de la ville redessinés dans le même style (drawPerson, drawCarAt remplacés). */
+
+/* ---------- 1. Catalogues ---------- */
+const PS_SKIN=[['#F8D9C4','Très clair'],['#EEBC98','Clair'],['#D49B6E','Mat'],['#A86A43','Foncé'],['#6E4329','Très foncé']];
+const PS_TONEI={'🏻':0,'🏼':1,'🏽':2,'🏾':3,'🏿':4};
+const PS_HC=[['noir','#2F2725','Noirs'],['brun','#5C3A27','Bruns'],['chatain','#91603A','Châtains'],['blond','#E8C06A','Blonds'],['roux','#CB6431','Roux'],['gris','#A8A5A1','Gris'],['blanc','#EEECE7','Blancs'],['rose','#EF97B8','Roses'],['bleu','#5E86D4','Bleus']];
+const PS_HS=[['court','Court','m'],['raie','Raie','m'],['banane','Banane','m'],['boucles','Bouclés',''],['afro','Afro',''],['rase','Rasés',''],['chauve','Chauve','m'],
+  ['long','Longs','f'],['carre','Carré','f'],['queue','Queue','f'],['chignon','Chignon','f'],['couettes','Couettes','f'],['pixie','Courts','f']];
+const PS_FH=[['','Rien'],['courte','Courte'],['barbe','Barbe'],['moustache','Moustache']];
+const PS_TP=[['tee','T-shirt'],['sweat','Sweat'],['chemise','Chemise'],['costume','Costume'],['pull','Col roulé'],['robe','Robe'],['veste','Veste'],['salopette','Salopette'],['chef','Chef'],['labo','Blouse']];
+const PS_TC=['#E8604C','#3F7FD1','#F2BE3C','#4FA872','#8A66C9','#2E3F5C','#EE86AE','#34B3B8','#F3F0EA','#3A3F48','#B5562E'];
+const PS_HAT=[['','Rien'],['casquette','Casquette'],['bonnet','Bonnet'],['chapeau','Chapeau'],['beret','Béret'],['noeud','Nœud'],['fleur','Fleur'],['casque','Casque'],['couronne','Couronne']];
+const PS_FACE=[['','Rien'],['lunettes','Lunettes'],['soleil','Soleil'],['boucles','Boucles'],['collier','Collier']];
+const PS_BG=[['jaune','#FFE37E','Jaune'],['rose','#F9C6D8','Rose'],['bleu','#BCDDFF','Bleu'],['vert','#C2ECCB','Vert'],['violet','#DACFFF','Violet'],['orange','#FFD2A8','Orange'],['gris','#DFE4E8','Gris']];
+/* Costumes de la boutique : mêmes ids, transformés en tenue + accessoire */
+const PS_COS={av_chef:{tp:'chef',hat:'toque'},av_artist:{tp:'tee',tc:'#F2BE3C',hat:'beret'},av_spy:{tp:'trench',hat:'feutre'},av_grad:{tp:'toge',hat:'mortier'},
+  av_hero:{tp:'hero',back:'cape',bc:'#E0413A',face:'masque'},av_astro:{tp:'combi',hat:'scaph'},av_robot:{tp:'robot',hat:'antennes',sk:'#C6D3DC'},av_pilot:{tp:'pilote',hat:'pilote'},
+  av_cowboy:{tp:'chemise',tc:'#B5562E',hat:'cowboy'},av_rock:{tp:'cuir',face:'soleil'},av_maire:{tp:'toge',hat:'perruque'},av_ninja:{tp:'ninja',hat:'cagoule'},
+  av_mage:{tp:'mage',hat:'pointu',fh:'mage'},av_fee:{tp:'robe',tc:'#7FCFA0',back:'ailes',hat:'diademe'},av_king:{tp:'royal',back:'cape',bc:'#6B3FA0',hat:'couronne'},
+  av_vamp:{tp:'costume',tc:'#22232B',back:'capecol',face:'crocs'},av_genie:{tp:'veste',tc:'#2BA39B',hat:'turban',sk:'#79BEE0'},av_alien:{tp:'combi',hat:'antennes',sk:'#9AD68F'},av_dino:{tp:'dino',hat:'dino'}};
+const PS_PERSON=/^(?:[\u{1F466}-\u{1F469}\u{1F46E}\u{1F470}-\u{1F478}\u{1F482}\u{1F477}\u{1F575}\u{1F9D1}-\u{1F9D5}\u{1F9D9}-\u{1F9DE}\u{1F934}\u{1F935}\u{1F930}\u{1F931}\u{1F9B8}\u{1F9B9}\u{1F977}\u{1F920}\u{1F916}\u{1F47D}\u{1F996}])/u;
+
+/* ---------- 2. Couleurs ---------- */
+const psRgb=h=>{h=String(h).replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255]};
+const psHex=a=>'#'+a.map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+const psMix=(a,b,t)=>{const x=psRgb(a),y=psRgb(b);return psHex(x.map((v,i)=>v+(y[i]-v)*t))};
+const psLt=(c,t)=>psMix(c,'#FFF6E8',t),psDk=(c,t)=>psMix(c,'#2A1630',t);
+function psHash(s){let h=2166136261;s=String(s);for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
+const psOf=(L,k)=>(L.find(x=>x[0]===k)||L[0]);
+const psHC=k=>psOf(PS_HC,k)[1];
+
+/* ---------- 3. Description d'une personne (déterministe) ---------- */
+function psAgeCat(a){a=+a;return !isFinite(a)?'a':a<3?'b':a<13?'k':a<62?'a':'o'}
+function psAuto(name,g,av,age){
+  av=String(av||'');const R=mulberry(psHash(String(name||av)+'|'+g)),P=a=>a[Math.floor(R()*a.length)];
+  let sk=null;for(const ch of av){if(PS_TONEI[ch]!=null){sk=PS_TONEI[ch];break}}if(sk==null)sk=Math.floor(R()*5);
+  const ac=age!=null?psAgeCat(age):/[\u{1F476}]/u.test(av)?'b':/[\u{1F466}\u{1F467}\u{1F9D2}]/u.test(av)?'k':/[\u{1F9D3}\u{1F474}\u{1F475}]/u.test(av)?'o':'a';
+  let hc=sk>=3?P(['noir','noir','brun','brun','noir']):sk===2?P(['brun','noir','chatain','brun','noir']):P(['brun','chatain','blond','chatain','roux','noir','blond','brun']);
+  let hs=g==='f'?P(sk>=3?['afro','boucles','couettes','queue','chignon','long','carre']:['long','carre','queue','chignon','pixie','long','boucles','couettes']):P(sk>=3?['rase','court','afro','boucles','court']:['court','raie','banane','court','boucles','raie','rase']);
+  let fh='';if(g==='m'&&ac!=='k'&&ac!=='b'){const r=R();fh=r<.18?'barbe':r<.3?'courte':r<.36?'moustache':''}
+  if(/\u{1F9B0}/u.test(av))hc='roux';if(/\u{1F471}/u.test(av))hc='blond';if(/\u{1F9B1}/u.test(av))hs=sk>=3&&g==='m'?'afro':'boucles';
+  if(/\u{1F9B3}/u.test(av))hc='blanc';if(/\u{1F9B2}/u.test(av))hs=g==='f'?'rase':'chauve';if(/\u{1F9D4}/u.test(av))fh='barbe';
+  if(ac==='o'){hc=R()<.5?'blanc':'gris';if(g==='m'&&R()<.3)hs='chauve'}
+  if(ac==='k'&&g==='f'&&hs==='chignon')hs='couettes';if((ac==='k'||ac==='b')&&(hs==='chauve'||hs==='rase'))hs='court';
+  const tp=P(ac==='a'||ac==='o'?['tee','sweat','chemise','pull','veste','tee','chemise']:['tee','sweat','salopette','tee']).replace(/^robe$/,'tee');
+  let tc=P(PS_TC);if(tc==='#F3F0EA'&&tp==='tee')tc='#3F7FD1';
+  const face=ac==='o'&&R()<.55?'lunettes':g==='f'&&ac==='a'&&R()<.3?'boucles':R()<.1?'lunettes':'';
+  const hat=ac==='k'&&g==='f'&&R()<.25?'noeud':'';
+  return {g,a:ac,sk,hs:ac==='b'?'bebe':hs,hc,fh,tp:g==='f'&&ac!=='b'&&R()<.15?'robe':tp,tc,hat,face,bg:P(PS_BG)[0]}}
+/* Ancien look (emojis) -> nouveau */
+function psFromOld(L,base){if(!L||typeof L!=='object')return base;const d=Object.assign({},base);
+  if(PS_TONEI[L.tone]!=null)d.sk=PS_TONEI[L.tone];
+  const hm={roux:['hc','roux'],blond:['hc','blond'],blanc:['hc','blanc'],brun:['hc','brun'],boucles:['hs','boucles'],rase:['hs','rase'],chauve:['hs','chauve'],barbe:['fh','barbe']}[L.hair];if(hm)d[hm[0]]=hm[1];
+  const om={costume:'costume',tablier:'chef',atelier:'salopette',geek:'sweat',artiste:'tee',scene:'veste',labo:'labo',jardin:'salopette'}[L.out];if(om)d.tp=om;if(L.out==='artiste')d.hat='beret';
+  const am={'🕶️':['face','soleil'],'👓':['face','lunettes'],'🎩':['hat','chapeau'],'🧢':['hat','casquette'],'🎀':['hat','noeud'],'🌸':['hat','fleur'],'🎧':['hat','casque'],'👑':['hat','couronne']}[L.acc];if(am)d[am[0]]=am[1];
+  if(L.bg&&PS_BG.some(x=>x[0]===L.bg))d.bg=L.bg;return d}
+function psSkinCos(){try{const sk=typeof peSkin==='function'?peSkin():null;return sk?sk.id:null}catch(e){return null}}
+function psHeroDesc(noCos){const h=S.hero||{},g=gOf(h);let base;
+  if(h.ch&&typeof h.ch==='object'&&h.ch.name===h.name){base=Object.assign(psAuto(h.name,g,'',h.age),h.ch)}
+  else{const av=(typeof peBaseAv==='function'?peBaseAv():h.av)||'';base=psAuto(h.name,g,av,h.age);if(h.look&&h.look.name===h.name)base=psFromOld(h.look,base)}
+  base.g=g;base.a=psAgeCat(h.age);if(base.a==='k'||base.a==='b')base.a='a';
+  const c=noCos?null:psSkinCos();if(c&&PS_COS[c])base.cos=c;return base}
+function psDesc(p){if(!p)return psAuto('?','m','',30);
+  if(typeof S!=='undefined'&&S&&p===S.hero)return psHeroDesc();
+  const age=p.age!=null?p.age:p.adult?null:30,g=gOf(p);
+  const kidLike=p.age!=null&&p.age<18;const av=kidLike?(p.av||p.adult):(p.adult||p.av);
+  return psAuto(p.name,g,av,age)}
+function psFind(name){name=String(name||'').split(/,| \(/)[0].trim();if(!name||typeof S==='undefined'||!S)return null;
+  const L=[S.hero,S.partner].concat(S.kids||[]);try{const v=S.vie;if(v){if(v.crush)L.push(v.crush);if(v.search&&v.search.list)L.push(...v.search.list)}}catch(e){}
+  (S.dynasty||[]).forEach(x=>L.push(x));return L.find(x=>x&&x.name===name)||null}
+
+/* ---------- 4. Le générateur SVG ---------- */
+let PS_N=0;
+const PS_TORSO={m:'M28.5 76 Q28.5 63.5 41 62.5 L59 62.5 Q71.5 63.5 71.5 76 L72.5 99 Q72.5 106 64.5 106 L35.5 106 Q27.5 106 27.5 99 Z',
+  f:'M31 76 Q31 63.5 42 62.5 L58 62.5 Q69 63.5 69 76 L71 99 Q71 106 63 106 L37 106 Q29 106 29 99 Z'};
+function psGrad(id,c,o){o=o||{};return `<radialGradient id="${id}" ${o.us?`gradientUnits="userSpaceOnUse" cx="${o.cx}" cy="${o.cy}" r="${o.r}"`:`cx="${o.cx||.36}" cy="${o.cy||.3}" r="${o.r||.78}"`}><stop offset="0" stop-color="${psLt(c,o.l||.28)}"/><stop offset=".55" stop-color="${c}"/><stop offset="1" stop-color="${psDk(c,o.d||.2)}"/></radialGradient>`}
+function psHairBack(d,F,hcD){const s=d.hs;
+  if(s==='long')return `<path d="M21.5 40 C19 18 33 9 50 9 C67 9 81 18 78.5 40 L80.5 86 Q80.5 94 72 94 L28 94 Q19.5 94 19.5 86 Z" fill="${F}"/><path d="M27 70 Q28 86 31 93 M73 70 Q72 86 69 93" stroke="${hcD}" stroke-width="1.6" fill="none" opacity=".35" stroke-linecap="round"/>`;
+  if(s==='carre')return `<path d="M21 42 C19 19 33 9.5 50 9.5 C67 9.5 81 19 79 42 L80 63 Q80 70 72.5 70 L27.5 70 Q20 70 20 63 Z" fill="${F}"/>`;
+  if(s==='afro')return `<circle cx="50" cy="33" r="33" fill="${F}"/>`;
+  if(s==='queue')return `<ellipse cx="80" cy="40" rx="8.5" ry="17" transform="rotate(-18 80 40)" fill="${F}"/>`;
+  if(s==='couettes')return `<circle cx="18.5" cy="40" r="9.5" fill="${F}"/><circle cx="81.5" cy="40" r="9.5" fill="${F}"/>`;
+  if(s==='chignon')return `<circle cx="50" cy="11" r="10.5" fill="${F}"/>`;
+  if(s==='boucles'&&d.g==='f')return `<path d="M20 44 C16 20 32 8 50 8 C68 8 84 20 80 44 C84 56 80 70 72 74 L28 74 C20 70 16 56 20 44 Z" fill="${F}"/>`;
+  return ''}
+function psHairFront(d,F,hcL,skD){const s=d.hs,hl=(p,w)=>`<path d="${p}" stroke="${hcL}" stroke-width="${w||2.6}" fill="none" stroke-linecap="round" opacity=".6"/>`;
+  const FR={court:'M23.5 45 C21 23 34 11.5 50 11.5 C66 11.5 79 23 76.5 45 C75.5 38.5 73.5 33.5 70 30.5 C63 29.5 57 27.5 52 25.5 C45.5 29.5 37 30.5 30 30.5 C27 33.5 24.5 38.5 23.5 45 Z',
+    raie:'M23.5 46 C21 23 34 11 51 11 C67.5 11 79 23 76.5 46 C75.5 38 72.5 32 68 29.5 C59 30.5 47 28.5 39.5 22.5 C37 28.5 30 32.5 23.5 46 Z',
+    longF:'M23.5 49 C19.5 24 33 10.5 50 10.5 C67 10.5 80.5 24 76.5 49 C75 37.5 70 28.5 61.5 24 C57.5 28 53.5 28.5 50 24.5 C46.5 28.5 42.5 28 38.5 24 C30 28.5 25 37.5 23.5 49 Z',
+    bangs:'M23.5 47 C21 22 34 10.5 50 10.5 C66 10.5 79 22 76.5 47 L76 37.5 C69.5 33.5 60 32.5 50 33 C40 32.5 30.5 33.5 24 37.5 Z',
+    pixie:'M23.5 46 C21 22 34 11 51 11 C68 11 80 23 76.5 46 C75.5 37.5 72.5 31 66.5 27.5 C57 33.5 42 34 31 35.5 C27 38 25 41.5 23.5 46 Z'};
+  if(s==='chauve')return d.a==='o'?`<path d="M23.5 44 C23 37 25 33 27.5 31.5 L28.5 41 Z M76.5 44 C77 37 75 33 72.5 31.5 L71.5 41 Z" fill="${F}"/>`:'';
+  if(s==='bebe')return `<path d="M46 15.5 C46 9 51 7 55 9.5 C52 9.5 50.5 11.5 51.5 15.5 Z" fill="${F}"/>`;
+  if(s==='rase')return `<path d="${FR.court}" fill="${F}" opacity=".55"/>`;
+  if(s==='court')return `<path d="${FR.court}" fill="${F}"/>`+hl('M33 21 Q40 15.5 49 15');
+  if(s==='raie')return `<path d="${FR.raie}" fill="${F}"/>`+hl('M43 15.5 Q55 13.5 64 18');
+  if(s==='banane')return `<path d="${FR.court}" fill="${F}"/><path d="M30 28 C28 15 38 6.5 51 7 C62 7.5 69 13 68 20 C62 16.5 55 18 50 23 C44 21 36 23 30 28 Z" fill="${F}"/>`+hl('M37 15 Q45 9.5 55 10.5');
+  if(s==='boucles'||s==='afro'){const r=s==='afro'?7.5:6.4,pts=[],n=s==='afro'?11:9;for(let i=0;i<n;i++){const a=Math.PI*(1.0+i/(n-1)),R=s==='afro'?27:23.5;pts.push([50+Math.cos(a)*R*1.08,38+Math.sin(a)*R])}
+    return `<path d="${FR.court}" fill="${F}"/>`+pts.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}" fill="${F}"/>`).join('')+hl('M34 18 Q41 13 49 12.5',2.2)}
+  if(s==='long'||s==='queue'||s==='chignon'||s==='couettes')return `<path d="${FR.longF}" fill="${F}"/>`+hl('M31 24 Q37 16.5 46 14.5')+(s==='queue'?`<ellipse cx="73.5" cy="27.5" rx="3" ry="4" fill="#EE86AE"/>`:s==='couettes'?`<circle cx="24" cy="35" r="2.6" fill="#EE86AE"/><circle cx="76" cy="35" r="2.6" fill="#EE86AE"/>`:'');
+  if(s==='carre')return `<path d="${FR.bangs}" fill="${F}"/>`+hl('M32 21 Q40 15 50 14.5');
+  if(s==='pixie')return `<path d="${FR.pixie}" fill="${F}"/>`+hl('M36 18 Q45 13.5 55 14');
+  return ''}
+function psBeard(d,F){if(d.fh==='barbe'||d.fh==='courte'||d.fh==='mage'){const p=d.fh==='mage'?'M27 46 C27 70 40 86 50 90 C60 86 73 70 73 46 C70 53 64 56 58 55.5 C55 53.5 52.5 53 50 53 C47.5 53 45 53.5 42 55.5 C36 56 30 53 27 46 Z':'M24.5 44 C25 60.5 36.5 69.5 50 69.5 C63.5 69.5 75 60.5 75.5 44 C72.5 52.5 66 56 60 55.5 C56 53.5 53 52.5 50 52.5 C47 52.5 44 53.5 40 55.5 C34 56 27.5 52.5 24.5 44 Z';
+    return `<path d="${p}" fill="${F}"${d.fh==='courte'?' opacity=".38"':''}/>`}
+  if(d.fh==='moustache')return `<path d="M42.5 53 Q46.5 49.6 50 51.6 Q53.5 49.6 57.5 53 Q53.5 54.4 50 53.2 Q46.5 54.4 42.5 53 Z" fill="${F}"/>`;return ''}
+function psTop(d,id,tc,full){const tp=d.tp,dk=psDk(tc,.25),lt=psLt(tc,.35),out=[],g=d.g==='f'?'f':'m';
+  const T=`<path d="${PS_TORSO[g]}" fill="url(#${id}t)"/>`;out.push(T);
+  const W='#F6F3EE',add=s=>out.push(s);
+  switch(tp){
+    case 'sweat':add(`<path d="M35 64 Q50 74 65 64 Q62 70 50 72 Q38 70 35 64 Z" fill="${dk}" opacity=".55"/><path d="M45.5 69 L45 80 M54.5 69 L55 80" stroke="${lt}" stroke-width="1.4" stroke-linecap="round"/><rect x="38" y="86" width="24" height="11" rx="4" fill="${dk}" opacity=".35"/>`);break;
+    case 'chemise':case 'pilote':add(`<path d="M41 62.5 L50 69 L46 74 Z M59 62.5 L50 69 L54 74 Z" fill="${tp==='pilote'?W:psLt(tc,.6)}"/><circle cx="50" cy="78" r="1" fill="${dk}"/><circle cx="50" cy="86" r="1" fill="${dk}"/><circle cx="50" cy="94" r="1" fill="${dk}"/>`);
+      if(tp==='pilote')add(`<path d="M48.6 69 L51.4 69 L52.4 81 L50 84 L47.6 81 Z" fill="#22355E"/><rect x="29.5" y="66" width="10" height="3.5" rx="1.2" fill="#22355E"/><rect x="60.5" y="66" width="10" height="3.5" rx="1.2" fill="#22355E"/><rect x="31" y="67.2" width="7" height="1.1" fill="#F2C14E"/><rect x="62" y="67.2" width="7" height="1.1" fill="#F2C14E"/>`);break;
+    case 'costume':case 'cuir':add(`<path d="M42.5 62.5 L50 82 L57.5 62.5 Z" fill="${tp==='cuir'?'#3A3F48':W}"/>`+(tp==='costume'?`<path d="M48.5 65 L51.5 65 L52.6 78 L50 81.5 L47.4 78 Z" fill="${tc==='#E8604C'?'#2E3F5C':'#D64545'}"/>`:'')+`<path d="M42.5 62.5 L50 82 L46.5 83 L38.5 67 Z M57.5 62.5 L50 82 L53.5 83 L61.5 67 Z" fill="${dk}" opacity=".7"/><circle cx="50" cy="90" r="1.3" fill="${dk}"/>`);break;
+    case 'pull':add(`<rect x="39" y="59.5" width="22" height="7.5" rx="3.5" fill="${dk}" opacity=".5"/><rect x="39" y="59.5" width="22" height="7.5" rx="3.5" fill="${tc}" opacity=".6"/><path d="M36 74 L36 104 M43 74 L43 105 M50 74 L50 105 M57 74 L57 105 M64 74 L64 104" stroke="${dk}" stroke-width=".8" opacity=".22"/>`);break;
+    case 'robe':case 'mage':add(`<path d="M44 62.5 L50 70 L56 62.5 Z" fill="url(#${id}s)"/><rect x="31" y="88" width="38" height="3.4" fill="${dk}" opacity=".45"/>`);
+      if(tp==='mage')add(`<path d="M37 78 l1.2 2.6 2.8.3 -2.1 1.9.6 2.8 -2.5-1.4 -2.5 1.4.6-2.8 -2.1-1.9 2.8-.3 Z M61 94 l1 2.1 2.3.3-1.7 1.5.5 2.3-2.1-1.2-2.1 1.2.5-2.3-1.7-1.5 2.3-.3 Z" fill="#F2C14E"/>`);break;
+    case 'veste':case 'trench':add(`<path d="M44.5 62.5 L55.5 62.5 L55 106 L45 106 Z" fill="${tp==='trench'?'#3A3F48':W}"/><path d="M44.5 62.5 L50 72 L38 70 Z M55.5 62.5 L50 72 L62 70 Z" fill="${dk}" opacity=".55"/>`+(tp==='trench'?`<rect x="29" y="90" width="42" height="3.4" fill="${dk}" opacity=".6"/>`:''));break;
+    case 'salopette':add(`<path d="M38 80 L62 80 L63 106 L37 106 Z" fill="#4B6FA8"/><path d="M39.5 64 L39.5 81 M60.5 64 L60.5 81" stroke="#4B6FA8" stroke-width="3" stroke-linecap="round"/><circle cx="39.5" cy="81" r="1.6" fill="#F2C14E"/><circle cx="60.5" cy="81" r="1.6" fill="#F2C14E"/><rect x="45" y="86" width="10" height="7" rx="2" fill="#3D5D90"/>`);break;
+    case 'chef':add(`<circle cx="45" cy="76" r="1.5" fill="#C9C2B8"/><circle cx="55" cy="76" r="1.5" fill="#C9C2B8"/><circle cx="45" cy="85" r="1.5" fill="#C9C2B8"/><circle cx="55" cy="85" r="1.5" fill="#C9C2B8"/><circle cx="45" cy="94" r="1.5" fill="#C9C2B8"/><circle cx="55" cy="94" r="1.5" fill="#C9C2B8"/><path d="M41 63 Q50 70 59 63 L58 67 Q50 72 42 67 Z" fill="#E0413A"/>`);break;
+    case 'labo':add(`<path d="M44 62.5 L50 76 L56 62.5 Z" fill="${d.tc2||'#3F7FD1'}"/><path d="M44 62.5 L50 76 L41 74 Z M56 62.5 L50 76 L59 74 Z" fill="#DCD6CE"/><path d="M50 76 L50 106" stroke="#DCD6CE" stroke-width="1"/><rect x="57" y="82" width="8" height="6" rx="1.5" fill="#DCD6CE"/>`);break;
+    case 'toge':add(`<path d="M44 62.5 L50 72 L56 62.5 Z" fill="${W}"/><path d="M50 72 L50 106" stroke="${dk}" stroke-width="1"/>`);break;
+    case 'hero':add(`<circle cx="50" cy="82" r="7.5" fill="#F2C14E"/><path d="M46 79 L54 79 L50 87 Z" fill="${tc}"/><rect x="29" y="96" width="42" height="4" fill="#F2C14E"/>`);break;
+    case 'combi':add(`<path d="M38 62 Q50 70 62 62" stroke="#C9CFD6" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="55" y="74" width="9" height="6" rx="1.5" fill="#3F7FD1"/><rect x="36" y="74" width="7" height="7" rx="3.5" fill="#E8604C"/><rect x="40" y="88" width="20" height="5" rx="2" fill="#C9CFD6"/>`);break;
+    case 'robot':add(`<rect x="38" y="72" width="24" height="18" rx="4" fill="#7E93A3"/><circle cx="44" cy="78" r="2" fill="#59E0A8"/><circle cx="50" cy="78" r="2" fill="#F2C14E"/><circle cx="56" cy="78" r="2" fill="#E8604C"/><rect x="42" y="83" width="16" height="2.5" rx="1.2" fill="#C9D6DE"/>`);break;
+    case 'ninja':add(`<path d="M38 62.5 L62 100 M62 62.5 L38 100" stroke="${dk}" stroke-width="2.4" opacity=".5"/><rect x="29" y="90" width="42" height="4.5" fill="#C2362B"/>`);break;
+    case 'royal':add(`<path d="M30 70 Q31 62 42 61 L58 61 Q69 62 70 70 Q60 75 50 74 Q40 75 30 70 Z" fill="#F7F3EA"/><circle cx="38" cy="68" r=".9" fill="#2F2725"/><circle cx="46" cy="70" r=".9" fill="#2F2725"/><circle cx="54" cy="70" r=".9" fill="#2F2725"/><circle cx="62" cy="68" r=".9" fill="#2F2725"/><circle cx="50" cy="86" r="2.6" fill="#F2C14E"/>`);break;
+    case 'dino':add(`<path d="M40 74 Q50 70 60 74 L61 104 L39 104 Z" fill="#E9F0A8"/><path d="M41 82 L59 82 M40.5 90 L59.5 90 M40 98 L60 98" stroke="#C9D27E" stroke-width="1"/>`);break;
+    default:add(`<path d="M42 62.5 Q50 68.5 58 62.5" stroke="${dk}" stroke-width="2" fill="none" opacity=".35"/>`)}
+  if(full&&(tp==='robe'||tp==='mage'||tp==='toge'))add(`<path d="M30.5 96 L69.5 96 L75 113 Q75 116 71 116 L29 116 Q25 116 25 113 Z" fill="url(#${id}t)"/>`);
+  return out.join('')}
+function psHat(d,hcF,id){const h=d.hat,o=[];const add=s=>o.push(s);
+  switch(h){
+    case 'casquette':{const c=d.tc==='#3F7FD1'||d.tc==='#2E3F5C'?'#E8604C':'#2E3F5C';add(`<path d="M23.5 33 C23 15 35 9 50 9 C65 9 77 15 76.5 33 Q50 28 23.5 33 Z" fill="${c}"/><path d="M30 31.5 Q50 26.5 70 31.5 Q75 33 73 36 Q50 31 27 36 Q25 33 30 31.5 Z" fill="${psDk(c,.3)}"/><circle cx="50" cy="9.5" r="2" fill="${psDk(c,.2)}"/><path d="M33 18 Q40 12.5 48 12" stroke="${psLt(c,.4)}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>`);break}
+    case 'bonnet':{const c=d.tc==='#E8604C'||d.tc==='#EE86AE'?'#F2BE3C':'#E8604C';add(`<path d="M23 34 C22 14 35 8 50 8 C65 8 78 14 77 34 Z" fill="${c}"/><rect x="21" y="27.5" width="58" height="9" rx="4.5" fill="${psDk(c,.22)}"/><circle cx="50" cy="6.5" r="6" fill="#F6F0E6"/><path d="M33 15 Q40 10.5 48 10" stroke="${psLt(c,.4)}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>`);break}
+    case 'chapeau':case 'feutre':{const c=h==='feutre'?'#6B5643':'#3A3F48';add(`<ellipse cx="50" cy="24" rx="31" ry="6.5" fill="${psDk(c,.15)}"/><path d="M32 24 Q31 7 50 7 Q69 7 68 24 Q50 28 32 24 Z" fill="${c}"/><path d="M32.5 19.5 Q50 23 67.5 19.5 L68 24 Q50 28 32 24 Z" fill="${h==='feutre'?'#2F2725':'#C2362B'}"/>`);break}
+    case 'beret':add(`<ellipse cx="46" cy="18" rx="25" ry="9" transform="rotate(-8 46 18)" fill="#C2362B"/><path d="M46 9.5 l1 -3.5" stroke="#C2362B" stroke-width="2.4" stroke-linecap="round"/><path d="M30 15 Q38 10 48 10" stroke="#E66A5E" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".7"/>`);break;
+    case 'noeud':add(`<g transform="translate(67 19) rotate(18)"><path d="M0 0 L-9 -6 Q-11 0 -9 6 Z M0 0 L9 -6 Q11 0 9 6 Z" fill="#EE5D93"/><circle r="3" fill="#D6477C"/></g>`);break;
+    case 'fleur':add(`<g transform="translate(69 21)">${[0,72,144,216,288].map(a=>`<circle cx="${(Math.cos(a*Math.PI/180)*4.4).toFixed(1)}" cy="${(Math.sin(a*Math.PI/180)*4.4).toFixed(1)}" r="3.6" fill="#FF9EC0"/>`).join('')}<circle r="2.6" fill="#F7D046"/></g>`);break;
+    case 'casque':add(`<path d="M22.5 42 C21 9 79 9 77.5 42" stroke="#3A3F48" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="17" y="35" width="10" height="16" rx="5" fill="#E8604C"/><rect x="73" y="35" width="10" height="16" rx="5" fill="#E8604C"/>`);break;
+    case 'couronne':add(`<path d="M34 20 L34 7 L41 13 L50 4.5 L59 13 L66 7 L66 20 Z" fill="#F2C14E"/><rect x="34" y="17" width="32" height="4.5" rx="1.5" fill="#D9A62E"/><circle cx="50" cy="12.5" r="2" fill="#E0413A"/>`);break;
+    case 'toque':add(`<path d="M33 27 L34 14 L66 14 L67 27 Q50 30 33 27 Z" fill="#F7F4EE"/><circle cx="38" cy="10" r="8" fill="#FFFFFF"/><circle cx="50" cy="6" r="9" fill="#FFFFFF"/><circle cx="62" cy="10" r="8" fill="#FFFFFF"/><rect x="34" y="12" width="32" height="5" fill="#FFFFFF"/><path d="M34 24 Q50 27 66 24" stroke="#E3DED6" stroke-width="1.4" fill="none"/>`);break;
+    case 'mortier':add(`<path d="M28 21 Q50 15 72 21 L72 27 Q50 22 28 27 Z" fill="#22232B"/><path d="M50 6 L80 14 L50 22 L20 14 Z" fill="#2F3038"/><path d="M50 14 L74 17 L74 28" stroke="#F2C14E" stroke-width="1.4" fill="none"/><circle cx="74" cy="29" r="2" fill="#F2C14E"/>`);break;
+    case 'scaph':add(`<circle cx="50" cy="40" r="34" fill="#BFE6FF" opacity=".28"/><circle cx="50" cy="40" r="34" fill="none" stroke="#F3F5F8" stroke-width="4"/><path d="M27 22 Q34 12 46 9" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity=".8"/>`);break;
+    case 'antennes':add(`<path d="M38 17 L33 4 M62 17 L67 4" stroke="#7E93A3" stroke-width="2" stroke-linecap="round"/><circle cx="33" cy="4" r="3.4" fill="#59E0A8"/><circle cx="67" cy="4" r="3.4" fill="#59E0A8"/>`);break;
+    case 'pilote':add(`<path d="M25 30 C25 16 36 11 50 11 C64 11 75 16 75 30 Z" fill="#22355E"/><path d="M27 29 Q50 25 73 29 Q74 33 70 33.5 Q50 30.5 30 33.5 Q26 33 27 29 Z" fill="#141F38"/><rect x="45" y="17" width="10" height="6" rx="2" fill="#F2C14E"/>`);break;
+    case 'cowboy':add(`<path d="M14 26 Q20 33 50 30 Q80 33 86 26 Q80 22 70 24 L50 25 L30 24 Q20 22 14 26 Z" fill="#8A5A36"/><path d="M33 25 Q32 9 42 8 Q50 11 58 8 Q68 9 67 25 Q50 28 33 25 Z" fill="#A06A40"/><path d="M33 21 Q50 24 67 21 L67 25 Q50 28 33 25 Z" fill="#5C3A27"/>`);break;
+    case 'perruque':add(`${[[27,26],[33,18],[42,13],[50,12],[58,13],[67,18],[73,26],[23,36],[77,36],[23,46],[77,46],[24,56],[76,56]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="7" fill="#F2EFEA"/>`).join('')}`);break;
+    case 'cagoule':add(`<path d="M22.5 46 C20 20 34 13.5 50 13.5 C66 13.5 80 20 77.5 46 C78 60 68 67 50 67 C32 67 22 60 22.5 46 Z" fill="#2B2D38"/><path d="M29 38 Q50 34 71 38 L70.5 48 Q50 44.5 29.5 48 Z" fill="url(#${id}s)"/><path d="M73 33 L84 28 L80 36 Z" fill="#C2362B"/>`);break;
+    case 'pointu':add(`<ellipse cx="50" cy="23" rx="30" ry="6" fill="#4A2F8F"/><path d="M33 23 L52 -12 Q56 -6 67 23 Q50 27 33 23 Z" fill="#6B47C2"/><path d="M45 7 l1 2 2.2.3 -1.6 1.4.4 2.2 -2 -1 -2 1 .4-2.2 -1.6-1.4 2.2-.3 Z" fill="#F2C14E"/>`);break;
+    case 'diademe':add(`<path d="M36 22 Q50 17 64 22 L62 24 Q50 20 38 24 Z" fill="#F2C14E"/><path d="M50 13 L53 19 L47 19 Z" fill="#F2C14E"/><circle cx="50" cy="17.5" r="1.6" fill="#7FCFF0"/>`);break;
+    case 'turban':add(`<path d="M23.5 34 C22 13 36 6 50 6 C64 6 78 13 76.5 34 Q50 25 23.5 34 Z" fill="#F2C14E"/><path d="M26 27 Q45 16 74 26 M28 20 Q50 11 72 19" stroke="#D9A62E" stroke-width="2" fill="none"/><circle cx="50" cy="25" r="3.6" fill="#E0413A"/><path d="M50 21 Q53 13 50 8" stroke="#F7F4EE" stroke-width="2" fill="none"/>`);break;
+    case 'dino':add(`<path d="M20 46 C17 14 34 6 50 6 C66 6 83 14 80 46 L76 46 C78 24 66 15 50 15 C34 15 22 24 24 46 Z" fill="#5FB563"/>${[[36,8],[50,4],[64,8],[76,18]].map(p=>`<path d="M${p[0]-4} ${p[1]+4} L${p[0]} ${p[1]-5} L${p[0]+4} ${p[1]+4} Z" fill="#F2BE3C"/>`).join('')}<circle cx="34" cy="14" r="2" fill="#FFFFFF"/><circle cx="66" cy="14" r="2" fill="#FFFFFF"/>`);break}
+  return o.join('')}
+function psFaceAcc(d,skD){const f=d.face;
+  if(f==='lunettes')return `<g fill="#FFFFFF" fill-opacity=".25" stroke="#3A2E2A" stroke-width="1.6"><circle cx="40.5" cy="44" r="5.6"/><circle cx="59.5" cy="44" r="5.6"/></g><path d="M46 43.5 Q50 41.5 54 43.5" stroke="#3A2E2A" stroke-width="1.5" fill="none"/>`;
+  if(f==='soleil')return `<path d="M33.5 40 L47 40 Q47.5 49 40.5 49.5 Q33.5 49 33.5 40 Z M53 40 L66.5 40 Q66.5 49 59.5 49.5 Q52.5 49 53 40 Z" fill="#23262E"/><path d="M47 41 Q50 39.5 53 41" stroke="#23262E" stroke-width="1.6" fill="none"/><path d="M36 42.5 L39.5 42.5 M55.5 42.5 L59 42.5" stroke="#FFFFFF" stroke-width="1.2" stroke-linecap="round" opacity=".55"/>`;
+  if(f==='boucles')return `<circle cx="24.5" cy="51.5" r="2.2" fill="#F2C14E"/><circle cx="75.5" cy="51.5" r="2.2" fill="#F2C14E"/>`;
+  if(f==='collier')return `<path d="M39 64 Q50 73 61 64" stroke="#F2C14E" stroke-width="1.4" fill="none"/><circle cx="50" cy="70.5" r="2.2" fill="#EE5D93"/>`;
+  if(f==='masque')return `<path d="M31 40 Q50 35 69 40 L68 48 Q60 50 54 46 Q50 44 46 46 Q40 50 32 48 Z" fill="#2E3F8C"/>`;
+  if(f==='crocs')return `<path d="M46.5 55 L47.6 58 L48.6 55.3 Z M51.4 55.3 L52.4 58 L53.5 55 Z" fill="#FFFFFF"/>`;
+  return ''}
+/* opt : {view:'bust'|'full', size, bg (couleur ou false), cls} */
+function charSVG(d,opt){opt=opt||{};d=d||psAuto('?','m','',30);const id='ps'+(++PS_N),full=opt.view==='full';
+  const C=d.cos&&PS_COS[d.cos]?Object.assign({},d,PS_COS[d.cos]):d;
+  const skc=C.sk!=null&&typeof C.sk==='string'?C.sk:PS_SKIN[Math.max(0,Math.min(4,C.sk|0))][0],skD=psDk(skc,.22),hc=psHC(C.hc),hcD=psDk(hc,.3),hcL=psLt(hc,.45);
+  const tc=C.tc||'#3F7FD1',tcol=(C.tp==='chef'||C.tp==='labo'||C.tp==='combi')?'#F4F1EC':C.tp==='toge'?'#26272F':C.tp==='hero'?'#3653C9':C.tp==='robot'?'#A9BAC6':C.tp==='ninja'?'#2B2D38':C.tp==='royal'?'#6B3FA0':C.tp==='dino'?'#5FB563':C.tp==='mage'?'#5A3CB0':C.tp==='trench'?'#C9A774':C.tp==='cuir'?'#2B2D33':C.tp==='pilote'?'#F4F1EC':tc;
+  const a=C.a||'a',kid=a==='k',baby=a==='b',old=a==='o',bs=baby?.62:kid?.8:1;
+  const pants=C.tp==='salopette'?'#4B6FA8':C.tp==='dino'?'#5FB563':C.tp==='ninja'?'#2B2D38':C.tp==='combi'?'#F4F1EC':kid?'#3D5D90':'#38425A',shoe=C.tp==='hero'?'#E0413A':kid?'#F4F1EC':'#2F2B2E';
+  const defs=`<defs>${psGrad(id+'s',skc,{l:.3,d:.16})}${psGrad(id+'h',hc,{l:.22,d:.25,us:1,cx:38,cy:16,r:62})}${psGrad(id+'t',tcol,{l:.22,d:.24,cy:.15})}<clipPath id="${id}c"><circle cx="50" cy="50" r="50"/></clipPath></defs>`;
+  const S_=`url(#${id}s)`,H=`url(#${id}h)`,o=[];
+  const bodyT=bs!==1?`transform="translate(50 63) scale(${bs}) translate(-50 -63)"`:'';
+  /* dos : cape, ailes, cheveux longs */
+  if(C.back==='cape')o.push(`<g ${bodyT}><path d="M30 66 L70 66 L82 ${full?118:110} Q50 ${full?124:116} 18 ${full?118:110} Z" fill="${C.bc||'#E0413A'}"/><path d="M30 66 L70 66 L74 80 Q50 86 26 80 Z" fill="${psDk(C.bc||'#E0413A',.25)}" opacity=".5"/></g>`);
+  if(C.back==='ailes')o.push(`<g opacity=".85"><ellipse cx="22" cy="72" rx="15" ry="22" transform="rotate(-25 22 72)" fill="#DDF3FF"/><ellipse cx="78" cy="72" rx="15" ry="22" transform="rotate(25 78 72)" fill="#DDF3FF"/><ellipse cx="25" cy="92" rx="9" ry="13" transform="rotate(-40 25 92)" fill="#F6D9FF"/><ellipse cx="75" cy="92" rx="9" ry="13" transform="rotate(40 75 92)" fill="#F6D9FF"/></g>`);
+  if(C.back==='capecol')o.push(`<path d="M18 74 L28 34 L40 58 L60 58 L72 34 L82 74 Z" fill="#7A1F3D"/><path d="M24 70 L30 44 L40 60 L60 60 L70 44 L76 70 Z" fill="#B0263F"/>`);
+  if(!['scaph','cagoule','dino','turban'].includes(C.hat))o.push(psHairBack(C,H,hcD));
+  /* corps */
+  const legs=full?`<rect x="38.5" y="100" width="10" height="${baby?10:15}" rx="5" fill="${pants}"/><rect x="51.5" y="100" width="10" height="${baby?10:15}" rx="5" fill="${pants}"/><ellipse cx="42.5" cy="${baby?111:116}" rx="7" ry="4.6" fill="${shoe}"/><ellipse cx="57.5" cy="${baby?111:116}" rx="7" ry="4.6" fill="${shoe}"/><ellipse cx="41" cy="${baby?109.5:114.5}" rx="3.6" ry="1.6" fill="#FFFFFF" opacity=".25"/><ellipse cx="56" cy="${baby?109.5:114.5}" rx="3.6" ry="1.6" fill="#FFFFFF" opacity=".25"/>`:'';
+  const sleeve=C.tp==='tee'||C.tp==='robe'||C.tp==='salopette'||C.tp==='hero'&&false;
+  const arm=(sx)=>{const x0=50+sx*19,x1=50+sx*24.5,col=psDk(tcol,.08),sk=sleeve;
+    return `<path d="M${x0} 67 Q${x1+sx*1.5} 72 ${x1} 90" stroke="${psDk(tcol,.3)}" stroke-width="10" stroke-linecap="round" fill="none" opacity=".35" transform="translate(${-sx*1.2} 1)"/>`+
+      `<path d="M${x0} 67 Q${x1+sx*1.5} 72 ${x1} 90" stroke="${col}" stroke-width="9.5" stroke-linecap="round" fill="none"/>`+
+      (sk?`<path d="M${x1+sx*.8} 80 L${x1} 90" stroke="${skc}" stroke-width="8.6" stroke-linecap="round" fill="none"/>`:'')+
+      `<circle cx="${x1}" cy="93" r="5.6" fill="${S_}"/>`};
+  const chin=`<ellipse cx="50" cy="64.5" rx="17" ry="5" fill="${psDk(tcol,.45)}" opacity=".35"/>`;
+  o.push(`<g ${bodyT}>${legs}${psTop(C,id,tcol,full)}${chin}${arm(-1)}${arm(1)}${C.face==='collier'?psFaceAcc(C,skD):''}</g>`);
+  /* tête */
+  const hy=baby?2:kid?1:0;
+  const head=[];
+  head.push(`<ellipse cx="24.5" cy="44" rx="4.3" ry="5.4" fill="${skc}"/><ellipse cx="75.5" cy="44" rx="4.3" ry="5.4" fill="${skD}"/><ellipse cx="24.8" cy="44.5" rx="1.8" ry="2.6" fill="${skD}" opacity=".5"/>`);
+  head.push(`<ellipse cx="50" cy="40" rx="${baby?27:26}" ry="${baby?26:25.5}" fill="${S_}"/>`);
+  head.push(`<ellipse cx="35.5" cy="51" rx="4.4" ry="2.7" fill="#FF7A7A" opacity="${C.sk>=3?.22:.3}"/><ellipse cx="64.5" cy="51" rx="4.4" ry="2.7" fill="#FF7A7A" opacity="${C.sk>=3?.22:.3}"/>`);
+  if(C.hat!=='cagoule')head.push(psBeard(C,H));
+  const ey=44,ex=10.5,er=kid||baby?[3,3.9]:[2.6,3.5],browc=C.hs==='chauve'||C.hc==='blanc'||C.hc==='gris'?psDk(skc,.4):hcD;
+  if(C.tp==='robot'&&C.hat==='antennes'&&C.cos==='av_robot')head.push(`<rect x="34" y="38" width="32" height="11" rx="5.5" fill="#23262E"/><rect x="37" y="41.5" width="7" height="4" rx="2" fill="#59E0A8"/><rect x="56" y="41.5" width="7" height="4" rx="2" fill="#59E0A8"/>`);
+  else{
+    head.push([-1,1].map(s=>`<ellipse cx="${50+s*ex}" cy="${ey}" rx="${er[0]}" ry="${er[1]}" fill="#2B211E"/><circle cx="${50+s*ex+.9}" cy="${ey-1.4}" r="${kid||baby?1.25:1}" fill="#FFFFFF"/>`).join(''));
+    if(C.g==='f')head.push(`<path d="M${50-ex-2.4} ${ey-2.4} l-2 -1.4 M${50+ex+2.4} ${ey-2.4} l2 -1.4" stroke="#2B211E" stroke-width="1.2" stroke-linecap="round"/>`);
+    if(!baby)head.push(`<path d="M${50-ex-4} 37.2 Q${50-ex} 34.8 ${50-ex+4} 36.6 M${50+ex-4} 36.6 Q${50+ex} 34.8 ${50+ex+4} 37.2" stroke="${browc}" stroke-width="${C.g==='f'?1.5:2}" fill="none" stroke-linecap="round"/>`);}
+  head.push(`<ellipse cx="50" cy="49.6" rx="2.3" ry="1.7" fill="${skD}" opacity=".55"/><ellipse cx="49.3" cy="49" rx=".9" ry=".6" fill="#FFFFFF" opacity=".35"/>`);
+  head.push(kid||baby?`<path d="M45 53.4 Q50 60 55 53.4 Q50 54.8 45 53.4 Z" fill="#8C3A33"/><path d="M47 56.5 Q50 58.4 53 56.5 Q50 55.6 47 56.5 Z" fill="#F08A8A"/>`:`<path d="M45.5 53.6 Q50 58.4 54.5 53.6 Q50 55.1 45.5 53.6 Z" fill="#8C3A33"/>`);
+  if(C.fh==='moustache')head.push(psBeard(C,H));
+  if(old)head.push(`<path d="M34 46.5 q-2 .6 -2.6 2.4 M66 46.5 q2 .6 2.6 2.4 M43.5 29 Q50 27.5 56.5 29" stroke="${skD}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".6"/>`);
+  if(C.face&&C.face!=='collier')head.push(psFaceAcc(C,skD));
+  if(!['scaph','cagoule','dino','turban','pilote','bonnet','casquette','toque','mortier','cowboy'].includes(C.hat)||C.hat==='scaph')head.push(psHairFront(C,H,hcL,skD));
+  else if(C.hat==='casquette'||C.hat==='bonnet'||C.hat==='pilote'||C.hat==='cowboy'||C.hat==='toque'||C.hat==='mortier'){if(C.hs!=='chauve'&&C.hs!=='rase'&&C.hs!=='bebe')head.push(`<path d="M23.5 46 C22 38 23.5 33 26 31 L33 31 C29 35 27 40 26.5 46 Z M76.5 46 C78 38 76.5 33 74 31 L67 31 C71 35 73 40 73.5 46 Z" fill="${H}"/>`)}
+  head.push(psHat(C,H,id));
+  o.push(`<g transform="translate(0 ${hy})">${head.join('')}</g>`);
+  /* cadre */
+  const fb=Math.round(63+((baby?111:116)-63)*bs+10),vh=fb+8,vb=`4 -8 92 ${vh}`,sz=opt.size||64,W=full?Math.round(sz*92/vh):sz;
+  const bg=opt.bg===false?'':opt.bg||psOf(PS_BG,C.bg)[1];
+  const shadow=full?`<ellipse cx="50" cy="${(63+((baby?111:116)-63)*bs+3.5).toFixed(1)}" rx="${(22*Math.max(bs,.75)).toFixed(1)}" ry="4.4" fill="#1E2430" opacity=".16"/>`:'';
+  const inner=full?shadow+o.join(''):`<g clip-path="url(#${id}c)">${bg?`<circle cx="50" cy="50" r="50" fill="${bg}"/><ellipse cx="50" cy="104" rx="46" ry="16" fill="${psDk(bg,.12)}" opacity=".5"/>`:''}<g transform="translate(50 52) scale(.98) translate(-50 -52)">${o.join('')}</g></g>`;
+  return `<svg class="ps ${opt.cls||''}" viewBox="${full?vb:'0 0 100 100'}" width="${W}" height="${sz}" role="img" aria-hidden="true" focusable="false">${defs}${inner}</svg>`}
+/* Raccourcis pour les vues */
+function psAv(p,o){try{return charSVG(psDesc(p),Object.assign({size:64},o||{}))}catch(e){return (p&&p.av)||''}}
+function psHeroAv(o){return psAv(S.hero,o)}
+function psWho(who,name){who=String(who==null?'':who);if(!PS_PERSON.test(who)||who.length>14)return who;
+  try{const p=psFind(name);if(p){if(p===S.hero)return psHeroAv();const kidNow=p.age!=null&&p.age<18;return charSVG(psDesc(p),{size:64})}
+    const nm=String(name||'').split(/,| \(/)[0].trim();const g=avG(who)||(typeof mgrG==='function'&&nm?mgrG(nm):null)||(nm?nameG(nm):null)||(psHash(nm||who)%2?'f':'m');
+    return charSVG(psAuto(nm||who,g,who,null),{size:64})}catch(e){return who}}
+/* Emoji approchant (pour les anciens écrans et le journal) */
+function psEmoji(d){const t=Object.keys(PS_TONEI).find(k=>PS_TONEI[k]===d.sk)||'🏽',b=d.g==='f'?'👩':'👨',Z='‍';
+  if(d.hc==='roux')return b+t+Z+'🦰';if(d.hs==='boucles'||d.hs==='afro')return b+t+Z+'🦱';if(d.hc==='blanc'||d.hc==='gris')return b+t+Z+'🦳';if(d.hs==='chauve')return b+t+Z+'🦲';
+  if(d.hc==='blond')return '👱'+t+Z+(d.g==='f'?'♀️':'♂️');if(d.fh==='barbe'&&d.g!=='f')return '🧔'+t;return b+t}
+
+/* ---------- 5. Sur la carte (canvas) : image du perso ---------- */
+const PS_IMG=new Map();
+function psImg(d,full){const k=JSON.stringify(d)+(full?'F':'');let im=PS_IMG.get(k);
+  if(!im){if(PS_IMG.size>80)PS_IMG.clear();im=new Image();im.decoding='async';im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(charSVG(d,{size:96,bg:full?false:'#FFFFFF',view:full?'full':'bust'}).replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" '));PS_IMG.set(k,im)}
+  return im.complete&&im.naturalWidth?im:null}
+function psCanvasP(e){if(typeof S==='undefined'||!S||!S.started||!e)return null;if(e===S.hero.av)return S.hero;
+  if(S.partner&&e===S.partner.av)return S.partner;return (S.kids||[]).find(k=>e===k.av||e===k.adult||e===kidAv(k))||null}
+emoji=(f=>function(e,x,y,s){const p=psCanvasP(e);if(p){const im=psImg(psDesc(p));if(im){const r=s*.82;ctx.save();ctx.beginPath();ctx.arc(x,y-1,r,0,7);ctx.clip();ctx.drawImage(im,x-r,y-1-r,r*2,r*2);ctx.restore();return}}return f.apply(this,arguments)})(emoji);
+
+/* ---------- 6. Remplacements dans les vues ---------- */
+const PS_ST=document.createElement('style');PS_ST.textContent=`
+svg.ps{display:block;flex:none}
+.hero-av,.ev-av,.j-who,.fam-av,.bs-ic,.life-av,.sk-av,.vv-av{overflow:hidden;padding:0}
+.hero-av>svg.ps,.ev-av>svg.ps,.j-who>svg.ps,.fam-av>svg.ps,.bs-ic>svg.ps,.life-av>svg.ps,.sk-av>svg.ps,.vv-av>svg.ps{width:100%;height:100%}
+.hero-av:has(>svg.ps){border:3px solid #fff;box-shadow:0 2px 8px rgba(30,40,60,.16);background:none}
+.ev-av:has(>svg.ps),.j-who:has(>svg.ps),.fam-av:has(>svg.ps){background:none;box-shadow:0 1px 4px rgba(30,40,60,.14)}
+.bs-ic:has(>svg.ps){border-radius:50%;background:none}
+.vv-av:has(>svg.ps)::before,.vv-av:has(>svg.ps)::after{display:none}
+.reveal-box>svg.ps,.epi-av>svg.ps{margin:0 auto;width:132px;height:132px}
+.reveal-box:has(>svg.ps.full),.epi-av:has(>svg.ps.full){line-height:0}
+.reveal-box>svg.ps.full{width:auto;height:180px}
+.cre>svg.ps,.vie-cav>svg.ps{width:44px;height:44px;margin:0 auto}
+.vie-cav>svg.ps{width:56px;height:56px;margin:0}
+.ps-in{display:inline-block;vertical-align:-6px;width:22px;height:22px;margin-right:4px}
+.ps-in svg.ps{width:22px;height:22px}
+`;document.head.appendChild(PS_ST);
+
+/* ---------- 7. Écran de look ---------- */
+let PS_DRAFT=null,PS_TAB='coif';
+function psDraftOpen(){const d=psHeroDesc(true);delete d.cos;PS_DRAFT=d;PS_TAB='coif';modal(psLookHTML())}
+function psLookHTML(){const d=PS_DRAFT,cos=psSkinCos(),T=[['coif','Coiffure'],['col','Couleurs'],['tenue','Tenue'],['acc','Accessoires']];
+  const thumb=(k,v,lab,ext)=>{const x=Object.assign({},d,{[k]:v},ext||{});const on=(d[k]||'')===v;
+    return `<button class="ps-c ${on?'on':''}" data-a="ps_set" data-k="${k}" data-v="${v}" aria-pressed="${on}" title="${lab}">${charSVG(x,{size:58,bg:'#F4F1EC'})}<small>${lab}</small></button>`};
+  const sw=(k,v,col,lab)=>{const on=String(d[k])===String(v);return `<button class="ps-sw ${on?'on':''}" data-a="ps_set" data-k="${k}" data-v="${v}" aria-pressed="${on}" title="${lab}" style="--c:${col}"><i></i><small>${lab}</small></button>`};
+  const row=(t,h)=>`<h3 class="ps-h">${t}</h3><div class="ps-row">${h}</div>`;let body='';
+  if(PS_TAB==='coif'){const L=PS_HS.slice().sort((a,b)=>(a[2]===d.g?0:a[2]?2:1)-(b[2]===d.g?0:b[2]?2:1));
+    body=row('Coupe',L.map(x=>thumb('hs',x[0],x[1],{hat:''})).join(''));if(d.g!=='f')body+=row('Barbe',PS_FH.map(x=>thumb('fh',x[0],x[1],{hat:''})).join(''))}
+  else if(PS_TAB==='col')body=row('Cheveux',PS_HC.map(x=>sw('hc',x[0],x[1],x[2])).join(''))+row('Peau',PS_SKIN.map((x,i)=>sw('sk',i,x[0],x[1])).join(''))+row('Vêtement',PS_TC.map((c,i)=>sw('tc',c,c,['Corail','Bleu','Jaune','Vert','Violet','Marine','Rose','Turquoise','Blanc','Anthracite','Brique'][i])).join(''))+row('Fond',PS_BG.map(x=>sw('bg',x[0],x[1],x[2])).join(''));
+  else if(PS_TAB==='tenue')body=row('Haut',PS_TP.map(x=>thumb('tp',x[0],x[1])).join(''));
+  else body=row('Sur la tête',PS_HAT.map(x=>thumb('hat',x[0],x[1])).join(''))+row('Visage',PS_FACE.map(x=>thumb('face',x[0],x[1])).join(''));
+  return `<div class="ps-look"><h2>Ton look</h2><p class="hint">${esc(S.hero.name)}, ${gx(S.hero,'né','née')} ${S.hero.place?'à '+esc(S.hero.place):'quelque part'}. Le reste, c’est toi.</p>
+  <div class="ps-stage" style="--bg:${psOf(PS_BG,d.bg)[1]}">${charSVG(d,{view:'full',size:200})}</div>
+  <div class="seg ps-tabs" role="tablist">${T.map(t=>`<button role="tab" class="${PS_TAB===t[0]?'on':''}" aria-selected="${PS_TAB===t[0]}" data-a="ps_tab" data-v="${t[0]}">${t[1]}</button>`).join('')}</div>
+  <div class="ps-body">${body}</div>
+  ${cos?`<p class="hint" style="margin-top:8px">Tu portes le costume « ${esc((META_BY[cos]||{}).n||'')} » de la boutique. Ton look réapparaît quand tu choisis « Mon perso » dans la boutique.</p>`:''}
+  <div class="ps-foot"><button class="btn ghost" data-a="close">Annuler</button><button class="btn big go" data-a="ps_ok">Valider</button></div></div>`}
+function psLookRefresh(){const sc=$('#layer .ps-body'),y=sc?sc.scrollTop:0,s0=$('#layer .sheet'),y0=s0?s0.scrollTop:0;modal(psLookHTML());const s2=$('#layer .ps-body');if(s2)s2.scrollTop=y;const s3=$('#layer .sheet');if(s3)s3.scrollTop=y0}
+peOpenLook=psDraftOpen;
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a^="ps_"]');if(!b||b.disabled)return;const a=b.dataset.a,v=b.dataset.v;
+  if(a==='ps_tab'){PS_TAB=v;psLookRefresh();sfx('tap');return}
+  if(a==='ps_set'&&PS_DRAFT){const k=b.dataset.k;PS_DRAFT[k]=k==='sk'?+v:v;psLookRefresh();sfx('tap');return}
+  if(a==='ps_ok'&&PS_DRAFT){const d=Object.assign({},PS_DRAFT);delete d.cos;delete d.a;delete d.g;S.hero.ch=Object.assign({name:S.hero.name},d);
+    try{peSetAv(psEmoji(Object.assign({g:gOf(S.hero)},d)))}catch(err){}PS_DRAFT=null;save();closeModal();sfx('good');toast('Nouveau look enregistré.');try{render()}catch(err){}}});
+const PS_ST2=document.createElement('style');PS_ST2.textContent=`
+.ps-look h2{margin-bottom:2px}
+.ps-stage{margin:10px auto 12px;height:212px;border-radius:22px;display:flex;align-items:flex-end;justify-content:center;background:radial-gradient(120% 90% at 50% 100%,color-mix(in srgb,var(--bg) 70%,#fff) 0 38%,var(--bg) 39%);overflow:hidden}
+.ps-stage svg.ps{height:206px;width:auto;margin-bottom:2px}
+.ps-tabs{margin:0 0 6px}
+.ps-body{max-height:min(40vh,330px);overflow:auto;padding:2px 2px 6px;overscroll-behavior:contain}
+.ps-h{font-size:.86rem;margin:10px 0 6px;text-align:left;color:var(--muted)}
+.ps-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px}
+.ps-c{border:2px solid transparent;border-radius:16px;background:var(--surface2);padding:5px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:var(--ink);font:inherit;min-height:84px}
+.ps-c svg.ps{width:52px;height:52px}
+.ps-c small,.ps-sw small{font-size:.66rem;color:var(--muted);max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps-c.on{border-color:var(--ink);background:var(--surface)}
+.ps-sw{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;font:inherit;color:var(--ink);padding:4px 0;min-height:56px}
+.ps-sw i{display:block;width:34px;height:34px;border-radius:50%;background:var(--c);box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 0 0 2px var(--surface),0 0 0 3px var(--line)}
+.ps-sw.on i{box-shadow:inset 0 -4px 0 rgba(0,0,0,.12),0 0 0 3px var(--surface),0 0 0 5px var(--ink)}
+.ps-foot{display:grid;grid-template-columns:1fr 2fr;gap:8px;margin-top:12px}
+`;document.head.appendChild(PS_ST2);
+
+/* Avatar du héros (Vie → Moi, Empire → Compte) */
+peAvHTML=function(cls){return `<div class="${cls} pe-av">${psHeroAv()}</div>`};
+
+/* ---------- 8. Famille dans la bulle du QG (carte) ---------- */
+drawFamilyPill=function(top){const fam=[];if(S.partner&&S.partner.stage!=='couple')fam.push(S.partner);S.kids.slice(0,4).forEach(k=>fam.push(k));if(!fam.length)return;
+  const w=fam.length*13+8,x=top[0]-w/2,y=top[1]-46;ctx.fillStyle='rgba(255,255,255,.95)';rr(x,y,w,16,8);ctx.fill();ctx.strokeStyle='#FF5FA2';ctx.lineWidth=1.2;ctx.stroke();
+  fam.forEach((p,i)=>{const im=psImg(psDesc(p)),cx=x+10+i*13,cy=y+8;if(im){ctx.save();ctx.beginPath();ctx.arc(cx,cy,6,0,7);ctx.clip();ctx.drawImage(im,cx-6,cy-6,12,12);ctx.restore()}else emoji(p.av||'🙂',cx,cy+.5,10)})};
+/* ---------- 9. Boutique : aperçu des costumes sur ton perso ---------- */
+skPreview=(f=>function(it){if(it&&it.k==='avatar'){const g=it.g;let svg='';try{const d=psHeroDesc(true);if(it.id!=='av_none')d.cos=it.id;svg=charSVG(d,{size:66,bg:false})}catch(e){svg=it.e}
+  return `<span class="sk-av" style="--g:${g?`linear-gradient(150deg,${g[0]},${g[1]})`:'var(--sticker)'};--ring:${it.ring||'#1E2B2A'}">${svg}</span>`}return f.apply(this,arguments)})(skPreview);
+
+/* ---------- 10. Passants : une description par habitant ---------- */
+function psPedDesc(e){if(e.pd)return e.pd;const v=e.v,g=v&&v.g||(Math.random()<.5?'f':'m'),age=v&&v.age!=null?v.age:e.kid?8:Math.random()<.12?70:30;
+  const d=psAuto((v&&v.name)||('p'+Math.random()),g,'',age);const si=SKINS.indexOf(e.skin);if(si>=0)d.sk=[1,2,3,4,4,0][si];
+  if(e.col&&/^#[0-9A-Fa-f]{6}$/.test(e.col))d.tc=e.col;if(d.tp==='robe'&&g!=='f')d.tp='tee';d.hat='';d.face=d.a==='o'?d.face:'';e.pd=d;return d}
+vvCardUpdate=(f=>function(){const r=f.apply(this,arguments);try{const e=VV.follow,c=VV.card;if(e&&e.v&&c&&!c.hidden){const av=c.querySelector('.vv-av'),k=e.v.name+'|'+e.v.age;
+  if(av&&av._ps!==k){if(e.pd&&e.pd._n!==e.v.name)e.pd=null;const d=psPedDesc(e);d._n=e.v.name;if(TH_.moon){d.hat='scaph';d.tp='combi'}av.innerHTML=charSVG(d,{size:36});av._ps=k}}}catch(err){}return r})(vvCardUpdate);
+/* ===== FIN AGENT PERSOS ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
