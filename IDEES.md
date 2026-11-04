@@ -41,12 +41,12 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 ## Demandes du 4 novembre (pas encore faites)
 - FAIT (04b) : retour en partie plafonné, plus de championnats en rafale.
 - Club de foot et Mairie dans des blocs (onglets) à part.
-- Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
+- FAIT (branche fe/immo, à fusionner) : immobilier d'investissement (valeur, loyer, rendement, crédit, logements vides, pannes, carnet), « Tout acheter » / « Améliorer au max » ; écran entier dans `vImmo()`, en attente de son onglet.
 - Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
 - Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
 - FAIT (04b) : décisions moins fréquentes, pause pendant une décision, bouton Pause.
-- La bourse doit dépendre un minimum de la ville.
+- FAIT (fe/immo) : bourse locale, 4 valeurs dont le grand groupe de la ville ; prix et nervosité suivent la ville ; anciennes bourses revendues au cours du jour.
 - FAIT (04b) : « Tout régler » dans Clients.
-- Commerces plus chers par ville, progression plus longue dans les villes avancées (courbe à la Clash of Clans : début facile, puis de plus en plus dur).
+- FAIT (fe/immo) : prix ×12×1,58 par ville, revenus ×12 ; simulé : chaque ville prend 30 à 50 % de temps de plus (9 ou 14 villes). Boutons « Tout acheter » et « Au max » aussi pour les boutiques.
 - Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
 - Publier soi-même sur la branche après chaque tâche terminée et testée.
