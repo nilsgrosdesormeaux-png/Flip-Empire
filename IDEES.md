@@ -43,8 +43,8 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - FAIT (onglets) : Club, Mairie et Immobilier ont chacun leur onglet en bas (8 onglets : Ville, Affaires, Immo, Club, Mairie, Vie, Objectifs, Empire). La Bourse est dans Affaires. Pastille rose tant qu'un nouvel onglet n'a pas été ouvert ; « ! » pour un match ou une campagne en cours. Boutique et Sondage visibles en haut (à droite des jauges).
 - FAIT : bugs META (charger un emplacement recharge bien la ville ; coffre du jour sans jetons si refusé).
 - FAIT : immobilier d'investissement (valeur, loyer, rendement, crédit, logements vides, pannes, carnet), « Tout acheter » / « Améliorer au max », dans l'onglet Immo.
-- Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
-- Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
+- FAIT : bâtiments achetés/améliorés qui gardent le style de leur ville (Paris reste Paris, Tokyo reste Tokyo), avec corniche dorée et fanion pour les reconnaître.
+- FAIT : 13 villes. Rio, Shanghai et Atlantide (ville sous la mer) avant la Lune, puis Mars en dernier. Chacune a ses monuments, ses commerces, son marché, ses fêtes et une décision. Les anciennes parties sur la Lune sont replacées sur la Lune.
 - FAIT (04b) : décisions moins fréquentes, pause pendant une décision, bouton Pause.
 - FAIT (fe/immo) : bourse locale, 4 valeurs dont le grand groupe de la ville ; prix et nervosité suivent la ville ; anciennes bourses revendues au cours du jour.
 - FAIT (04b) : « Tout régler » dans Clients.
