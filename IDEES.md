@@ -42,12 +42,12 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - FAIT (04b) : retour en partie plafonné, plus de championnats en rafale.
 - FAIT (onglets) : Club, Mairie et Immobilier ont chacun leur onglet en bas (8 onglets : Ville, Affaires, Immo, Club, Mairie, Vie, Objectifs, Empire). La Bourse est dans Affaires. Pastille rose tant qu'un nouvel onglet n'a pas été ouvert ; « ! » pour un match ou une campagne en cours. Boutique et Sondage visibles en haut (à droite des jauges).
 - FAIT : bugs META (charger un emplacement recharge bien la ville ; coffre du jour sans jetons si refusé).
-- Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
+- FAIT : immobilier d'investissement (valeur, loyer, rendement, crédit, logements vides, pannes, carnet), « Tout acheter » / « Améliorer au max », dans l'onglet Immo.
 - Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
 - Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
 - FAIT (04b) : décisions moins fréquentes, pause pendant une décision, bouton Pause.
-- La bourse doit dépendre un minimum de la ville.
+- FAIT (fe/immo) : bourse locale, 4 valeurs dont le grand groupe de la ville ; prix et nervosité suivent la ville ; anciennes bourses revendues au cours du jour.
 - FAIT (04b) : « Tout régler » dans Clients.
-- Commerces plus chers par ville, progression plus longue dans les villes avancées (courbe à la Clash of Clans : début facile, puis de plus en plus dur).
+- FAIT (fe/immo) : prix ×12×1,58 par ville, revenus ×12 ; simulé : chaque ville prend 30 à 50 % de temps de plus (9 ou 14 villes). Boutons « Tout acheter » et « Au max » aussi pour les boutiques.
 - Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
 - Publier soi-même sur la branche après chaque tâche terminée et testée.

@@ -5,14 +5,8 @@ Ils partent de la version 2026-11-04a (commit 00d825a) ; ils s'appliquent encore
 
 Pour reprendre : `git apply travaux-en-cours/<fichier>.patch`, puis finir, tester (voir CLAUDE.md), publier, et supprimer le .patch.
 
-## immobilier-economie.patch (~300 lignes)
-Objectif (voir IDEES.md « Demandes du 4 novembre ») :
-1. Prix des commerces, gérants, améliorations, immeubles qui montent avec la ville (courbe type « hôtel de ville » : début facile, chaque ville +30-50 % plus longue). Écrire en fonction de l'indice de ville (doit marcher pour 12-14 villes).
-2. Immobilier = vraie partie investissement visible : portefeuille, loyer, valeur, rendement, prêt, vacance, événements.
-3. Boutons « Tout acheter » et « Améliorer au max ».
-4. Bourse liée à la ville (+ migration des anciennes bourses).
-État : l'agent venait d'écrire le bloc `/* ===== AGENT IMMO ===== */` (après FIN AGENT ECO). Rien de testé.
-Note : CITY_MULT ne s'applique pas aux boutiques/gérants/améliorations/logements du QG.
+## immobilier-economie.patch
+Repris, fini et testé sur la branche fe/immo (bloc AGENT IMMO) ; fichier supprimé.
 
 ## villes-ville-vivante.patch (~110 lignes)
 Objectif :
