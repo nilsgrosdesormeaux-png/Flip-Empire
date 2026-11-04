@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1939)
+- Graphismes, 1re passe « Monopoly Go » (bloc AGENT RENDU3D avant BOOT, style `<style id="r3-ui">`) : ville posée sur un socle arrondi dont la matière change par ville, bâtiments « gonflés » (arêtes éclairées, toits à débord, reflets), interface en relief (boutons brillants, argent doré 3D), pièces et éclats dorés aux gains.
+- Plus riche à chaque ville : liseré doré dès Marseille, guirlande de nuit dès Londres, plus de reflets et de couleurs.
+- Garde-fou de fluidité : si la carte est lente (>22 ms ~3 s), reflets fins et halo s'éteignent seuls. À vérifier sur un vrai téléphone.
+- Pistes : dégradés de façades pré-dessinés, arbres plus ronds et brillants, bandeau du haut plus coloré, test 100 joueurs, adoucir la difficulté après la 1re ville (à trancher avec Nils).
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1911)
 - Blocs AGENT PROGRESSION (après FIN TUTORIEL) et AGENT MARSEILLE (après FIN AGENT VILLES). Réglages : PG_K0, PG_KR, PG_LV0, PG_LVA, PG_LVB, PG_NB, MGR_K, START_K, BIZ_GATE_K.
 - Arrivée en ville avec 1,5× la 1re boutique ; le reste va au « trésor de l'empire » (non dépensable, +1 à +5 % de revenus par ville, max +50 %). Améliorations bien remises à zéro (vérifié sur 13 franchises).
