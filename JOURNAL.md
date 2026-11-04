@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1501)
+- Bug corrigé : l'objectif bourse comptait le bénéfice net (une vente à perte le faisait reculer, et rien ne se comptait). Maintenant il additionne les bénéfices des ventes, par ville, sauvegardés dans S.counts.bourse.
+- Objectif bourse : 10 000 € à Ta ville, ×3 à chaque ville (Londres 810 k €, Rio 65,6 M €).
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1456)
 - Objectif bourse fixé à 10 000 € dans toutes les villes (demande de Nils, plus d'échelle selon les revenus).
 - À trancher avec Nils : l'objectif « Gagne X dans cette ville » (cityGoal2) reste très élevé dans les grandes villes ; une valeur fixe serait plus simple mais trop facile à Rio.
