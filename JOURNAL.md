@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04-2346 : personnages dessinés (version 2026-11-04-2346)
+- Fusion du bloc AGENT PERSOS : personnages SVG à la place des emojis (héros, famille, rencontres, gérants, journal), écran de look, passants chibi, voitures/taxis/bus arrondis. Reste : chiens, look gardé dans la lignée.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2345)
 - Courbe de difficulté refaite : 1re ville ~25 min, puis ~+27 % par ville, ~43 h pour les 14 villes (≈ 2 h/jour pendant 3 semaines), mesuré avec un joueur auto (scratchpad prog/sim2.js).
 - Réglages : cityDiff 1,58 → 1,35 ; pgK(c) remplace PG_K0/PG_KR (+ PG_KADJ par ville) ; PG_LVB 8 → 4 ; BIZ_GATE_K 5 → 2 ; commerce phare moins cher ; Rio 80 % ; adversaire de mairie plus faible au début.
@@ -13,6 +16,12 @@
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2248)
 - Personnel (recrutement pour la satisfaction des clients) : prix FIXE, lié au prix du commerce de la ville (1er niveau 0,5×, 2e 2×, 3e 6×). Il ne dépend plus des gains. Avant : jusqu'à 5 Md € en ville 1.
 - Reste : vérifier en jouant le prix des gérants et des améliorations, qui sont aussi fixes par ville.
+
+## 2026-11-04 : Claude de Nils, agent persos (non publié, fe-build inchangé)
+- Bloc AGENT PERSOS (avant BOOT) : fini les emojis de personnes. Un générateur `charSVG(desc, opt)` dessine des persos « jouets 3D » (grosse tête, sans contour, ombrage doux). Héros, couple, enfants, rencontres, gérants, lignée, événements, journal, boutique, bulle du QG.
+- Look (Vie → Moi) refait : grand aperçu, onglets Coiffure / Couleurs / Tenue / Accessoires, vignettes dessinées. Choix gardé dans `S.hero.ch` (optionnel ; sinon look tiré du prénom + ancien emoji, l'ancien `S.hero.look` est repris). Costumes de la boutique = tenues/accessoires (mêmes ids).
+- Ville : passants chibi (sprites en cache, enfants à la main, vélos, âgés), voitures/taxis/bus/camionnettes arrondis. `drawPerson` et `drawCarAt` remplacés (tram et rover lunaire inchangés).
+- À faire : garder le look perso dans la lignée à la mort, chiens plus jolis, avis de Nils sur téléphone.
 
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2133)
 - Retiré : le bloc AGENT RENDU3D (socle doré, boutons brillants…) : Nils le trouve « très IA », pire qu'avant. Retour au rendu de la version 1911.
