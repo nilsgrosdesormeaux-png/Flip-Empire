@@ -48,5 +48,5 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - La bourse doit dépendre un minimum de la ville.
 - FAIT (04b) : « Tout régler » dans Clients.
 - Commerces plus chers par ville, progression plus longue dans les villes avancées (courbe à la Clash of Clans : début facile, puis de plus en plus dur).
-- Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
+- FAIT (branche fe/vivant, à fusionner) : vie de la ville. Passants avec une journée (travail, déjeuner, courses, chien, footing, livreurs, touristes, bus), files d'attente devant tes commerces (plus longues quand ils marchent bien), bus avec arrêts, taxis, camionnettes de livraison, petits bouchons, heures de pointe. Toucher un passant (ou le bouton bonhomme sur la carte) : la caméra le suit et une fiche montre son prénom, son métier et la suite de sa journée.
 - Publier soi-même sur la branche après chaque tâche terminée et testée.

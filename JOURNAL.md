@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils, agent VIVANT (branche fe/vivant, pas encore en ligne)
+- Nouveau bloc `AGENT VIVANT` avant BOOT : passants avec une petite journée, files d'attente devant les commerces du joueur, bus (arrêts sur la 1re route verticale), taxis, camionnettes de livraison, distance entre voitures et carrefours, heures de pointe.
+- Suivre un passant : toucher un bonhomme (jamais prioritaire sur un commerce) ou le bouton bonhomme sous les boutons de zoom. Fiche en bas à gauche, « Quelqu'un d'autre », « Recentrer » après un glissement.
+- Rien de sauvegardé (aucun champ dans `S`). Remplace updateEnts, spawnLogic, spawnClient, spawnExit ; enveloppe genCity, drawPerson, drawCarAt, drawWorld, tapAt.
+- Testé : 9 villes, ×4, rechargement, mobile et ordinateur, zéro erreur JS, images/s identiques à avant. Reste : changer `fe-build` à la fusion.
+
 ## 2026-11-04 : Claude de Nils (pause demandée par Nils)
 - En ligne : version 2026-11-04b (déploiements GitHub Pages réussis). Si l'ancienne version s'affiche : ajouter `?v=123` au lien.
 - Mis en pause : immobilier/économie et nouvelles villes/ville vivante. Le travail inachevé est dans `travaux-en-cours/` (patchs + LISEZMOI.md avec où on en est). À reprendre de là, pas de zéro.
