@@ -3908,9 +3908,9 @@ SUF.push(' Sp',' Oc',' No',' Dc',' Ud',' Dd',' Td',' Qad',' Qid');
 /* Revenus ×12 par ville (comme CITY_MULT) ; prix ×12 × cityDiff : chaque ville coûte relativement plus cher.
  */
 function cityRev(c){return Math.pow(12,c||0)}
-/* Base 1,58 choisie par simulation (gérants, achats au meilleur rendement) : chaque ville prend 30 à 50 % de temps
-   de plus que la précédente, que le voyage compte 9 ou 14 villes (le niveau demandé suit c/(CITIES.length-1)). */
-function cityDiff(c){return Math.pow(1.58,c||0)}
+/* Base 1,35 (était 1,58) : avec pgK() (bloc PROGRESSION), chaque ville prend ~27 % de temps de plus que la précédente
+   (joueur simulé : Ta ville ~25 min, Mars ~9 h, ~42 h pour les 14 villes). Sert aussi à l'immobilier et à la bourse. */
+function cityDiff(c){return Math.pow(1.35,c||0)}
 function cityCost(c){return cityRev(c)*cityDiff(c)}
 /* Immobilier : portefeuille, valeur de marché, locataires, état, prêts, petits imprévus. Écran complet : vImmo(). */
 /* Prix de la ville : ouverture, niveaux, gérants, améliorations et QG coûtent cityCost(ville) ; les ventes rapportent cityRev(ville) */
@@ -7685,7 +7685,7 @@ function vvCardUpdate(){const e=VV.follow,c=VV.card;if(!e||!e.v||!c||c.hidden)re
    1. un commerce ne s'ouvre que si le précédent a atteint un niveau qui monte avec la ville ;
    2. les objectifs de conquête grandissent avec la ville ;
    3. l'immobilier coûte plus cher dans les villes avancées (rendement un peu plus bas). */
-let BIZ_GATE_K=5; /* était 8 : avec +30 niveaux par ville, Paris et après devenaient interminables (simulé) */const bizGate=c=>Math.min(150,10+BIZ_GATE_K*(c||0));
+let BIZ_GATE_K=2; /* était 8 puis 5 : le palier d'ouverture faisait exploser le temps des dernières villes (simulé) */const bizGate=c=>Math.min(150,10+BIZ_GATE_K*(c||0));
 function bizGateOk(b){const i=BIZ.indexOf(b);if(i<=0)return true;const pv=BIZ[i-1];return (S.biz[pv.id].lvl|0)>=bizGate(S.city)}
 quote=(f=>function(b){const q=f(b);if(S.biz[b.id].lvl===0&&!bizGateOk(b)){const pv=BIZ[BIZ.indexOf(b)-1];return Object.assign({},q,{ok:false,label:`D’abord ${pv.n} au niveau ${bizGate(S.city)}`})}return q})(quote);
 cityGoal2=()=>Math.max(1000,Math.round(BIZ.reduce((t,b)=>t+b.base*10/b.time,0)*600));
@@ -8090,9 +8090,14 @@ vEmpire=(f=>function(){return f().replace('<div class="foot">',()=>`<div class="
 const MGR_K=4,START_K=1.5,TRESOR_MAX=50;
 const pgR2=x=>{if(!(x>0))return 0;const p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p};
 /* Gérants : prix proportionnel à l’ouverture de la boutique */
-let PG_K0=.4,PG_KR=.2,PG_LV0=50,PG_LVA=55,PG_LVB=8,PG_NB=4;
-cityPrices=(f=>function(ci){f(ci);const k=Math.min(1,PG_K0+PG_KR*(ci||0));if(k!==1){BIZ.forEach(b=>{b.cost*=k});UPG.forEach(u=>{u.cost*=k});STAGES.forEach(x=>{x.cost*=k})}BIZ.forEach(b=>{MGR[b.id]=Math.round(b.cost*MGR_K)})})(cityPrices);
-/* Niveau demandé et prix : plus doux au début (prix ×0,4 à Ta ville, ×0,6 à Nantes, ×0,8 à Lyon, normal ensuite) */
+let PG_LV0=50,PG_LVA=55,PG_LVB=4,PG_NB=4;
+/* Prix des commerces, améliorations, locaux et gérants, ville par ville (réglé au joueur simulé, cible : ~25 min à Ta ville puis +27 % par ville).
+   Courbe lisse en c, un peu moins chère dans les villes « club » (pas de salaire de maire), et un petit réglage fin par ville
+   qui compense ses fêtes et ses objectifs propres. Au-delà de Mars, la courbe reste au niveau de Mars (cityDiff fait monter la difficulté). */
+const PG_KA=.053,PG_KB=.0922,PG_KC=.00753,PG_KCLUB=.856,PG_KADJ={3:1.12,5:.92,10:1.23,11:1.11,12:.9};
+function pgK(c){c=c||0;const x=Math.min(c,13);return PG_KA*Math.exp(PG_KB*x-PG_KC*x*x)*(c%2?PG_KCLUB:1)*(PG_KADJ[c]||1)}
+cityPrices=(f=>function(ci){f(ci);const k=pgK(ci);if(k!==1){BIZ.forEach(b=>{b.cost*=k});UPG.forEach(u=>{u.cost*=k});STAGES.forEach(x=>{x.cost*=k})}BIZ.forEach(b=>{MGR[b.id]=Math.round(b.cost*MGR_K)})})(cityPrices);
+/* Niveau demandé : 50 à Ta ville, puis 55 + 4 par ville */
 const pgLv=c=>c?Math.min(400,PG_LVA+PG_LVB*c):PG_LV0,pgNb=c=>PG_NB||Math.min(8,4+Math.floor(c/3));
 /* Objectifs propres à chaque ville (rangés par nom) */
 const PG_THEME={
@@ -8101,18 +8106,22 @@ const PG_THEME={
   'Lyon':{tag:'Lyon : la table et le vin.',g:[['lvl',0],['upg1',4]]},
   'Marseille':{tag:'Marseille : la mer, le port et le foot.',g:[['lvl',3],['props',.2]]},
   'Paris':{tag:'Paris : la mode et le luxe.',g:[['lvl',6],['upg1',3]]},
-  'Londres':{tag:'Londres : la City et la clientèle exigeante.',g:[['lvl',7],['rev5',30]]},
+  'Londres':{tag:'Londres : la City et la clientèle exigeante.',g:[['lvl',6],['rev5',30]]},
   'New York':{tag:'New York : la pierre et Wall Street.',g:[['props',.3],['lvl',5]]},
   'Tokyo':{tag:'Tokyo : la tech et le service parfait.',g:[['lvl',5],['staff',8]]},
   'Dubaï':{tag:'Dubaï : voir grand.',g:[['stage',3],['lvl',6]]},
-  'Rio de Janeiro':{tag:'Rio : le carnaval et la fête.',g:[['lvl',3],['sat',85]]},
+  'Rio de Janeiro':{tag:'Rio : le carnaval et la fête.',g:[['lvl',3],['sat',80]]},
   'Shanghai':{tag:'Shanghai : l’usine du monde.',g:[['lvl',5],['rev5',40]]},
   'Atlantide':{tag:'Atlantide : les perles et la ville sous la mer.',g:[['lvl',0],['props',.4]]},
   'La Lune':{tag:'La Lune : tout doit tourner sans toi.',g:[['lvl',6],['mgr',8]]},
   'Mars':{tag:'Mars : bâtir une colonie.',g:[['lvl',7],['staff',12]]}};
 const pgTheme=c=>PG_THEME[(CITIES[c||0]||{}).n]||{tag:'',g:[['sat',75],['props',.2]]};
 /* Niveau visé par un objectif « commerce phare » */
-function pgThemeLvl(c,i){const lv=pgLv(c),nb=pgNb(c);return i<nb?lv+(i===0?50:10):Math.max(bizGate(c)+10,Math.round(lv*.6))}
+/* Commerce phare : le 1er de la liste loin devant, ceux du haut un peu au-dessus du niveau demandé ; les gros commerces
+   visent un niveau qui coûte à peu près la moitié de l'objectif « niveaux » (avant, Londres demandait sa tour au niveau 57 : des heures de plus) */
+function pgThemeLvl(c,i){const lv=pgLv(c),nb=pgNb(c),g=bizGate(c);if(i===0)return lv+50;if(i<nb)return lv+5;
+  const ref=BIZ.map(b=>costN(b,0,lv)).sort((a,b)=>a-b)[nb-1]*.5,b=BIZ[i],L=Math.floor(Math.log(ref*(b.m-1)/b.cost+1)/Math.log(b.m));
+  return Math.max(i===BIZ.length-1?5:g+5,Math.min(Math.round(lv*.6),isFinite(L)?L:g+5))}
 function pgBase(){if(!S.cityBase||S.cityBase.c!==(S.city||0))S.cityBase={c:S.city||0,r5:S.stats.reviews5||0};return S.cityBase}
 const pgStaff=()=>BIZ.reduce((a,b)=>{const s=S.biz[b.id].staff||{};return a+(s.clean|0)+(s.wait|0)+(s.qual|0)},0);
 function pgGoal(c,d){const cn=c?CITIES[c].n:'ta ville',[k,v]=d;
@@ -8182,6 +8191,8 @@ vMarche=(f=>function(){let h=f();const g=mktGoal2(),a=Math.round(mktGains()),ok=
   h=h.replace('<div class="seg">',top+'<div class="seg">');h=h.replace('<div class="mbtns">',big+'<details class="more"><summary>Acheter ou vendre par petites quantités</summary><div class="mbtns">');
   return h.replace('<h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>','</details><h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>')})(vMarche);
 (()=>{const st=document.createElement('style');st.textContent='.pg-big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.pg-big .btn{min-height:54px;font-size:1.02rem}.pg-mk .obj-bar{margin-top:6px}';document.head.appendChild(st)})();
+/* Mairie : adversaire un peu moins fort dans les premières villes (−6 à Ta ville, −4 à Lyon, −2 à Paris) */
+decOppScore=(f=>function(d){return f(d)-Math.max(0,6-(S.city||0))})(decOppScore);
 /* ===== FIN AGENT PROGRESSION ===== */
 /* ================= BOOT ================= */
 (function boot(){
