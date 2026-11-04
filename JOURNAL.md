@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04b)
+- Fait : mise à jour automatique des joueurs (le jeu détecte une nouvelle version et se recharge seul, partie sauvegardée, jamais pendant un match en direct).
+
 ## 2026-11-04 : Claude de Nils (séance agents, version 2026-11-04a)
 - Fait : prénoms accordés au genre (listes F/M, avatars assortis, textes accordés, choix femme/homme à la création, anciennes sauvegardes complétées).
 - Fait : carte plus colorée par ville (lumière chaude, ciel, eau, arbres qui bougent) ; skins refaits et plus nombreux ; style des boutons/panneaux revu ; correctifs d'anciennes sauvegardes (bourse v8, club sans effectif, événement disparu) et divers.
