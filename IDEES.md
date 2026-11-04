@@ -53,7 +53,7 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - Publier soi-même sur la branche après chaque tâche terminée et testée.
 - FAIT (version 2026-11-04-1137) : tutoriel de départ en 4 étapes (carte « Tutoriel » + bouton Passer, à revoir dans Empire) ; au départ seuls Ville, Affaires et Empire sont visibles, puis Objectifs (3 ventes), Vie (2 boutiques), Immo + Bourse (3), Club (5), Mairie (6), avec une carte d'explication à chaque déblocage ; tout reste débloqué après la 1re franchise et pour les anciennes parties.
 
-## Demandes du 4 novembre au soir (en cours)
+## Demandes du 4 novembre au soir (faites en 2026-11-04-1911 sauf graphismes)
 Priorité de Nils : des graphismes beaucoup plus poussés (référence : Monopoly Go), plus beaux à chaque ville. À faire EN DERNIER, après le jeu. Publier souvent, s'arrêter avant 70 % de la limite d'usage.
 - Économie : arriver dans une nouvelle ville avec peu d'argent (aujourd'hui tout s'achète en 30 s à Rio/Shanghai) ; améliorations remises à zéro à chaque ville ; 1re ville plus simple, objectif « gagne X » ≈ ce qu'il faut pour maxer la ville (~50 Md en 1re ville) ; nouveaux objectifs à chaque ville ; bourse à revoir (objectif parfois trop dur, accès plus clair) ; gérants moins chers (proportionnels à la boutique) ; « Logement » en double (QG ≠ maison) ; vérifier que les revenus du club vont au bon endroit ; ticket à gratter qui gagne plus souvent ; Marseille avant Paris.
 - Perso et vie : naissance au hasard d'office ; personnaliser son perso après la création (blond, tenue, accessoires) ; couple homme-femme par défaut sauf choix ; personnages au genre de leur prénom partout.

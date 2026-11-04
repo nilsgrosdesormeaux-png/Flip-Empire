@@ -1,5 +1,12 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1911)
+- Blocs AGENT PROGRESSION (après FIN TUTORIEL) et AGENT MARSEILLE (après FIN AGENT VILLES). Réglages : PG_K0, PG_KR, PG_LV0, PG_LVA, PG_LVB, PG_NB, MGR_K, START_K, BIZ_GATE_K.
+- Arrivée en ville avec 1,5× la 1re boutique ; le reste va au « trésor de l'empire » (non dépensable, +1 à +5 % de revenus par ville, max +50 %). Améliorations bien remises à zéro (vérifié sur 13 franchises).
+- 1re ville plus douce (prix ×0,4, « Gagne X » = coût réel de conquête ≈ 19 Md €). 2 objectifs propres à chaque ville. Bourse : objectif en haut avec barre, « Acheter au max » / « Tout vendre ». Gérants = 4× l'ouverture. QG renommé « Tes locaux ». Ticket gagnant 1 fois sur 3. Marseille entre Lyon et Paris (anciennes sauvegardes décalées une fois).
+- À trancher : les villes suivantes restent longues (×1,5 à ×2 par ville ; Ta ville 2 h 30, Paris ~37 h en joueur auto). Levier principal : cityDiff 1,58 (bloc IMMO), puis PG_LVB, BIZ_GATE_K.
+- Reste : graphismes (Monopoly Go), test 100 joueurs.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1903)
 - Bloc AGENT PERSO (avant BOOT) : naissance au hasard d'office (« Naître ») ; look modifiable (teint, cheveux dont blonds/roux, tenue, accessoire) dans Vie → Moi / Empire → Compte ; « Je cherche : une femme / un homme / peu importe » (défaut : autre genre) ; gérants au genre de leur nom.
 - Mairie : pas de candidature avant le déblocage ; « Me présenter » à tout moment (partielle en 6 mois) ; carte « Faire monter la confiance » ; moitié de la campagne remboursée si élu.
