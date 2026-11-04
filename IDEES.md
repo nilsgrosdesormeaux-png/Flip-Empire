@@ -39,14 +39,14 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - Serveur : comptes, sauvegarde en ligne, vrai sondage, paiements.
 
 ## Demandes du 4 novembre (pas encore faites)
-- Au retour dans une partie : les championnats gagnés pendant l'absence tombent tous d'un coup, beaucoup trop d'argent → plafonner / étaler.
+- FAIT (04b) : retour en partie plafonné, plus de championnats en rafale.
 - Club de foot et Mairie dans des blocs (onglets) à part.
 - Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
 - Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
 - Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
-- Décisions moins fréquentes et moins répétitives (même en ×4) ; le jeu se met en pause pendant une décision ; bouton pause disponible.
+- FAIT (04b) : décisions moins fréquentes, pause pendant une décision, bouton Pause.
 - La bourse doit dépendre un minimum de la ville.
-- Avis clients : payer tous les services d'un coup.
+- FAIT (04b) : « Tout régler » dans Clients.
 - Commerces plus chers par ville, progression plus longue dans les villes avancées (courbe à la Clash of Clans : début facile, puis de plus en plus dur).
 - Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
 - Publier soi-même sur la branche après chaque tâche terminée et testée.

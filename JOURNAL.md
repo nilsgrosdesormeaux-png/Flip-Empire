@@ -1,5 +1,12 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04b)
+- Fait : décisions 2 à 4 fois moins fréquentes (écart minimum en mois et en secondes réelles, pas de répétition avant 4 ans), jeu en pause pendant une décision, bouton Pause/Reprendre dans le bandeau.
+- Fait : retour après absence plafonné (plus de saisons/championnats en rafale ; gérants + loyers seulement, max ~2 h 30 de revenus), écran de retour.
+- Fait : onglet Clients : « Tout régler » et « Embaucher partout ».
+- Code : bloc AGENT RYTHME (après FIN AGENT DECISIONS). Tests : 0 erreur JS, anciennes sauvegardes OK, fuzz OK.
+- En cours : immobilier/économie par ville, nouvelles villes + ville vivante.
+
 ## 2026-11-04 : Claude de Nils (séance agents, version 2026-11-04a)
 - Fait : prénoms accordés au genre (listes F/M, avatars assortis, textes accordés, choix femme/homme à la création, anciennes sauvegardes complétées).
 - Fait : carte plus colorée par ville (lumière chaude, ciel, eau, arbres qui bougent) ; skins refaits et plus nombreux ; style des boutons/panneaux revu ; correctifs d'anciennes sauvegardes (bourse v8, club sans effectif, événement disparu) et divers.
