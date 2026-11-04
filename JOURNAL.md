@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (pause demandée par Nils)
+- En ligne : version 2026-11-04b (déploiements GitHub Pages réussis). Si l'ancienne version s'affiche : ajouter `?v=123` au lien.
+- Mis en pause : immobilier/économie et nouvelles villes/ville vivante. Le travail inachevé est dans `travaux-en-cours/` (patchs + LISEZMOI.md avec où on en est). À reprendre de là, pas de zéro.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04b)
 - Fait : décisions 2 à 4 fois moins fréquentes (écart minimum en mois et en secondes réelles, pas de répétition avant 4 ans), jeu en pause pendant une décision, bouton Pause/Reprendre dans le bandeau.
 - Fait : retour après absence plafonné (plus de saisons/championnats en rafale ; gérants + loyers seulement, max ~2 h 30 de revenus), écran de retour.

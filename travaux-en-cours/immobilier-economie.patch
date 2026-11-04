@@ -1,0 +1,479 @@
+diff --git a/index.html b/index.html
+index 61b53e2..5465db6 100644
+--- a/index.html
++++ b/index.html
+@@ -893,7 +893,7 @@ p,.hint,.sub{overflow-wrap:break-word}
+   <div class="tabs-in">
+     <button class="tab" data-a="tab" data-t="ville"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V10l5-3v14M8 21V4l8 4v13M16 21v-9l5 2v7M2 21h20"/></svg>Ville</button>
+     <button class="tab" data-a="tab" data-t="gestion"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16l-1.5 11h-13zM8 9V7a4 4 0 0 1 8 0v2"/></svg>Affaires<span class="badge" id="b-gestion" hidden></span></button>
+-    <button class="tab" data-a="tab" data-t="marche"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 3 6-8 3 3M3 21h18"/></svg>Bourse</button>
++    <button class="tab" data-a="tab" data-t="marche"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l5-6 4 3 6-8 3 3M3 21h18"/></svg>Placements</button>
+     <button class="tab" data-a="tab" data-t="vie"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-7 8-7s7 2.5 8 7"/></svg>Vie<span class="badge" id="b-vie" hidden></span></button>
+     <button class="tab" data-a="tab" data-t="objectifs"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4M6 4h11l-2 4 2 4H6"/></svg>Objectifs<span class="badge" id="b-objectifs" hidden></span></button>
+     <button class="tab" data-a="tab" data-t="empire"><svg class="e" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10zM3 21h18"/></svg>Empire<span class="badge" id="b-empire" hidden></span></button>
+@@ -906,7 +906,7 @@ const rand=(a,b)=>a+Math.random()*(b-a);
+ const randInt=(a,b)=>Math.floor(rand(a,b+1));
+ const pick=a=>a[Math.floor(Math.random()*a.length)];
+ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+-const SUF=['','\u00a0k','\u00a0M','\u00a0Md','\u00a0T','\u00a0Qa','\u00a0Qi','\u00a0Sx'];
++const SUF=['','\u00a0k','\u00a0M','\u00a0Md','\u00a0T','\u00a0Qa','\u00a0Qi','\u00a0Sx','\u00a0Sp','\u00a0Oc','\u00a0No','\u00a0Dc','\u00a0Ud','\u00a0Dd','\u00a0Td'];
+ function fmt(n){
+   const neg=n<0;n=Math.abs(n);let out;
+   if(n<10000)out=Math.round(n).toLocaleString('fr-FR');
+@@ -999,7 +999,7 @@ function freshBiz(){const o={};BIZ.forEach(b=>o[b.id]={lvl:b.id==='sneak'?1:0,mg
+ function newGame(){return{cash:200,lifetime:0,lifetimeAll:0,day:1,dayProg:0,stage:0,rep:50,energy:80,tab:'ville',gTab:'affaires',
+   stats:{decisions:0,reviews5:0,reviews:0},mkt:null,counts:{collect:0,vip:0,actions:0,propsBought:0},biz:freshBiz(),upg:[],stars:0,city:0,trophies:[],claimed:[],
+   xp:0,streak:0,lastDaily:null,sound:true,buyMode:1,ugFilter:'all',boostUntil:0,boostReadyAt:0,frenzyUntil:0,started:false,hintSeen:false,lastSeen:Date.now(),
+-  evSeen:{},propUp:{},qTab:'obj',eTab:'mairie',vTab:'moi',hero:{name:'',av:AVATARS[0],age:20,origin:'metro',sit:'etudiant',health:100,passions:[],place:'',fam:'',born:2006,study:''},event:null,nextEv:3,flags:{},sched:[],journal:[],mods:[],debt:null,share:0,reviews:[],props:{},
++  evSeen:{},propUp:{},immo:{v:1,idx:1,tgt:1,hist:[1],loans:{},ten:{},cond:{},iss:{},log:[]},mTab:'immo',qTab:'obj',eTab:'mairie',vTab:'moi',hero:{name:'',av:AVATARS[0],age:20,origin:'metro',sit:'etudiant',health:100,passions:[],place:'',fam:'',born:2006,study:''},event:null,nextEv:3,flags:{},sched:[],journal:[],mods:[],debt:null,share:0,reviews:[],props:{},
+   partner:null,kids:[],gen:1,dynasty:[],sitBonus:1,notified:[],dead:false,speed:1,cohort:[],grandkids:0,yearsMarried:0,
+   pol:{office:null,cand:false,pop:0,prog:[],acts:{},nextElec:19,budget:0,projects:[],mood:null,poll:null,wins:0,terms:0},
+   club:{own:false,name:'',div:0,str:30,stade:0,fans:120,coach:0,acad:0,pts:0,played:0,last:null,seasons:[],acts:{}}}}
+@@ -1046,6 +1046,13 @@ function dayEvent(d){
+ }
+ 
+ /* ================= ECONOMY ================= */
++/* Progression par ville : les revenus suivent CITY_MULT (12^ville), les prix montent plus vite (12^ville × CITY_DIFF^ville).
++   Chaque ville demande donc plus de temps que la précédente, quelle que soit la longueur de la liste CITIES. */
++const CITY_DIFF=1.35;
++function cityRev(c){return Math.pow(12,c||0)}
++/* (1+0,1×ville) compense l’étoile de franchise gagnée à chaque ville (+10 % de revenus) */
++function cityDiff(c){c=c||0;return Math.pow(CITY_DIFF,c)*(1+.1*c)}
++function cityCost(c){return cityRev(c)*cityDiff(c)}
+ const openIds=()=>BIZ.filter(b=>S.biz[b.id].lvl>0).map(b=>b.id);
+ const rankIdx=()=>{let i=0;RANKS.forEach((r,k)=>{if(S.xp>=r[0])i=k});return i};
+ const globalUpg=()=>UPG.filter(u=>!u.biz&&S.upg.includes(u.id)).reduce((a,u)=>a*u.x,1);
+@@ -1078,7 +1085,8 @@ function quote(b){
+ }
+ function earn(x){S.cash+=x;S.lifetime+=x;S.lifetimeAll+=x}
+ function spend(x){S.cash-=x;if(dispCash>S.cash)dispCash=S.cash}
+-const newStars=()=>Math.max(0,Math.floor(Math.sqrt(S.lifetimeAll/1e6))-S.stars);
++/* Étoiles de franchise, ville par ville : 1 en atteignant l’objectif de gains, +1 à 5 fois l’objectif, +1 à 25 fois */
++const newStars=()=>{const g=cityGoal2(),l=S.lifetime||0;return l<g?0:1+(l>=g*5?1:0)+(l>=g*25?1:0)};
+ const floorsOf=b=>{const l=S.biz[b.id].lvl;const p=PALIERS.filter(x=>l>=x).length;return Math.min(b.maxF,(b.type==='tower'?4:1)+p*(b.type==='tower'?2:1))};
+ const actCost=(b,a)=>Math.max(20*a.cd,Math.round(baseRev(b)*permMult()/b.time*a.sec));
+ function addXP(n){
+@@ -1574,6 +1582,15 @@ function applyCityBiz(ci){
+   BIZ.forEach((b,i)=>{const d=cat?{e:cat[i][0],n:cat[i][1],noun:cat[i][2],c:cat[i][3],mgr:cat[i][4],ups:cat[i][5]}:BASE_BIZ[i];
+     b.e=d.e;b.n=d.n;b.noun=d.noun;b.c=d.c;MGR_NAMES[b.id]=d.mgr;
+     UPG.forEach(u=>{if(u.biz===b.id){u.n=d.ups[+u.id.slice(b.id.length)]}})});
++  cityPrices(ci);
++}
++/* Prix de la ville : ouverture, niveaux, gérants, améliorations et QG coûtent cityCost(ville) ; les ventes rapportent cityRev(ville) */
++const ECO0={cost:BIZ.map(b=>b.cost),base:BIZ.map(b=>b.base),mgr:Object.assign({},MGR),upg:UPG.map(u=>u.cost),stage:STAGES.map(x=>x.cost)};
++function cityPrices(ci){
++  const K=cityCost(ci),R=cityRev(ci);
++  BIZ.forEach((b,i)=>{b.cost=ECO0.cost[i]*K;b.base=ECO0.base[i]*R;MGR[b.id]=ECO0.mgr[b.id]*K});
++  UPG.forEach((u,i)=>{u.cost=ECO0.upg[i]*K});
++  STAGES.forEach((x,i)=>{x.cost=ECO0.stage[i]*K});
+ }
+ 
+ /* City-specific calendar */
+@@ -1607,7 +1624,7 @@ const MKT=[
+ const mkt=()=>MKT[Math.min(S.city,MKT.length-1)];
+ function freshMkt(){const m=MKT[Math.min(S.city||0,MKT.length-1)];return{qty:0,avg:0,cap:0,profit:0,price:m.p,target:m.p,hist:[m.p],news:[],nextNews:40,histT:0}}
+ const mktCap=()=>20*Math.pow(5,S.mkt.cap);
+-const mktCapCost=()=>Math.round(mkt().p*15*Math.pow(6,S.mkt.cap));
++const mktCapCost=()=>Math.round(assetDef(0).p*15*Math.pow(6,S.mkt.cap));
+ const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+ function mktTick(dt){
+   const M=S.mkt,m=mkt();if(!M)return;
+@@ -1817,11 +1834,11 @@ function computeNb(){
+   BIZ.forEach(b=>{const cx=b.p.x+b.p.w/2,cy=b.p.y+b.p.d/2;let n=0;owned.forEach(o=>{if(Math.max(Math.abs(o.x+o.w/2-cx),Math.abs(o.y+o.d/2-cy))<=3.5)n+=S.props[o.pid]});nbCache[b.id]=Math.min(.4,.04*n)});
+ }
+ const CITY_MULT=c=>Math.pow(12,c);
+-const propBase=o=>(o.t==='apt'?9000:900)*o.f*CITY_MULT(S.city)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
+-const propPrice=o=>Math.round(propBase(o)*Math.pow(1.1,ownedCount()));
+-const propRent=(o,l)=>propBase(o)*.035*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
++const propBase=o=>(o.t==='apt'?9000:900)*o.f*cityCost(S.city)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
++const propPrice=o=>Math.round(propBase(o)*Math.pow(1.1,ownedCount())*immoIdx());
++const propRent=(o,l)=>propBase(o)*.035/Math.sqrt(cityDiff(S.city))*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
+ const renovCost=(o,l)=>Math.round(propBase(o)*([0,1.2,3][l]||3));
+-const dailyRent=()=>propsList().reduce((a,o)=>a+(S.props[o.pid]?propRent(o,S.props[o.pid]):0),0);
++const dailyRent=()=>propsList().reduce((a,o)=>a+(S.props[o.pid]?immoRentNow(o):0),0);
+ const propName=o=>TH_.dome?(o.t==='apt'?'Module d’habitation':'Dôme résidentiel'):o.t==='apt'?`Immeuble de ${o.f} étages`:o.f>1?`Maison de ${o.f} étages`:'Petite maison';
+ const nearBiz=o=>BIZ.filter(b=>S.biz[b.id].lvl&&Math.max(Math.abs(o.x+o.w/2-(b.p.x+b.p.w/2)),Math.abs(o.y+o.d/2-(b.p.y+b.p.d/2)))<=3.5);
+ 
+@@ -2805,7 +2822,7 @@ function renderSheet(){
+       ${st.mgr?`<p class="hint">${MGR_NAMES[b.id]} encaisse pour toi.</p>`:`<div class="bs-row"><button class="btn go" data-a="run" data-id="${b.id}" id="sh-run">Encaisser</button><button class="btn ghost" id="sh-mgr" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>Engager ${MGR_NAMES[b.id].split(',')[0]} pour ${fmt(MGR[b.id])}</button></div>`}</div>
+     <div class="bs-sec"><h3>Clients</h3>${bizQualityHTML(b)}${last?`<p class="review-mini">${'★'.repeat(last.stars)}${'☆'.repeat(5-last.stars)} « ${last.text} » <span class="hint">${last.who}</span></p>`:''}</div>
+     <div class="bs-sec"><div class="ug-h"><h3>Agrandir</h3>${modesHTML()}</div>
+-      <button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>${np?`<p class="hint" style="margin-top:6px">Niveau ${np} : revenus ×2 et un étage de plus.</p>`:''}</div>
++      <button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>${typeof bizMaxBtn==='function'?`<div style="margin-top:8px">${bizMaxBtn(b)}</div>`:''}${np?`<p class="hint" style="margin-top:6px">Niveau ${np} : revenus ×2 et un étage de plus.</p>`:''}</div>
+     <div class="bs-sec"><h3>Améliorations</h3><ul class="ug">${ups.map(u=>`<li><div><strong>${u.n}</strong><span class="hint">Revenus ×${u.x}, qualité +20</span></div>${S.upg.includes(u.id)?'<span class="done">✓ Achetée</span>':`<button class="btn small go" data-a="upg" data-id="${u.id}" data-cost="${u.cost}" ${S.cash>=u.cost?'':'disabled'}>${fmt(u.cost)}</button>`}</li>`).join('')}</ul></div>`;
+ }
+ function liveSheet(){
+@@ -2840,8 +2857,8 @@ function vAffaires(){
+       <div class="minibar"><i id="g-bar-${b.id}"></i></div><p class="hint">${tierOf(st.lvl)}, niveau ${st.lvl}${st.mgr?', avec gérant':''}. Clients <b style="color:${s<35?'var(--loss)':s<60?'#B8860B':'var(--money)'}">${Math.round(s)} %</b>${modMult(b.id)!==1?`, effets en cours ×${fmtM(modMult(b.id))}`:''}</p>
+       <div class="bs-row" style="margin-top:6px">${st.mgr?'':`<button class="btn small" data-a="run" data-id="${b.id}">Encaisser</button>`}<button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${q.ok?'':'disabled'}>${q.label}</button>
+       ${st.mgr?'':`<button class="btn small ghost" id="g-mgr-${b.id}" data-a="mgr" data-id="${b.id}" ${S.cash>=MGR[b.id]?'':'disabled'}>Gérant ${fmt(MGR[b.id])}</button>`}
+-      <button class="btn small ghost" data-a="locate" data-id="${b.id}">Carte</button></div></div></div>`}).join('');
+-  return `<div class="sec-head"><h2>Tes boutiques</h2>${modesHTML()}</div><div class="panel">${rows}</div>`;
++      ${bizMaxBtn(b)}<button class="btn small ghost" data-a="locate" data-id="${b.id}">Carte</button></div></div></div>`}).join('');
++  return `${shopQuickHTML()}<div class="sec-head"><h2>Tes boutiques</h2>${modesHTML()}</div><div class="panel">${rows}</div>`;
+ }
+ function vAvis(){
+   const o=openIds(),s=avgSat();
+@@ -2864,7 +2881,9 @@ function vUpg(){
+   const filt=u=>S.ugFilter==='all'||(!S.upg.includes(u.id)&&S.cash>=u.cost);
+   const ug=groups.map(g=>{const list=g.ups.filter(filt);if(!list.length)return '';const m=g.b?bizUpg(g.b.id):globalUpg();
+     return `<div class="panel"><div class="ug-h"><h3>${g.b?g.b.e+' '+g.b.n:'🌟 Toute ton entreprise'}</h3><span class="tag">×${m}</span></div><ul class="ug">${list.map(u=>`<li><div><strong>${u.n}</strong><span class="hint">${u.biz?'Revenus':'Toutes tes affaires'} ×${u.x}${u.biz&&!S.biz[u.biz].lvl?', affaire pas encore ouverte':''}</span></div>${S.upg.includes(u.id)?'<span class="done">✓ Achetée</span>':`<button class="btn small go" data-a="upg" data-id="${u.id}" data-cost="${u.cost}" ${S.cash>=u.cost&&(!u.biz||S.biz[u.biz].lvl)?'':'disabled'}>${fmt(u.cost)}</button>`}</li>`).join('')}</ul></div>`}).join('');
++  const ua=shopPlan(null,['upg']);
+   return `<div class="sec-head"><h2>Toutes les améliorations</h2><p>${S.upg.length}/${UPG.length}</p></div>
++    ${ua.n?`<button class="btn go" style="width:100%;margin-top:10px" data-a="upgall" data-cost="${ua.tot}">Tout acheter : ${ua.n} amélioration${ua.n>1?'s':''}, ${fmt(ua.tot)}</button>`:''}
+     <div class="seg" role="group"><button class="${S.ugFilter==='all'?'on':''}" data-a="ugf" data-f="all">Toutes</button><button class="${S.ugFilter==='buy'?'on':''}" data-a="ugf" data-f="buy">Achetables maintenant</button></div>
+     ${ug||'<div class="empty">Rien d’achetable pour l’instant. Encaisse encore un peu !</div>'}`;
+ }
+@@ -2932,7 +2951,7 @@ function vQuetes(){
+ /* Objectifs : un objectif principal, deux à côté, la conquête vers la ville suivante, puis la collection */
+ function vObjectifs(){
+   const rd=readyMissions(),tot=rd.reduce((t,m)=>t+missionReward(m),0),open=MISSIONS.filter(m=>!S.claimed.includes(m.id)),main=open.find(m=>!m.c()),side=open.filter(m=>m!==main&&!m.c()).slice(0,2);
+-  const ns=newStars(),c=S.city,last=c>=CITIES.length-1,nc=CITIES[Math.min(c+1,CITIES.length-1)],cd=conqDone(),need=Math.pow(S.stars+1,2)*1e6,ri=rankIdx(),nr=RANKS[ri+1];
++  const ns=newStars(),c=S.city,last=c>=CITIES.length-1,nc=CITIES[Math.min(c+1,CITIES.length-1)],cd=conqDone(),need=cityGoal2(),ri=rankIdx(),nr=RANKS[ri+1];
+   const ready=cd>=7&&ns>=1&&!last;
+   let h='';
+   if(rd.length)h+=`<div class="claimbar"><div><b>${rd.length>1?rd.length+' récompenses':'1 récompense'} à récupérer</b><span>${rd.map(m=>mt(m)).join(', ')}</span></div><button class="btn big claim" data-a="claimall">Récupérer +${fmt(tot)}</button></div>`;
+@@ -2944,7 +2963,7 @@ function vObjectifs(){
+   h+=`<div class="sec-head"><h2>${last?'Conquête de '+CITIES[c].n:'Cap sur '+nc.n}</h2><p>${cd}/7</p></div>
+   <div class="panel conq"><div class="conq-meter">${[0,1,2,3,4,5,6].map(i=>`<i class="${i<cd?'on':''}"></i>`).join('')}</div>
+     <ul class="conq-list">${conqGoals().map(g=>{const [a,b]=g.p(),ok=a>=b;return `<li class="${ok?'ok':''}"><span class="ck" aria-hidden="true"></span><span>${g.t}${ok?'':`<span class="hint">${progTxt(a,b)}</span>`}</span></li>`}).join('')}
+-    ${last?'':`<li class="${ns>=1?'ok':''}"><span class="ck" aria-hidden="true"></span><span>Une étoile de franchise : ${fmt(need)} gagnés au total${ns>=1?'':`<span class="hint">${progTxt(S.lifetimeAll,need)}</span>`}</span></li>`}</ul>
++    ${last?'':`<li class="${ns>=1?'ok':''}"><span class="ck" aria-hidden="true"></span><span>Étoiles de franchise : 1 en gagnant ${fmt(need)} ici, +1 à ${fmt(need*5)}, +1 à ${fmt(need*25)}${ns>=1?`<span class="hint">${ns} étoile${ns>1?'s':''} en poche</span>`:`<span class="hint">${progTxt(S.lifetime,need)}</span>`}</span></li>`}</ul>
+     ${ready?`<button class="btn big go" style="margin-top:12px" data-a="franchise">Partir pour ${nc.n} (+${ns} étoile${ns>1?'s':''})</button><p class="hint" style="margin-top:6px">Tu repars de zéro dans la nouvelle ville. Famille, trophées et étoiles te suivent.</p>`:`<p class="hint" style="margin-top:8px">${last?'Dernière étape du voyage.':`Les 7 étapes et l’étoile cochées, tu pourras ouvrir une franchise à ${nc.n}.`} Chaque étoile ajoute 10 % à tous tes revenus.</p>`}</div>
+   <div class="route">${CITIES.map((x,i)=>`<div class="city ${i<c?'done':i===c?'cur':'lock'}" role="button" tabindex="0" aria-label="Aperçu : ${x.n}"><div class="pin">${i>c?'':x.e}</div><div><h3>${x.n}</h3></div></div>`).join('')}</div>
+   <button class="btn ghost small gfx-open" data-a="gfx_gallery">Voir les villes à venir</button>
+@@ -3202,10 +3221,11 @@ function bizQualityHTML(b){
+ }
+ 
+ /* ---------- Easier conquest ---------- */
+-const mktGoal2=()=>Math.round(mkt().p*60*(1+S.city));
+-const cityGoal2=()=>3e7*Math.pow(10,S.city);
++const mktGoal2=()=>Math.round(assetDef(0).p*40*(1+S.city));
++const cityGoal2=()=>CITY_GOAL0*cityCost(S.city);
++const CITY_GOAL0=1e12;
+ function conqGoals(){
+-  const c=S.city,cn=c?CITIES[c].n:'ta ville',lv=75+c*15;
++  const c=S.city,cn=c?CITIES[c].n:'ta ville',lv=Math.min(100,75+c*5);
+   return [
+     {t:`Ouvre les 8 affaires de ${cn}`,p:()=>[openIds().length,8]},
+     {t:`Fais grandir 4 affaires jusqu’au niveau ${lv}`,p:()=>[BIZ.filter(b=>S.biz[b.id].lvl>=lv).length,4]},
+@@ -3228,7 +3248,7 @@ function computeNb(){
+   BIZ.forEach(b=>{const cx=b.p.x+b.p.w/2,cy=b.p.y+b.p.d/2;let n=0;owned.forEach(o=>{if(Math.max(Math.abs(o.x+o.w/2-cx),Math.abs(o.y+o.d/2-cy))<=3.5)n+=Math.min(S.props[o.pid],4)});
+     let bonus=Math.min(.4,.04*n);done.forEach(id=>{if(bl[id].some(o=>Math.max(Math.abs(o.x+o.w/2-cx),Math.abs(o.y+o.d/2-cy))<=4))bonus+=.1});nbCache[b.id]=bonus});
+ }
+-function blockCost(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);let n=ownedCount(),t=0;l.forEach(o=>{t+=propBase(o)*Math.pow(1.1,n);n++});return Math.round(t*.9)}
++function blockCost(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);let n=ownedCount(),t=0;l.forEach(o=>{t+=propBase(o)*Math.pow(1.1,n)*immoIdx();n++});return Math.round(t*.9)}
+ function buyBlock(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);if(!l.length)return;const c=blockCost(id);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
+   spend(c);l.forEach(o=>{S.props[o.pid]=1;S.counts.propsBought++});computeNb();addXP(10*l.length);sfx('rank');checkTrophies();
+   toast(`🏘️ Îlot ${id} entièrement à toi : loyers ×1,5 et boutiques voisines +10 % !`)}
+@@ -3249,8 +3269,30 @@ function vPatrimoine(){
+ /* ---------- Market: three assets, take-profit and stop-loss ---------- */
+ const COIN={e:'🪙',n:'FlipCoin',u:'jeton',p:50,vol:.08,mul:200,news:[['Un milliardaire tweete son amour pour FlipCoin','Une grande banque accepte enfin FlipCoin'],['Une plateforme d’échange se fait pirater','Le gouvernement veut encadrer les cryptos']]};
+ const INDEXA={e:'🏙️',n:'Indice de la ville',u:'part',p:1000,vol:.012,mul:20,news:[['L’économie locale tourne à plein régime','Le chômage recule en ville'],['Une récession est annoncée','Un gros employeur ferme son usine']]};
+-const assetDef=i=>i===0?Object.assign({mul:1},mkt()):i===1?COIN:INDEXA;
+-function freshMkt(){const a=[0,1,2].map(i=>{const d=assetDef(i);return{qty:0,avg:0,price:d.p,target:d.p,hist:[d.p],tp:0,sl:0}});return{a,sel:0,cap:0,profit:0,news:[],nextNews:35,histT:0}}
++/* Bourse locale : quatre valeurs par ville. Prix, volatilité et nom suivent la ville (cityCost) ; FlipCoin reste la même crypto partout. */
++const STOCKS=[['🧰','Quincaillerie Morel'],['🚢','Chantiers de l’Estuaire'],['💊','Laboratoires Rhône-Alpes'],['👜','Maison Vendôme'],['🏦','Thames & Co'],['🍎','Hudson Tech'],['🤖','Shibuya Robotics'],['🛢️','Gulf Energy'],['🚀','Selene Mining']];
++const MKT_V=2;
++const cityName=c=>c&&CITIES[c]?CITIES[c].n:'ta ville';
++function assetDef(i,c){
++  c=c==null?(S.city||0):c;const K=cityCost(c),v=1+.06*c,cn=cityName(c);
++  if(i===0){const m=MKT[Math.min(c,MKT.length-1)];return Object.assign({},m,{mul:1,p:Math.round(180*K),vol:m.vol*v,hint:'Ce que tout le monde s’arrache ici'})}
++  if(i===1)return Object.assign({},COIN,{p:50*K,hint:'Crypto nerveuse : ça monte vite, ça tombe plus vite'});
++  if(i===2)return Object.assign({},INDEXA,{n:c?'Indice '+cn:'Indice local',p:1000*K,vol:INDEXA.vol*v,hint:'Suit l’économie de '+cn+', donc un peu tes affaires'});
++  const st=STOCKS[c]||['🏢','Holding '+cn];
++  return{e:st[0],n:st[1],u:'action',p:300*K,vol:.03*v,mul:10,hint:'Le grand groupe de '+cn+' : solide, sauf les jours de scandale',
++    news:[[st[1]+' décroche un contrat géant','Bénéfices record chez '+st[1]],['Le patron de '+st[1]+' démissionne',st[1]+' rate ses objectifs']]};
++}
++/* Ancienne bourse (3 valeurs, anciens prix) : remise à l’échelle de la ville, sans perte ni gain */
++function mktMigrate(M){
++  if(!M||!Array.isArray(M.a))return;
++  if(M.v!==MKT_V){const c=S.city||0,old=[MKT[Math.min(c,MKT.length-1)].p,50,1000];
++    M.a.forEach((A,i)=>{if(i>2)return;const f=assetDef(i).p/old[i];if(!isFinite(f)||f<=0)return;['price','target','avg'].forEach(k=>{A[k]=(+A[k]||0)*f});A.hist=(A.hist||[]).map(x=>x*f);if(!A.price){A.price=A.target=assetDef(i).p}});
++    M.v=MKT_V}
++  while(M.a.length<4){const d=assetDef(M.a.length);M.a.push({qty:0,avg:0,price:d.p,target:d.p,hist:[d.p],tp:0,sl:0})}
++  M.a.forEach(A=>{if(!isFinite(A.price)||A.price<=0)A.price=A.target=1;if(!Array.isArray(A.hist)||!A.hist.length)A.hist=[A.price];if(!isFinite(A.qty)||A.qty<0)A.qty=0});
++  if(!(M.sel>=0&&M.sel<M.a.length))M.sel=0;
++}
++function freshMkt(){const a=[0,1,2,3].map(i=>{const d=assetDef(i);return{qty:0,avg:0,price:d.p,target:d.p,hist:[d.p],tp:0,sl:0}});return{a,sel:0,cap:0,profit:0,news:[],nextNews:35,histT:0,v:MKT_V}}
+ const assetCap=i=>20*Math.pow(5,S.mkt.cap)*assetDef(i).mul;
+ function mktTick(dt){
+   const M=S.mkt;if(!M||!M.a)return;
+@@ -3259,7 +3301,7 @@ function mktTick(dt){
+       else if(A.sl&&r<=-A.sl/100){const s=M.sel;M.sel=i;mktSell('max');M.sel=s;toast(`🛑 Stop-loss : ${d.e} ${d.n} vendu à ${Math.round(r*100)} %.`)}}});
+   M.histT+=dt;if(M.histT>=1){M.histT=0;M.a.forEach(A=>{A.hist.push(A.price);if(A.hist.length>150)A.hist.shift()})}
+   M.nextNews-=dt;
+-  if(M.nextNews<=0){M.nextNews=rand(35,80);const i=randInt(0,2),d=assetDef(i),A=M.a[i];
++  if(M.nextNews<=0){M.nextNews=rand(35,80);const i=randInt(0,M.a.length-1),d=assetDef(i),A=M.a[i];
+     let up=Math.random()<.5;if(i===2)up=Math.random()<.45+(avgSat()-60)/200+conqDone()*.03;
+     const txt=pick(d.news[up?0:1]);A.target=clamp(A.target*(up?rand(1.25,1.8):rand(.5,.8)),d.p*.25,d.p*6);
+     if(i!==2&&Math.random()<.25)A.target=d.p*Math.exp(gauss()*.2);
+@@ -3274,7 +3316,7 @@ function mktBuy(n){
+ }
+ function mktSell(n){
+   const M=S.mkt,A=M.a[M.sel],p=A.price*.99;n=n==='max'?A.qty:Math.min(n,A.qty);if(n<=0){sfx('no');return}
+-  const gain=(p-A.avg)*n;earn(n*p);A.qty-=n;M.profit+=gain;if(!A.qty)A.avg=0;sfx(gain>=0?'sale':'bad');
++  const gain=(p-A.avg)*n;S.cash+=n*p;if(gain>0){S.lifetime+=gain;S.lifetimeAll+=gain}A.qty-=n;M.profit+=gain;if(!A.qty)A.avg=0;sfx(gain>=0?'sale':'bad');
+   if(S.tab==='marche')burstAt(innerWidth/2,innerHeight*.4,gain>0?8:0,(gain>=0?'+':'')+fmt(gain));
+ }
+ function mktUpCap(){const c=mktCapCost();if(S.cash<c){sfx('no');return}spend(c);S.mkt.cap++;sfx('rank');toast('📦 Portefeuille agrandi : tu peux détenir 5 fois plus de chaque actif.')}
+@@ -3289,9 +3331,9 @@ function chartSVG(){
+ function vMarche(){
+   const M=S.mkt,i=M.sel,A=M.a[i],d=assetDef(i),h=A.hist,ch=h.length>1?(A.price/h[0]-1)*100:0,pl=A.qty?(A.price*.99-A.avg)*A.qty:0;
+   const tot=M.a.reduce((s,x,k)=>s+x.qty*x.price,0);
+-  return `<div class="sec-head"><h2>Bourse</h2><p>Portefeuille ${fmt(tot)}<br>Encaissé ${(M.profit>=0?'+':'')+fmt(M.profit)}</p></div>
++  return `${typeof placeSeg==='function'?placeSeg():''}<div class="sec-head"><h2>Bourse de ${cityName(S.city)}</h2><p>Portefeuille ${fmt(tot)}<br>Encaissé ${(M.profit>=0?'+':'')+fmt(M.profit)}</p></div>
+   <div class="seg">${M.a.map((x,k)=>{const dd=assetDef(k),c=x.hist.length>1?(x.price/x.hist[0]-1)*100:0;return `<button class="${k===i?'on':''}" data-a="msel" data-i="${k}">${dd.e} ${dd.n}<br><span class="${c>=0?'pos':'neg'}" style="font-size:.75rem">${c>=0?'▲':'▼'}${Math.abs(c).toFixed(1)} %</span></button>`}).join('')}</div>
+-  <div class="panel"><div class="mhead"><span class="mic">${d.e}</span><div><h3>${d.n}</h3><p class="hint">${i===0?'Ce que tout le monde s’arrache ici':i===1?'Crypto nerveuse : ça monte vite, ça tombe plus vite':'Suit l’économie locale, donc un peu tes affaires'}</p></div><div class="mprice"><b id="m-price">${fmt(A.price)}</b><span id="m-ch" class="${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'} ${Math.abs(ch).toFixed(1)} %</span></div></div>
++  <div class="panel"><div class="mhead"><span class="mic">${d.e}</span><div><h3>${d.n}</h3><p class="hint">${d.hint||''}</p></div><div class="mprice"><b id="m-price">${fmt(A.price)}</b><span id="m-ch" class="${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'} ${Math.abs(ch).toFixed(1)} %</span></div></div>
+     <div id="m-chart">${chartSVG()}</div>
+     <div class="kv" style="margin-top:8px"><span>Détenu</span><b>${A.qty.toLocaleString('fr-FR')} / ${assetCap(i).toLocaleString('fr-FR')} ${d.u}s</b></div>
+     <div class="kv"><span>Prix moyen d’achat</span><b>${A.qty?fmt(A.avg):'—'}</b></div>
+@@ -3900,6 +3942,238 @@ function rebuild(pid){const o=DECOR.find(x=>x.pid===pid);if(!o||S.props[pid]!==3
+   spend(c);S.props[pid]=4;S.propUp[pid]=o.t==='apt'?4:3;computeNb();sfx('rank');addXP(15);
+   const [X,Y]=worldToPage(o.x+o.w/2,o.y+o.d/2,(o.f+S.propUp[pid])*FH);burstAt(X,Y,6,'🏗️ Nouvelle résidence !');toast(`🏗️ Résidence de standing : loyer ${fmt(propRent(o,4))} par mois, 24 fois le loyer de départ.`)}
+ /* ===== FIN AGENT ECO ===== */
++/* ===== AGENT IMMO ===== */
++/* Immobilier : portefeuille, valeur de marché, locataires, état, prêts, petits imprévus.
++   Achat rapide : tout acheter, tout rénover, une boutique au max. Onglet Placements = Immobilier | Bourse. */
++const IM_VAL=[0,1,2.1,4.8,12],IM_RATE=.005,IM_MONTHS=60,IM_APPORT=.3;
++const IM_TEN=['les Martin','M. Diallo','Mme Petit','un couple de profs','deux étudiantes','la famille Nguyen','M. et Mme Roux','une infirmière de nuit','un jeune couple','Mme Haddad','un retraité discret','la famille Moreau','un chef cuisinier','une coloc de trois','M. Lefèvre','la famille Benali','un pilote de ligne','Mme Garnier et son chat'];
++const IM_ISS={fuite:{n:'Dégât des eaux',k:.12},chaud:{n:'Chaudière en panne',k:.08},toit:{n:'Toiture à refaire',k:.2},facade:{n:'Ravalement de façade',k:.15}};
++const imPct=y=>(Math.round(y*10)/10).toLocaleString('fr-FR',{minimumFractionDigits:1,maximumFractionDigits:1});
++function immoS(){let I=S.immo;if(!I||typeof I!=='object'||Array.isArray(I))I=S.immo={};
++  if(!isFinite(I.idx)||I.idx<=0)I.idx=1;if(!isFinite(I.tgt)||I.tgt<=0)I.tgt=1;if(!Array.isArray(I.hist)||!I.hist.length)I.hist=[I.idx];
++  ['loans','ten','cond','iss'].forEach(k=>{if(!I[k]||typeof I[k]!=='object'||Array.isArray(I[k]))I[k]={}});if(!Array.isArray(I.log))I.log=[];return I}
++function immoIdx(){const I=S&&S.immo;return I&&isFinite(I.idx)&&I.idx>0?I.idx:1}
++function immoSync(){const I=immoS(),own=S.props||{};
++  Object.keys(own).forEach(pid=>{if(!isFinite(I.cond[pid]))I.cond[pid]=90;if(!I.ten[pid]||typeof I.ten[pid]!=='object')I.ten[pid]={n:pick(IM_TEN),since:S.day};if(I.iss[pid]&&!IM_ISS[I.iss[pid]])delete I.iss[pid]});
++  ['loans','ten','cond','iss'].forEach(k=>Object.keys(I[k]).forEach(pid=>{if(!own[pid])delete I[k][pid]}));
++  Object.keys(I.loans).forEach(pid=>{const L=I.loans[pid];if(!L||!isFinite(L.left)||!isFinite(L.pay)||L.left<=0)delete I.loans[pid]});
++  return I}
++const imCond=pid=>{const c=S.immo&&S.immo.cond?S.immo.cond[pid]:null;return c==null||!isFinite(c)?90:c};
++const imVac=pid=>{const t=S.immo&&S.immo.ten&&S.immo.ten[pid];return !!(t&&t.vac)};
++function immoRentNow(o){const l=S.props[o.pid];if(!l||imVac(o.pid))return 0;const I=S.immo||{};return propRent(o,l)*(.7+.3*imCond(o.pid)/100)*(I.iss&&I.iss[o.pid]?.5:1)}
++function immoValue(o){const l=S.props[o.pid]||1;return propBase(o)*IM_VAL[Math.min(4,l)]*immoIdx()*(.75+.25*imCond(o.pid)/100)}
++function immoLoanLeft(pid){const L=S.immo&&S.immo.loans&&S.immo.loans[pid];return L?Math.max(0,+L.left||0):0}
++const immoDebt=()=>{const I=S.immo;return I&&I.loans?Object.values(I.loans).reduce((a,L)=>a+Math.max(0,+L.left||0),0):0};
++const immoPays=()=>{const I=S.immo;return I&&I.loans?Object.values(I.loans).reduce((a,L)=>a+(+L.pay||0),0):0};
++const immoSaleNet=o=>Math.round(immoValue(o)*.95)-Math.round(immoLoanLeft(o.pid));
++const immoFixCost=o=>Math.max(1,Math.round(propBase(o)*IM_VAL[Math.min(4,S.props[o.pid]||1)]*(100-imCond(o.pid))/100*.1));
++const immoRepCost=o=>{const k=S.immo.iss[o.pid];return Math.round(propBase(o)*IM_VAL[Math.min(4,S.props[o.pid]||1)]*(IM_ISS[k]?IM_ISS[k].k:.1))};
++const immoAgencyCost=o=>Math.max(1,Math.round(propRent(o,S.props[o.pid]||1)));
++const immoName=o=>propName(o).toLowerCase();
++function immoLog(t,bad){const I=immoS();I.log.unshift({d:S.day,t,bad:bad?1:0});if(I.log.length>12)I.log.length=12;if(bad&&S.started)toast(t)}
++const imOf=pid=>DECOR.find(x=>x.pid===pid);
++/* Prêt : 30 % d’apport, 5 ans à 0,5 % par mois ; la banque refuse si les mensualités dépassent 40 % des revenus du mois */
++function immoLoanTerms(o){const P=propPrice(o),ap=Math.ceil(P*IM_APPORT),B=P-ap,r=IM_RATE,pay=B*r/(1-Math.pow(1+r,-IM_MONTHS)),room=(inc()*DAY_SEC+dailyRent())*.4-immoPays();
++  const why=S.cash<ap?`Il faut ${fmt(ap)} d’apport`:pay>room?'La banque refuse : mensualités trop lourdes pour tes revenus':'';return{P,ap,B,pay,ok:!why,why}}
++function immoBuyLoan(pid){const o=imOf(pid);if(!o||S.props[pid])return;const t=immoLoanTerms(o);
++  if(!t.ok){toast(t.why+'.');sfx('no');return}
++  spend(t.ap);S.props[pid]=1;S.counts.propsBought++;addXP(10);sfx('buy');computeNb();const I=immoSync();I.loans[pid]={left:t.B,pay:t.pay,start:S.day};
++  immoLog(`Achat à crédit : ${immoName(o)}, ${fmt(t.ap)} d’apport puis ${fmt(t.pay)} par mois.`);toast(`🔑 Achat à crédit. Mensualité : ${fmt(t.pay)}.`);checkTrophies()}
++function immoRepay(pid){const I=immoS(),L=I.loans[pid];if(!L)return;const c=Math.ceil(L.left);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
++  spend(c);delete I.loans[pid];sfx('good');immoLog(`Prêt soldé en avance : ${fmt(c)}.`);toast('🏦 Prêt soldé. Le bien est entièrement à toi.')}
++/* Revente au prix du marché, 5 % de frais ; le prêt est soldé sur le prix. Ce n’est pas un gain : ça ne compte pas dans les objectifs. */
++function sellProp(pid){const o=imOf(pid),l=S.props[pid];if(!o||!l)return;const I=immoS(),v=Math.round(immoValue(o)*.95),left=Math.round(immoLoanLeft(pid)),net=v-left;
++  if(net<0&&S.cash<-net){toast(`La vente ne couvre pas le prêt : il manque ${fmt(-net)}.`);sfx('no');return}
++  delete S.props[pid];if(S.propUp)delete S.propUp[pid];['loans','ten','cond','iss'].forEach(k=>delete I[k][pid]);G.bucket=-1;
++  if(net>=0)S.cash+=net;else spend(-net);computeNb();sfx('sale');
++  immoLog(`Vente : ${immoName(o)} pour ${fmt(v)}${left?`, prêt soldé (${fmt(left)})`:''}.`);toast(`Vendu ${fmt(v)}${left?`, ${fmt(net)} après le prêt`:''}.`)}
++function immoFix(pid){const o=imOf(pid);if(!o||!S.props[pid])return;const c=immoFixCost(o);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
++  spend(c);immoS().cond[pid]=100;sfx('good');toast('🧰 Entretien fait : comme neuf.')}
++function immoRepair(pid){const o=imOf(pid),I=immoS();if(!o||!I.iss[pid])return;const c=immoRepCost(o);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
++  const n=IM_ISS[I.iss[pid]].n;spend(c);delete I.iss[pid];I.cond[pid]=clamp(imCond(pid)+10,0,100);sfx('good');immoLog(`${n} réparé${/Chaudière|Toiture/.test(n)?'e':''} : ${immoName(o)}.`);toast('🔧 Réparé. Le loyer revient à la normale.')}
++function immoAgency(pid){const o=imOf(pid),I=immoS();if(!o||!imVac(pid))return;const c=immoAgencyCost(o);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}
++  spend(c);I.ten[pid]={n:pick(IM_TEN),since:S.day};sfx('good');immoLog(`Nouveaux locataires par l’agence : ${I.ten[pid].n}.`);toast(`🔑 Loué à ${I.ten[pid].n}.`)}
++renovProp=(f=>function(pid){const l=S.props[pid];f(pid);if(S.props[pid]>l)immoS().cond[pid]=100})(renovProp);
++rebuild=(f=>function(pid){const l=S.props[pid];f(pid);if(S.props[pid]>l)immoS().cond[pid]=100})(rebuild);
++
++/* Chaque mois : marché, usure, locataires, imprévus, mensualités (tout est réglé sur le temps réel, comme les loyers) */
++function immoMonth(){
++  if(S.dead)return;const I=immoSync(),pm=1/(S.speed||1),c=S.city||0;
++  if(Math.random()<.05*pm){const up=Math.random()<.55;I.tgt=clamp(I.tgt*(up?rand(1.06,1.15):rand(.87,.95)),.7,1.9);immoLog(up?`Le marché de ${cityName(c)} s’emballe : les prix grimpent.`:`Le marché de ${cityName(c)} se tasse : les acheteurs hésitent.`)}
++  I.tgt=clamp(I.tgt*(1+.002*pm),.7,1.9);
++  let lp=Math.log(I.idx);lp+=.08*(Math.log(I.tgt)-lp)*pm+(.012+.003*c)*gauss()*Math.sqrt(pm);I.idx=clamp(Math.exp(lp),.6,2.2);
++  I.hist.push(Math.round(I.idx*1000)/1000);if(I.hist.length>36)I.hist.shift();
++  const own=propsList().filter(o=>S.props[o.pid]);
++  own.forEach(o=>{const pid=o.pid,l=S.props[pid],t=I.ten[pid];
++    I.cond[pid]=clamp(imCond(pid)-((l>=4?.6:1.2)+(I.iss[pid]?2:0))*pm,0,100);
++    if(t.vac){if(Math.random()<(.3+imCond(pid)/300)*pm){I.ten[pid]={n:pick(IM_TEN),since:S.day};immoLog(`Nouveaux locataires : ${I.ten[pid].n} (${immoName(o)}).`)}}
++    else if(Math.random()<(.012+(imCond(pid)<50?.05:0)+(I.iss[pid]?.04:0))*pm){I.ten[pid]={vac:true,since:S.day};immoLog(`Fin de bail pour ${t.n} : ${immoName(o)} à relouer.`)}});
++  if(own.length&&Math.random()<Math.min(.3,.04*own.length)*pm){const o=pick(own),pid=o.pid,r=Math.random();
++    if(r<.45&&!I.iss[pid]){const k=pick(Object.keys(IM_ISS));I.iss[pid]=k;immoLog(`${IM_ISS[k].n} (${immoName(o)}) : loyer divisé par deux tant que ce n’est pas réparé.`,1)}
++    else if(r<.6&&!I.ten[pid].vac){const n=I.ten[pid].n;I.ten[pid]={vac:true,since:S.day};I.cond[pid]=clamp(imCond(pid)-10,0,100);immoLog(`Impayés : le bail de ${n} est rompu, ${immoName(o)} à relouer.`,1)}
++    else if(r<.75){I.cond[pid]=clamp(imCond(pid)+15,0,100);immoLog(`Tes locataires repeignent à leurs frais (${immoName(o)}) : état +15.`)}
++    else if(r<.88){I.tgt=clamp(I.tgt*1.06,.7,1.9);immoLog(`Un nouveau tram dessert ton quartier : les prix montent.`)}
++    else{I.tgt=clamp(I.tgt*.94,.7,1.9);immoLog(`Un projet de rocade fait peur aux acheteurs : les prix baissent.`)}}
++  Object.keys(I.loans).forEach(pid=>{const L=I.loans[pid],o=imOf(pid);if(!o||!S.props[pid]){delete I.loans[pid];return}
++    const int=L.left*IM_RATE*pm,due=Math.min(L.left+int,L.pay*pm);
++    if(S.cash>=due){spend(due);L.left=Math.max(0,L.left+int-due);if(L.left<1){delete I.loans[pid];immoLog(`Dernière mensualité : ${immoName(o)} est entièrement à toi.`)}}
++    else{const v=Math.round(immoValue(o)*.85),net=Math.max(0,v-Math.round(L.left));
++      delete S.props[pid];if(S.propUp)delete S.propUp[pid];['loans','ten','cond','iss'].forEach(k=>delete I[k][pid]);G.bucket=-1;computeNb();S.cash+=net;
++      immoLog(`Mensualité impayée : la banque saisit ${immoName(o)} et le revend. Il te reste ${fmt(net)}.`,1)}});
++}
++newDay=(f=>function(){const r=f.apply(this,arguments);try{immoMonth()}catch(e){if(typeof reportErr==='function')reportErr(e,'immobilier')}return r})(newDay);
++
++/* ---------- Achat rapide ---------- */
++const quiet=fn=>{const T=toast,B=burstAt,X=sfx;toast=()=>{};burstAt=()=>{};sfx=()=>{};try{fn()}finally{toast=T;burstAt=B;sfx=X}};
++function immoBuyPlan(){const free=propsList().filter(o=>!S.props[o.pid]).sort((a,b)=>propBase(a)-propBase(b)),list=[];let n=ownedCount(),tot=0;
++  for(const o of free){const p=Math.round(propBase(o)*Math.pow(1.1,n)*immoIdx());if(tot+p>S.cash)break;list.push(o);tot+=p;n++}return{list,tot}}
++function immoBuyAll(){const P=immoBuyPlan();if(!P.list.length){toast('Rien d’abordable pour l’instant.');sfx('no');return}
++  const c0=S.cash;let k=0;P.list.forEach(o=>{const p=propPrice(o);if(!S.props[o.pid]&&S.cash>=p){spend(p);S.props[o.pid]=1;S.counts.propsBought++;k++}});
++  immoSync();computeNb();addXP(10*k);sfx('rank');checkTrophies();immoLog(`Achat groupé : ${k} bien${k>1?'s':''} pour ${fmt(c0-S.cash)}.`);toast(`🔑 ${k} bien${k>1?'s':''} achetés pour ${fmt(c0-S.cash)}.`)}
++function immoUpPlan(only){const lv={},steps=[];let tot=0;const own=propsList().filter(o=>S.props[o.pid]&&(!only||o.pid===only));own.forEach(o=>lv[o.pid]=S.props[o.pid]);
++  for(let it=0;it<300;it++){let best=null,bc=Infinity;own.forEach(o=>{const l=lv[o.pid];if(l>=4)return;const c=l<3?renovCost(o,l):rebuildCost(o);if(c<bc){bc=c;best=o}});
++    if(!best||tot+bc>S.cash)break;tot+=bc;steps.push(best.pid);lv[best.pid]++}
++  return{steps,tot}}
++function immoUpAll(only){const P=immoUpPlan(only);if(!P.steps.length){toast('Pas assez d’argent pour des travaux.');sfx('no');return}
++  const c0=S.cash;let k=0;quiet(()=>P.steps.forEach(pid=>{const l=S.props[pid];if(l<3)renovProp(pid);else if(l===3)rebuild(pid);if(S.props[pid]>l)k++}));
++  sfx('rank');immoLog(`Travaux : ${k} chantier${k>1?'s':''} pour ${fmt(c0-S.cash)}.`);toast(`🔨 ${k} chantier${k>1?'s':''} terminé${k>1?'s':''} pour ${fmt(c0-S.cash)}.`)}
++function immoFixPlan(){const list=propsList().filter(o=>S.props[o.pid]&&imCond(o.pid)<85).sort((a,b)=>immoFixCost(a)-immoFixCost(b)),got=[];let tot=0;
++  for(const o of list){const c=immoFixCost(o);if(tot+c>S.cash)break;got.push(o);tot+=c}return{list:got,tot}}
++function immoFixAll(){const P=immoFixPlan();if(!P.list.length){sfx('no');return}const c0=S.cash;quiet(()=>P.list.forEach(o=>immoFix(o.pid)));sfx('good');toast(`🧰 Entretien de ${P.list.length} bien${P.list.length>1?'s':''} : ${fmt(c0-S.cash)}.`)}
++/* Boutiques : ouvertures, gérants, améliorations (et pour une seule boutique : personnel puis niveaux avec le reste) */
++function shopPlan(only,kinds){
++  const want=k=>!kinds||kinds.includes(k),items=[];
++  BIZ.forEach(b=>{if(only&&b.id!==only)return;const st=S.biz[b.id];
++    if(!st.lvl&&want('open'))items.push({k:'open',id:b.id,c:b.cost});
++    if(!st.mgr&&want('mgr'))items.push({k:'mgr',id:b.id,c:MGR[b.id],dep:st.lvl?null:b.id});
++    if(want('upg'))UPG.forEach(u=>{if(u.biz===b.id&&!S.upg.includes(u.id))items.push({k:'upg',id:u.id,c:u.cost,dep:st.lvl?null:b.id})});
++    if(only&&st.lvl&&want('staff')){const s=st.staff||{clean:0,wait:0,qual:0};['clean','wait','qual'].forEach(k=>{for(let v=s[k]|0;v<3;v++)items.push({k:'staff',id:b.id,s:k,c:staffCost(b,v)})})}});
++  if(!only&&want('upg'))UPG.forEach(u=>{if(!u.biz&&!S.upg.includes(u.id))items.push({k:'upg',id:u.id,c:u.cost})});
++  items.sort((a,b)=>a.c-b.c);
++  const got=[],opened=new Set();let tot=0;
++  for(const it of items){if(tot+it.c>S.cash)break;if(it.dep&&!opened.has(it.dep))continue;got.push(it);tot+=it.c;if(it.k==='open')opened.add(it.id)}
++  let lv=0;if(only&&want('lvl')){const b=BIZ_BY[only],st=S.biz[only];if(st.lvl||opened.has(only)){const l=Math.max(1,st.lvl),c=b.cost*Math.pow(b.m,l),room=S.cash-tot;
++    if(room>=c){lv=Math.floor(Math.log(room*(b.m-1)/c+1)/Math.log(b.m));if(lv>0)tot+=costN(b,l,lv)}}}
++  return{items:got,lv,tot,n:got.length}}
++function shopRun(only,kinds){const P=shopPlan(only,kinds);if(!P.n&&!P.lv){toast('Rien d’abordable pour l’instant.');sfx('no');return}
++  const c0=S.cash;let k=0;
++  quiet(()=>{P.items.forEach(it=>{if(it.k==='open'){if(!S.biz[it.id].lvl&&S.cash>=BIZ_BY[it.id].cost){buyBiz(it.id);k++}}
++    else if(it.k==='mgr'){if(S.biz[it.id].lvl&&!S.biz[it.id].mgr&&S.cash>=MGR[it.id]){hireMgr(it.id);k++}}
++    else if(it.k==='upg'){const u=UPG.find(x=>x.id===it.id);if(u&&(!u.biz||S.biz[u.biz].lvl)&&S.cash>=u.cost){buyUpg(it.id);k++}}
++    else if(it.k==='staff'){const s=S.biz[it.id].staff;if(s&&s[it.s]<3&&S.cash>=staffCost(BIZ_BY[it.id],s[it.s])){hireStaff(it.id,it.s);k++}}});
++    if(P.lv&&only){const b=BIZ_BY[only],st=S.biz[only];if(st.lvl){const c=costN(b,st.lvl,P.lv);let n=P.lv;if(c>S.cash)n=Math.max(0,Math.floor(Math.log(S.cash*(b.m-1)/(b.cost*Math.pow(b.m,st.lvl))+1)/Math.log(b.m)));
++      if(n>0){spend(costN(b,st.lvl,n));st.lvl+=n;st.q.wait=clamp(st.q.wait-.12*n,0,100)}}}});
++  computeNb();sfx('rank');toast(`${only?BIZ_BY[only].e+' Au max':'Tout acheté'} : ${k} achat${k>1?'s':''}${P.lv?` et ${P.lv} niveau${P.lv>1?'x':''}`:''} pour ${fmt(c0-S.cash)}.`)}
++function shopQuickHTML(){const P=shopPlan(null,['open','mgr','upg']);
++  return `<div class="panel im-shopq"><div><h3 class="im-h3">Achat rapide</h3><p class="hint">Ouvertures, gérants et améliorations, du moins cher au plus cher, tant que ton argent suffit.</p></div>
++    <button class="btn go" data-a="shopall" ${P.n?`data-cost="${P.tot}"`:'disabled'}>${P.n?`Tout acheter : ${P.n} achat${P.n>1?'s':''}, ${fmt(P.tot)}`:'Rien d’abordable pour l’instant'}</button></div>`}
++function bizMaxBtn(b){const P=shopPlan(b.id);if(!P.n&&!P.lv)return '';
++  return `<button class="btn small" data-a="bizmax" data-id="${b.id}" data-cost="${P.tot}" title="Améliorations, personnel, puis niveaux avec le reste">Au max${P.lv?` +${P.lv} niv.`:''} ${fmt(P.tot)}</button>`}
++
++/* ---------- Vues ---------- */
++function placeSeg(){return `<div class="seg" role="tablist">${[['immo','Immobilier'],['bourse','Bourse']].map(([k,l])=>`<button class="${(S.mTab==='bourse'?'bourse':'immo')===k?'on':''}" data-a="mtab" data-f="${k}">${l}</button>`).join('')}</div>`}
++vMarche=(f=>function(){return S.mTab==='bourse'?f():vImmo(true)})(vMarche);
++function vPatrimoine(){return vImmo(false)}
++function immoSpark(h){if(!h||h.length<2)return '';const W=120,H=36,mn=Math.min(...h),mx=Math.max(...h),r=mx-mn||1,up=h[h.length-1]>=h[0];
++  return `<svg class="im-spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${h.map((v,i)=>`${(i/(h.length-1)*W).toFixed(1)},${(H-3-(v-mn)/r*(H-6)).toFixed(1)}`).join(' ')}" fill="none" stroke="${up?'var(--money)':'var(--loss)'}" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`}
++function immoCard(o){const I=S.immo,pid=o.pid,l=S.props[pid],t=I.ten[pid]||{},cd=imCond(pid),v=immoValue(o),r=immoRentNow(o),y=v?r*12/v*100:0,L=I.loans[pid],is=I.iss[pid];
++  const nx=l<3?{a:'renov',c:renovCost(o,l),t:'Rénover'}:l===3?{a:'rebuild',c:rebuildCost(o),t:'Reconstruire'}:null,mp=immoUpPlan(pid),net=immoSaleNet(o);
++  const fixB=is?`<button class="btn small go" data-a="imrep" data-id="${pid}" data-cost="${immoRepCost(o)}">Réparer ${fmt(immoRepCost(o))}</button>`:cd<85?`<button class="btn small ghost" data-a="imfix" data-id="${pid}" data-cost="${immoFixCost(o)}">Entretien ${fmt(immoFixCost(o))}</button>`:'';
++  return `<div class="im-card"><div class="im-top"><div class="im-ic">${TH_.dome?'🫧':o.t==='apt'?'🏢':'🏠'}</div><div class="im-tt"><strong>${propName(o)}</strong><span class="hint">${l>=4?'Résidence moderne':'Niveau '+l+' sur 3'}${blockMult(o)>1?', îlot complet':''}</span></div>
++      <span class="tag${t.vac?' im-vac':''}">${t.vac?'Vide':esc(t.n||'Loué')}</span></div>
++    <div class="im-kv"><span>Valeur</span><b>${fmt(v)}</b><span>Loyer</span><b>${fmt(r)}</b><span>Rendement</span><b>${imPct(y)} %</b><span>Prêt</span><b class="${L?'neg':''}">${L?fmt(L.left):'aucun'}</b></div>
++    ${gaugeHTML('État',cd)}${is?`<p class="im-warn">${IM_ISS[is].n} : loyer divisé par deux.</p>`:''}
++    <div class="im-btns">${nx?`<button class="btn small go" data-a="${nx.a}" data-id="${pid}" data-cost="${nx.c}" ${S.cash>=nx.c?'':'disabled'}>${nx.t} ${fmt(nx.c)}</button>`:''}${mp.steps.length>1?`<button class="btn small" data-a="imupone" data-id="${pid}" data-cost="${mp.tot}">Au max ${fmt(mp.tot)}</button>`:''}${fixB}
++      ${t.vac?`<button class="btn small go" data-a="imagent" data-id="${pid}" data-cost="${immoAgencyCost(o)}">Trouver un locataire ${fmt(immoAgencyCost(o))}</button>`:''}${L?`<button class="btn small ghost" data-a="imrepay" data-id="${pid}" data-cost="${Math.ceil(L.left)}">Solder le prêt</button>`:''}
++      <button class="btn small ghost" data-a="sellprop" data-id="${pid}">Revendre ${fmt(Math.max(0,net))}</button><button class="btn small ghost" data-a="imloc" data-id="${pid}">Carte</button></div></div>`}
++function immoBuyRow(o){const p=propPrice(o),lt=immoLoanTerms(o),r1=propRent(o,1),nb=nearBiz(o);
++  return `<li class="im-buy"><div><strong>${propName(o)}</strong><span class="hint">Loyer ${fmt(r1)} par mois, ${imPct(r1*12/p*100)} % par an${nb.length?', booste '+nb.map(b=>b.e).join(' '):''}</span></div>
++    <div class="im-bb"><button class="btn small go" data-a="buyprop" data-id="${o.pid}" data-cost="${p}" ${S.cash>=p?'':'disabled'}>Comptant ${fmt(p)}</button><button class="btn small ghost" data-a="imloan" data-id="${o.pid}" ${lt.ok?'':'disabled'} title="${esc(lt.why||'')}">Crédit : ${fmt(lt.ap)} puis ${fmt(lt.pay)}/mois</button></div></li>`}
++function vImmo(seg){
++  const I=immoSync(),all=propsList(),own=all.filter(o=>S.props[o.pid]),free=all.filter(o=>!S.props[o.pid]).sort((a,b)=>propBase(a)-propBase(b)),c=S.city||0;
++  const val=own.reduce((a,o)=>a+immoValue(o),0),rent=dailyRent(),debt=immoDebt(),yl=val?rent*12/val*100:0;
++  const vac=own.filter(o=>imVac(o.pid)),iss=own.filter(o=>I.iss[o.pid]),h=I.hist,ch=h.length>1?(I.idx/h[Math.max(0,h.length-13)]-1)*100:0;
++  const bp=immoBuyPlan(),up=immoUpPlan(),fx=immoFixPlan(),bl=blocks();
++  let x=(seg?placeSeg():'')+`<div class="sec-head"><h2>${c?'Immobilier à '+cityName(c):'Immobilier de ta ville'}</h2><p>${own.length}/${all.length} biens<br>${all.length?Math.round(own.length/all.length*100):0} % de la ville</p></div>
++  <div class="im-sum"><div><span>Valeur du parc</span><b>${fmt(val)}</b></div><div><span>Loyers par mois</span><b class="pos">${fmt(rent)}</b></div><div><span>Rendement par an</span><b>${imPct(yl)} %</b></div><div><span>Prêts à rembourser</span><b class="${debt?'neg':''}">${debt?fmt(debt):'Aucun'}</b>${debt?`<span>${fmt(immoPays())} par mois</span>`:''}</div></div>
++  <div class="panel im-mkt"><div><h3 class="im-h3">Prix du marché</h3><p class="hint">Indice ${imPct(I.idx*100)} · <span class="${ch>=0?'pos':'neg'}">${ch>=0?'▲':'▼'} ${imPct(Math.abs(ch))} % sur un an</span></p></div>${immoSpark(h)}</div>
++  <div class="panel"><h3 class="im-h3">Achat rapide</h3><div class="im-qa">
++    <button class="btn go" data-a="imbuyall" ${bp.list.length?`data-cost="${bp.tot}"`:'disabled'}>${bp.list.length?`Tout acheter : ${bp.list.length} bien${bp.list.length>1?'s':''}, ${fmt(bp.tot)}`:'Tout acheter : rien d’abordable'}</button>
++    ${own.length?`<button class="btn" data-a="imupall" ${up.steps.length?`data-cost="${up.tot}"`:'disabled'}>${up.steps.length?`Tout rénover : ${up.steps.length} chantier${up.steps.length>1?'s':''}, ${fmt(up.tot)}`:own.every(o=>S.props[o.pid]>=4)?'Tout est déjà rénové':'Tout rénover : pas assez d’argent'}</button>`:''}
++    ${fx.list.length?`<button class="btn ghost" data-a="imfixall" data-cost="${fx.tot}">Entretien de ${fx.list.length} bien${fx.list.length>1?'s':''} : ${fmt(fx.tot)}</button>`:''}</div>
++    <p class="hint" style="margin-top:8px">Du moins cher au plus cher, tant que ton argent suffit. Chaque achat fait monter le prix du suivant.</p></div>`;
++  if(vac.length||iss.length)x+=`<div class="sec-head"><h2>À traiter</h2><p>${vac.length+iss.length}</p></div><div class="panel"><ul class="ug">${iss.map(o=>`<li><div><strong>${IM_ISS[I.iss[o.pid]].n}</strong><span class="hint">${propName(o)}, loyer divisé par deux</span></div><button class="btn small go" data-a="imrep" data-id="${o.pid}" data-cost="${immoRepCost(o)}">Réparer ${fmt(immoRepCost(o))}</button></li>`).join('')}${vac.map(o=>`<li><div><strong>Logement vide</strong><span class="hint">${propName(o)}, depuis ${dateLabel(I.ten[o.pid].since||S.day)}</span></div><button class="btn small go" data-a="imagent" data-id="${o.pid}" data-cost="${immoAgencyCost(o)}">Agence ${fmt(immoAgencyCost(o))}</button></li>`).join('')}</ul></div>`;
++  x+=`<div class="sec-head"><h2>Tes biens</h2><p>${own.length?fmt(rent)+' par mois':''}</p></div>`;
++  x+=own.length?`<div class="im-grid">${own.slice().sort((a,b)=>immoValue(b)-immoValue(a)).map(immoCard).join('')}</div>`:`<div class="panel"><p class="hint">Aucun bien pour l’instant. Achète ci-dessous ou touche une maison sur la carte. Un bien près d’une boutique lui donne +4 % de revenus.</p></div>`;
++  if(free.length){const sh=free.slice(0,5),rest=free.slice(5);
++    x+=`<div class="sec-head"><h2>À vendre</h2><p>${free.length} bien${free.length>1?'s':''}</p></div><div class="panel"><ul class="ug">${sh.map(immoBuyRow).join('')}</ul>
++      ${rest.length?`<details class="im-more"><summary>Voir les ${rest.length} autres</summary><ul class="ug">${rest.map(immoBuyRow).join('')}</ul></details>`:''}
++      <p class="hint" style="margin-top:6px">Crédit sur 5 ans, 30 % d’apport. La banque refuse si les mensualités dépassent 40 % de tes revenus du mois. Mensualité impayée : le bien est saisi.</p></div>`}
++  const bk=Object.keys(bl).sort();
++  if(bk.length)x+=`<div class="sec-head"><h2>Les îlots</h2><p>${bk.filter(blockDone).length}/${bk.length} complets</p></div><p class="hint">Un îlot complet : loyers ×1,5 et boutiques voisines +10 %.</p>
++  <div class="blocks">${bk.map(id=>{const l=bl[id],n=l.filter(o=>S.props[o.pid]).length,done=blockDone(id);return `<div class="blk ${done?'done':''}"><b>Îlot ${id}</b><span class="hint">${n}/${l.length} à toi</span><div class="qt-bar"><i style="width:${n/l.length*100}%"></i></div>${done?'<span class="done">Complet</span>':`<button class="btn small go" data-a="buyblock" data-id="${id}" data-cost="${blockCost(id)}" ${S.cash>=blockCost(id)?'':'disabled'}>Le reste ${fmt(blockCost(id))}</button>`}</div>`}).join('')}</div>`;
++  if(I.log.length)x+=`<div class="sec-head"><h2>Carnet de gestion</h2></div><div class="panel im-log">${I.log.slice(0,8).map(e=>`<p class="${e.bad?'neg':''}">${esc(e.t)} <span class="hint">${dateLabel(e.d)}</span></p>`).join('')}</div>`;
++  return x;
++}
++function immoLive(){document.querySelectorAll('#main [data-a^="im"],#main [data-a="buyprop"],#main [data-a="renov"],#main [data-a="rebuild"],#main [data-a="buyblock"]').forEach(u=>{
++  if(u.dataset.a==='imloan'){const o=imOf(u.dataset.id);if(o)u.disabled=!immoLoanTerms(o).ok}else if(u.dataset.cost)u.disabled=S.cash<+u.dataset.cost})}
++updateLive=(f=>function(){f();if(S.tab==='marche'&&S.mTab!=='bourse')immoLive()})(updateLive);
++/* Fiche d’un bien sur la carte : valeur, locataire, état, prêt, achat à crédit */
++renderSheet=(f=>function(){f();if(S.tab!=='ville'||!isProp(sel))return;const el=$('#bsheet'),o=imOf(sel);if(!el||el.hidden||!o)return;immoSync();
++  let h;if(S.props[sel]){const I=S.immo,t=I.ten[sel]||{},L=I.loans[sel];
++    h=`<div class="kv"><span>Valeur aujourd’hui</span><b>${fmt(immoValue(o))}</b></div><div class="kv"><span>Locataire</span><b>${t.vac?'aucun, logement vide':esc(t.n)}</b></div>${L?`<div class="kv"><span>Prêt restant</span><b class="neg">${fmt(L.left)}</b></div>`:''}${gaugeHTML('État',imCond(sel))}`}
++  else{const lt=immoLoanTerms(o);h=`<button class="btn ghost" data-a="imloan" data-id="${sel}" ${lt.ok?'':'disabled'}>À crédit : ${fmt(lt.ap)} puis ${fmt(lt.pay)}/mois</button>${lt.ok?'':`<p class="hint" style="margin-top:6px">${esc(lt.why)}.</p>`}`}
++  el.insertAdjacentHTML('beforeend',`<div class="bs-sec">${h}<button class="btn small ghost" style="margin-top:8px" data-a="imgo">Voir mon immobilier</button></div>`)})(renderSheet);
++extraAct=(f=>function(a,b,id){
++  switch(a){
++    case 'mtab':S.mTab=b.dataset.f==='bourse'?'bourse':'immo';return 'top';
++    case 'imgo':S.tab='marche';S.mTab='immo';sel=null;return 'top';
++    case 'imbuyall':immoBuyAll();return;
++    case 'imupall':immoUpAll();return;
++    case 'imupone':immoUpAll(id);return;
++    case 'imfixall':immoFixAll();return;
++    case 'imfix':immoFix(id);return;
++    case 'imrep':immoRepair(id);return;
++    case 'imagent':immoAgency(id);return;
++    case 'imrepay':immoRepay(id);return;
++    case 'imloan':immoBuyLoan(id);return;
++    case 'imloc':{const o=imOf(id);if(!o)return;S.tab='ville';sel=id;camTo(o.x+o.w/2,o.y+o.d/2);return 'top'}
++    case 'shopall':shopRun(null,['open','mgr','upg']);return;
++    case 'upgall':shopRun(null,['upg']);return;
++    case 'bizmax':shopRun(id);return;
++  }
++  return f(a,b,id)})(extraAct);
++document.head.insertAdjacentHTML('beforeend',`<style>
++.im-sum{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
++.im-sum>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2,14px);padding:10px 12px;display:grid;gap:2px;align-content:start;min-width:0;box-shadow:var(--sh1,none)}
++.im-sum span{font-size:.78rem;color:var(--muted)}
++.im-sum b{font-size:1.05rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
++.im-mkt{display:flex;align-items:center;justify-content:space-between;gap:12px}
++.im-h3{font-size:.95rem;margin:0}
++.im-spark{width:120px;height:36px;flex:none}
++.im-qa{display:grid;gap:8px;margin-top:10px}
++.im-qa .btn{width:100%}
++.im-grid{display:grid;gap:10px;margin-top:10px}
++.im-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r2,14px);padding:12px 14px;display:grid;gap:8px;min-width:0;box-shadow:var(--sh1,none)}
++.im-top{display:flex;align-items:center;gap:10px;min-width:0}
++.im-ic{font-size:1.3rem;width:40px;height:40px;display:grid;place-items:center;background:var(--surface2);border-radius:10px;flex:none}
++.im-tt{display:grid;min-width:0;flex:1}
++.im-tt strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
++.im-top .tag{max-width:42%;overflow:hidden;text-overflow:ellipsis}
++.tag.im-vac{background:color-mix(in srgb,var(--loss) 14%,var(--surface));border-color:var(--loss);color:var(--loss)}
++.im-kv{display:grid;grid-template-columns:auto 1fr auto 1fr;gap:3px 10px;font-size:.88rem;align-items:baseline}
++.im-kv span{color:var(--muted)}.im-kv b{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
++.im-btns{display:flex;flex-wrap:wrap;gap:6px}
++.im-warn{color:var(--loss);font-size:.85rem;margin:0}
++.ug li.im-buy{flex-wrap:wrap}
++.im-buy>div:first-child{flex:1 1 200px}
++.im-bb{display:flex;gap:6px;flex-wrap:wrap}
++.im-more summary{cursor:pointer;font-weight:700;padding:10px 0;min-height:44px;display:flex;align-items:center}
++.im-log p{margin:5px 0;font-size:.88rem}
++.im-shopq{display:grid;gap:10px}
++@media (min-width:700px){.im-sum{grid-template-columns:repeat(4,minmax(0,1fr))}.im-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.im-qa{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.im-shopq{grid-template-columns:1fr auto;align-items:center}}
++</style>`);
++/* ===== FIN AGENT IMMO ===== */
+ /* ===== AGENT VIE ===== */
+ /* Vie de famille pilotée par le joueur : amour, étapes du couple, projet bébé, enfants, foyer et prêt immobilier. */
+ const VIE_FT=3,VIE_RATE=.035/12,VIE_N=240;
+@@ -6325,7 +6599,7 @@ tick=(f=>function(){try{f()}catch(e){reportErr(e,'temps')}})(tick);
+   applyCityBiz(S.city);
+   if(!S.mkt||!Array.isArray(S.mkt.a)){const old=S.mkt;S.mkt=freshMkt();
+     if(old){S.mkt.profit=+old.profit||0;S.mkt.cap=+old.cap||0;if(old.qty>0){S.mkt.a[0].qty=old.qty;S.mkt.a[0].avg=+old.avg||S.mkt.a[0].price}}}
+-  if(!(S.mkt.sel>=0&&S.mkt.sel<3))S.mkt.sel=0;
++  mktMigrate(S.mkt);
+   if(S.event&&!EV[S.event.id])S.event=null;
+   S.sched=(S.sched||[]).filter(s=>s&&EV[s.id]);
+   genCity(S.city);
