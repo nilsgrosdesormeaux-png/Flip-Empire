@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-2133)
+- Retiré : le bloc AGENT RENDU3D (socle doré, boutons brillants…) : Nils le trouve « très IA », pire qu'avant. Retour au rendu de la version 1911.
+- Nils n'aime pas non plus le look personnalisable (emojis) : à refaire. Prochaine passe graphique : skills de design (frontend-design, ux designer), vraie étude de Monopoly Go, rien de doré/brillant gadget.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1939)
 - Graphismes, 1re passe « Monopoly Go » (bloc AGENT RENDU3D avant BOOT, style `<style id="r3-ui">`) : ville posée sur un socle arrondi dont la matière change par ville, bâtiments « gonflés » (arêtes éclairées, toits à débord, reflets), interface en relief (boutons brillants, argent doré 3D), pièces et éclats dorés aux gains.
 - Plus riche à chaque ville : liseré doré dès Marseille, guirlande de nuit dès Londres, plus de reflets et de couleurs.
