@@ -6444,6 +6444,23 @@ function reportErr(e,where){const m=((e&&e.message)||String(e)).slice(0,160),st=
 addEventListener('error',e=>reportErr(e.error||e.message,'page'));
 addEventListener('unhandledrejection',e=>reportErr(e.reason,'promesse'));
 tick=(f=>function(){try{f()}catch(e){reportErr(e,'temps')}})(tick);
+/* Mise à jour automatique : le jeu compare sa version à celle du site et se recharge tout seul (partie sauvegardée avant). */
+const FE_BUILD=(document.querySelector('meta[name=fe-build]')||{}).content||'';
+let feUpdating=false;
+async function feCheckUpdate(){
+  if(feUpdating||!FE_BUILD||!location.protocol.startsWith('http'))return;
+  try{const r=await fetch('./?check='+Date.now(),{cache:'no-store'});if(!r.ok)return;
+    const m=(await r.text()).match(/name="fe-build" content="([^"]+)"/);const v=m&&m[1];
+    if(!v||v===FE_BUILD)return;
+    const busy=()=>(typeof MX!=='undefined'&&MX&&MX.phase&&MX.phase!=='end');
+    if(busy()){setTimeout(feCheckUpdate,30000);return}
+    feUpdating=true;try{save()}catch(e){}
+    try{toast('Nouvelle version du jeu : mise à jour…')}catch(e){}
+    setTimeout(()=>location.replace(location.pathname+'?v='+encodeURIComponent(v)),1200);
+  }catch(e){}
+}
+setTimeout(feCheckUpdate,2500);setInterval(feCheckUpdate,5*60*1000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')feCheckUpdate()});
 /* ===== FIN FILET DE SÉCURITÉ ===== */
 /* ================= BOOT ================= */
 (function boot(){
