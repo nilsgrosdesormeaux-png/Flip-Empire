@@ -29,7 +29,7 @@ https://nilsgrosdesormeaux-png.github.io/Flip-Empire/
 
 ## Mise en ligne
 - Branche publiée par GitHub Pages : voir Settings → Pages du dépôt (aujourd'hui `claude/zen-volta-wpuz92`, bientôt `main`). Pousser sur cette branche = mise en ligne en 1 à 2 minutes.
-- À chaque mise en ligne, changer la date de version dans `<meta name="fe-build" content="…">` (visible dans Empire → Compte) pour que le joueur puisse vérifier qu'il a la bonne version.
+- À chaque mise en ligne, changer la version dans `<meta name="fe-build" content="…">` au format date + heure UTC, ex. `2026-11-04-0915` (`date -u +%Y-%m-%d-%H%M`) : deux Claude ont déjà publié chacun une « 04b », et les joueurs n'ont pas reçu la seconde (visible dans Empire → Compte) pour que le joueur puisse vérifier qu'il a la bonne version.
 - Mise à jour automatique : le jeu compare son `fe-build` à celui du site (au lancement, au retour sur l'onglet, toutes les 5 min) et se recharge seul. Il faut donc TOUJOURS changer `fe-build` à chaque publication, sinon les joueurs ne reçoivent pas la mise à jour.
 
 ## IDEES.md
