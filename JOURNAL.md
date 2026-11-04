@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-2345)
+- Courbe de difficulté refaite : 1re ville ~25 min, puis ~+27 % par ville, ~43 h pour les 14 villes (≈ 2 h/jour pendant 3 semaines), mesuré avec un joueur auto (scratchpad prog/sim2.js).
+- Réglages : cityDiff 1,58 → 1,35 ; pgK(c) remplace PG_K0/PG_KR (+ PG_KADJ par ville) ; PG_LVB 8 → 4 ; BIZ_GATE_K 5 → 2 ; commerce phare moins cher ; Rio 80 % ; adversaire de mairie plus faible au début.
+- À trancher avec Nils : la mort du héros (~1 vie = 5 h réelles) fait perdre 30-50 % des niveaux à chaque succession et casse ce rythme ; le personnel permanent est peu rentable.
+- En cours : personnages dessinés (SVG) à la place des emojis, passants et véhicules.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2259)
 - Chrono de progression : Empire → « Temps par ville » affiche, pour chaque ville, le temps réel pour avoir 8 affaires ouvertes et tout au niveau 20. Sert à calibrer la progression avec les vrais temps de Nils.
 - Simulation de progression (prog2.js, hors jeu) : pas fiable en valeur absolue (ne compte ni les encaissements manuels, ni les loyers, ni les objectifs). À remplacer par les temps réels du chrono.
