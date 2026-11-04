@@ -5923,6 +5923,131 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
   if(a==='dec_war'&&P.cand&&P.camp.warN<3){const c=costSec(100*(P.camp.warN+1));if(S.cash<c){sfx('no');return}spend(c);P.camp.warN++;P.camp.war+=2;toast('💰 Budget de campagne renforcé : +2 partout.');sfx('good')}
   render()});
 /* ===== FIN AGENT DECISIONS ===== */
+/* ===== AGENT RYTHME ===== */
+/* Rythme des décisions, pause (bouton + pendant une décision), retour après absence, « Tout régler » chez les clients.
+   Champs ajoutés (initialisés ici, les vieilles sauvegardes passent) : S.paused, S.playSec, S.flags.ryDay, S.flags.rySec. */
+const RY={gapM:5,gapS:100,schM:2,schS:40,fatM:24,mem:24,cool:48,offFull:3600,offHalf:3*3600,hidAt:0,pauseAt:0,saveAt:0,
+  urgent:/^(huissier|rupture|elec_annonce|camp_|debat|majeur)/};
+function ryInit(){if(!S)return;if(typeof S.playSec!=='number'||!isFinite(S.playSec))S.playSec=0;if(typeof S.paused!=='boolean')S.paused=false;
+  const f=S.flags||(S.flags={});if(typeof f.ryDay!=='number')f.ryDay=-99;if(typeof f.rySec!=='number')f.rySec=-1e6;if(!Array.isArray(S.evMem))S.evMem=[]}
+function ryDur(sec){sec=Math.max(0,Math.round(sec));const d=Math.floor(sec/86400),h=Math.floor(sec%86400/3600),m=Math.floor(sec%3600/60);
+  return d?`${d} j${h?' '+h+' h':''}`:h?`${h} h${m?' '+String(m).padStart(2,'0'):''}`:m?`${m} min`:`${sec} s`}
+/* Une décision (ou son résultat) est à l'écran : le temps attend */
+function ryDecShown(){return !!(document.querySelector('#layer .evcard,#layer .suspense,#layer .verdict')||(S.event&&document.querySelector('#main .evcard')))}
+function ryPaused(){return !!(S.paused||ryDecShown())}
+/* Rush et frénésie comptent en temps réel : on les décale de la durée de la pause */
+function ryShift(ms){if(!(ms>0))return;const t0=Date.now()-ms;['boostUntil','boostReadyAt','frenzyUntil'].forEach(k=>{if(S[k]>t0)S[k]+=ms})}
+function ryHud(){const h=$('#hud');if(!h)return;const st=S.paused?'u':ryDecShown()?'d':'';if(h.dataset.ry===st)return;h.dataset.ry=st;
+  h.classList.toggle('ry-off',!!st);const b=h.querySelector('.ry-pause');
+  if(b){b.innerHTML=(S.paused?'<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7-4.5z"/></svg>':'<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="1.5" width="2.6" height="9" rx=".6"/><rect x="6.9" y="1.5" width="2.6" height="9" rx=".6"/></svg>')+`<span class="ry-t">${S.paused?'Reprendre':'Pause'}</span>`;b.classList.toggle('on',!!S.paused);b.setAttribute('aria-pressed',String(!!S.paused));b.setAttribute('aria-label',S.paused?'Reprendre le temps':'Mettre le temps en pause')}
+  const c=h.querySelector('.ry-chip');if(c){c.hidden=!st;c.textContent=st==='u'?'En pause':st==='d'?'Pause : décision en cours':''}}
+renderHud=(f=>function(){f();const h=$('#hud');if(!h)return;ryInit();h.dataset.ry='x';
+  const r=h.querySelector('.hud-r'),sp=r&&r.querySelector('[data-a=speed]');
+  if(r&&!r.querySelector('.ry-pause')){const b=document.createElement('button');b.className='btn ghost ry-pause';b.dataset.a='ry_pause';if(sp)r.insertBefore(b,sp);else r.appendChild(b)}
+  const m=h.querySelector('.meta');if(m&&!m.querySelector('.ry-chip')){const c=document.createElement('span');c.className='ry-chip';c.hidden=true;m.insertBefore(c,m.children[1]||null)}
+  ryHud()})(renderHud);
+function ryToggle(){ryInit();S.paused=!S.paused;if(S.paused){RY.pauseAt=RY.pauseAt||Date.now();toast('Pause : le temps est figé. Touche « Reprendre » pour repartir.')}
+  else toast('C’est reparti.');save()}
+
+/* ---------- Temps : pause, onglet caché, absence ---------- */
+tick=(f=>function(){
+  const now=performance.now();
+  if(!S.started||S.dead){RY.hidAt=0;return f()}
+  ryInit();
+  if(document.hidden){if(!RY.hidAt){RY.hidAt=Date.now();save()}lastTick=now;return}
+  let gap=0;if(RY.hidAt){gap=(Date.now()-RY.hidAt)/1000;RY.hidAt=0}else if(now-lastTick>5000)gap=(now-lastTick)/1000;
+  if(gap>0){lastTick=now;if(gap>=5&&!S.paused)ryAway(gap)}
+  if(ryPaused()){if(!RY.pauseAt)RY.pauseAt=Date.now();lastTick=now;updateLive();ryHud();if(now-RY.saveAt>5000){RY.saveAt=now;save()}return}
+  if(RY.pauseAt){ryShift(Date.now()-RY.pauseAt);RY.pauseAt=0}
+  ryHud();
+  const dt=Math.min(Math.max(0,(now-lastTick)/1000),3600);f();
+  if(S&&typeof S.playSec==='number')S.playSec+=dt;
+})(tick);
+document.addEventListener('visibilitychange',()=>{try{if(document.hidden&&S.started)save()}catch(e){}});
+/* Absence : les gérants et les loyers tournent, mais le calendrier s'arrête (pas de mois, de match ni de saison simulés).
+   Gains : 1re heure à plein, puis moitié jusqu'à 3 h de plus (2 h 30 de revenus au maximum). */
+function ryAway(sec,atBoot){
+  if(!S.started||S.dead||!(sec>0))return;
+  const eff=Math.min(sec,RY.offFull)+.5*Math.min(Math.max(sec-RY.offFull,0),RY.offHalf);
+  let off=0;BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*eff});
+  let rent=dailyRent()*eff/DAY_SEC;off=isFinite(off)?Math.max(0,Math.round(off)):0;rent=isFinite(rent)?Math.max(0,Math.round(rent)):0;
+  const tot=off+rent;if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
+  if(sec<120){if(tot>0)toast(`De retour : +${fmt(tot)} pendant ton absence.`);return}
+  const capped=sec>RY.offFull;
+  queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tu es ${gx(S.hero,"parti","partie")} ${ryDur(sec)}.</p>
+    <div class="panel ry-away">${off?`<div class="kv"><span>Tes gérants</span><b class="pos">+${fmt(off)}</b></div>`:''}${rent?`<div class="kv"><span>Tes loyers</span><b class="pos">+${fmt(rent)}</b></div>`:''}
+    ${tot?`<div class="kv"><span><strong>Total</strong></span><b class="pos">+${fmt(tot)}</b></div>`:'<p class="hint">Personne ne travaillait pour toi. Embauche des gérants pour gagner quand tu n’es pas là.</p>'}</div>
+    <p class="hint" style="margin-top:8px">Le calendrier s’est arrêté pendant ce temps : aucun mois ne s’est écoulé, ton club n’a pas joué et aucune décision ne t’a échappé.${capped?' Les gains sont comptés à plein la première heure, puis à moitié, et plafonnés à 4 h d’absence.':''}</p>
+    <button class="btn big" style="margin-top:14px" data-a="close">${tot?'Encaisser':'Reprendre'}</button>`);
+}
+
+/* ---------- Décisions : moins souvent, moins répétitives, en alternance ---------- */
+function ryMark(k){ryInit();S.flags.ryDay=S.day;S.flags.rySec=S.playSec;S.flags.decLastEv=S.day}
+pickEvent=function(){
+  decInit();ryInit();
+  const f=S.flags,dM=S.day-f.ryDay,dS=S.playSec-f.rySec,mainOK=dM>=RY.gapM&&dS>=RY.gapS,schOK=dM>=RY.schM&&dS>=RY.schS;
+  const okC=E=>{try{return !E.cond||!!E.cond()}catch(e){return false}};
+  const due=S.sched.filter(s=>s.day<=S.day&&(schOK||RY.urgent.test(s.id))).sort((a,b)=>a.day-b.day);
+  if(due.length){const s=due[0];S.sched=S.sched.filter(x=>x!==s);if(EV[s.id]&&okC(EV[s.id])){prepEv(EV[s.id]);ryMark(s.id);return [s.id,s.data]}}
+  if(S.partner&&S.partner.rel<10&&EV.rupture){ryMark('rupture');return ['rupture',{}]}
+  if(!mainOK||S.day<S.nextEv||!openIds().length)return null;
+  if(S.energy<25&&EV.fatigue&&S.day-(f.fatigueLast||-99)>=RY.fatM){f.fatigueLast=S.day;ryMark('fatigue');return ['fatigue',{}]}
+  const mem=S.evMem,lastCat=f.decLastCat;
+  const pool=EV_POOL.filter((k,i,a)=>{const E=EV[k];if(a.indexOf(k)!==i||!E||E.sched||(E.once&&f['done_'+k])||mem.includes(k))return false;
+    if(S.evSeen[k]&&S.day-S.evSeen[k]<Math.max(E.cool||0,RY.cool))return false;return okC(E)});
+  if(!pool.length)return null;
+  const cat=k=>EV[k].cat||'business';let use=pool;
+  if(lastCat){const other=pool.filter(k=>cat(k)!==lastCat);if(other.length&&Math.random()<.85)use=other}
+  const wt=k=>{const E=EV[k];let w=E.w||4;if(!S.evSeen[k])w*=1.8;if(E.ctx)w*=1.6;return w};
+  let tot=use.reduce((a,k)=>a+wt(k),0),r=Math.random()*tot;
+  for(const k of use){if((r-=wt(k))<0){f['last_'+k]=S.day;f.decLastCat=cat(k);mem.push(k);while(mem.length>RY.mem)mem.shift();prepEv(EV[k]);ryMark(k);return [k,{}]}}
+  return null;
+};
+/* Une décision qui tombe pendant qu'une fenêtre est ouverte s'affiche juste après, au lieu de passer inaperçue */
+startEvent=(f=>function(id,data){const was=modalOpen;f.apply(this,arguments);
+  if(S.event&&S.event.id===id){S.event.deadline=Math.max(S.event.deadline,S.day+3);if(was&&S.tab!=='vie'&&!MQ.some(h=>h.indexOf('evcard')>=0))MQ.push(eventHTML(false))}})(startEvent);
+closeModal=(f=>function(){if(!S.event)for(let i=MQ.length-1;i>=0;i--)if(MQ[i].indexOf('class="evcard')>=0)MQ.splice(i,1);return f.apply(this,arguments)})(closeModal);
+eventHTML=(f=>function(inline){return f(inline).replace(/<p class="hint" style="margin-top:8px">À décider avant ([^<]*?)\. Sans réponse, les choses se feront sans toi\.<\/p>/,
+  (m,d)=>`<p class="hint" style="margin-top:8px">Le temps est en pause pendant que tu lis. Si tu remets à plus tard, réponds avant ${d}.</p>`)})(eventHTML);
+
+/* ---------- Clients : tout régler d'un coup ---------- */
+function ryFixPlan(){const L=[];openIds().forEach(id=>{const b=BIZ_BY[id],st=S.biz[id];if(!b||!st||!st.q)return;const cd=st.cd||(st.cd={});
+  Object.keys(QK).forEach(k=>{const a=ACTS.find(x=>x.k===k);if(!a||cd[a.id]>S.day||st.q[k]>=95)return;L.push({id,k,a,c:actCost(b,a),q:st.q[k]})})});
+  return L.sort((x,y)=>x.q-y.q)}
+function ryHirePlan(){const L=[];openIds().forEach(id=>{const b=BIZ_BY[id],st=S.biz[id];if(!b||!st)return;const s=st.staff||{clean:0,wait:0,qual:0};
+  Object.keys(QK).forEach(k=>{if((s[k]|0)<3)L.push({id,k,c:staffCost(b,s[k]|0),q:st.q[k]})})});return L.sort((x,y)=>x.c-y.c)}
+function ryFixAll(){const L=ryFixPlan();let n=0,spent=0,lowE=false,lowC=false;
+  for(const it of L){const st=S.biz[it.id];if(S.cash<it.c){lowC=true;continue}if(S.energy<it.a.nrg){lowE=true;continue}
+    spend(it.c);spent+=it.c;S.energy=clamp(S.energy-it.a.nrg,0,100);st.q[it.k]=clamp(st.q[it.k]+it.a.gain,0,100);st.cd[it.a.id]=S.day+it.a.cd;S.counts.actions++;n++}
+  if(!n){toast(lowE?'Trop crevé pour ça ce mois-ci.':lowC?'Pas assez d’argent pour régler quoi que ce soit.':'Rien à régler pour l’instant.');sfx('no');return}
+  addXP(5*n);sfx('good');toast(`${n} coup${n>1?'s':''} de boost payé${n>1?'s':''} (${fmt(spent)}).${n<L.length?` ${L.length-n} en attente : ${lowE?'plus d’énergie':'plus assez d’argent'}.`:''}`)}
+function ryHireAll(){const L=ryHirePlan();let n=0,spent=0;
+  for(const it of L){if(S.cash<it.c)break;const st=S.biz[it.id],s=st.staff||(st.staff={clean:0,wait:0,qual:0});spend(it.c);spent+=it.c;s[it.k]=(s[it.k]|0)+1;st.q[it.k]=clamp(st.q[it.k]+25,0,100);S.counts.actions++;n++}
+  if(!n){toast('Pas assez d’argent pour une embauche.');sfx('no');return}
+  addXP(10*n);sfx('rank');toast(`${n} embauche${n>1?'s':''} définitive${n>1?'s':''} (${fmt(spent)}).`)}
+vAvis=(f=>function(){const html=f(),F=ryFixPlan(),H=ryHirePlan();if(!openIds().length)return html;
+  const fc=F.reduce((a,x)=>a+x.c,0),fe=F.reduce((a,x)=>a+x.a.nrg,0),hc=H.reduce((a,x)=>a+x.c,0);
+  const panel=`<div class="panel ry-fix"><h3>Tout régler d’un coup</h3>
+    <p class="hint">Les jauges les plus basses passent en premier. Si l’argent ou l’énergie manquent, on fait ce qui est possible et on s’arrête là.</p>
+    <div class="kv"><span>Coups de boost disponibles (${F.length})</span><b>${F.length?fmt(fc)+' · énergie '+fe:'—'}</b></div>
+    <div class="kv"><span>Personnel encore à embaucher (${H.length})</span><b>${H.length?fmt(hc):'—'}</b></div>
+    <div class="bs-row" style="margin-top:8px"><button class="btn small go" data-a="ry_fixall" ${F.length&&S.cash>=Math.min(...F.map(x=>x.c))?'':'disabled'}>Tout régler${F.length?' ('+fmt(fc)+')':''}</button>
+    <button class="btn small ghost" data-a="ry_hireall" ${H.length&&S.cash>=H[0].c?'':'disabled'}>Embaucher partout${H.length?' ('+fmt(hc)+')':''}</button></div></div>`;
+  const i=html.indexOf('<div class="panel"><div class="ug-h">');return i<0?html+panel:html.slice(0,i)+panel+html.slice(i)})(vAvis);
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="ry_"]');if(!b||b.disabled)return;
+  const a=b.dataset.a;if(a==='ry_pause')ryToggle();else if(a==='ry_fixall')ryFixAll();else if(a==='ry_hireall')ryHireAll();else return;
+  render()});
+setTimeout(()=>{try{ONCE.add('ry_fixall');ONCE.add('ry_hireall')}catch(e){}},0);
+(function(){const st=document.createElement('style');st.textContent=`
+.ry-pause{min-height:44px;min-width:44px;padding:0 10px;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.ry-pause svg{width:13px;height:13px;fill:currentColor;flex:none}
+@media (max-width:480px){.ry-pause .ry-t{display:none}.ry-pause{padding:0}}
+.ry-pause.on{background:var(--pink);color:#1E2B2A;border-color:transparent}
+.ry-chip{font-size:.8rem;font-weight:700;border-radius:999px;padding:3px 10px;background:var(--pink);color:#1E2B2A}
+#hud.ry-off .daybar i{opacity:.35}
+.ry-fix h3{margin:0 0 4px}`;document.head.appendChild(st)})();
+/* ===== FIN AGENT RYTHME ===== */
 /* ===== AGENT UI ===== */
 /* Le re-rendu garde la position de lecture : défilement de la fiche, sections dépliées */
 renderSheet=(f=>function(){const el=$('#bsheet'),sc=el?el.scrollTop:0,same=el&&el.dataset.sel===String(sel);f();if(el){if(same)el.scrollTop=sc;el.dataset.sel=String(sel)}})(renderSheet);
@@ -6329,17 +6454,15 @@ tick=(f=>function(){try{f()}catch(e){reportErr(e,'temps')}})(tick);
   if(S.event&&!EV[S.event.id])S.event=null;
   S.sched=(S.sched||[]).filter(s=>s&&EV[s.id]);
   genCity(S.city);
-  const away=S.started&&!S.dead?Math.min((Date.now()-(S.lastSeen||Date.now()))/1000,4*3600):0;
-  let off=0,rentOff=0;
-  if(away>30){BIZ.forEach(b=>{const st=S.biz[b.id];if(st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*away});rentOff=dailyRent()*away/DAY_SEC}
-  if(off+rentOff>0)earn(off+rentOff);
+  /* Absence : gains plafonnés et écran de retour (voir ryAway, bloc AGENT RYTHME) */
+  const away=S.started&&!S.dead?Math.max(0,(Date.now()-(S.lastSeen||Date.now()))/1000):0;
   dispCash=S.cash;S.tab=S.tab||'ville';normTab();if(!['ville','gestion','vie','objectifs','empire','marche'].includes(S.tab))S.tab='ville';
   render();camTo(11,10,true);
   for(let i=0;i<14;i++){spawnPed();const e=ENTS[ENTS.length-1],a=e.pts[0],b=e.pts[1],k=Math.random();e.x=a[0]+(b[0]-a[0])*k;e.y=a[1]+(b[1]-a[1])*k}
   setInterval(tick,100);requestAnimationFrame(frame);
   if(!S.started){intro();return}
   if(S.dead){modal(heirsHTML());return}
-  if(off+rentOff>0)queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tes gérants et tes locataires ont travaillé pour toi pendant ${away>=3600?Math.floor(away/3600)+' h '+Math.floor(away%3600/60)+' min':Math.floor(away/60)+' min'}.</p><div class="big-num">+${fmt(off+rentOff)}</div><button class="btn big" style="margin-top:18px" data-a="close">Encaisser</button>`);
+  ryInit();if(S.paused)toast('Le jeu est en pause. Touche « Reprendre » en haut pour relancer le temps.');else if(away>30)ryAway(away,true);
   if(S.lastDaily!==today())dailyModal();
   if(S.event)queueModal(eventHTML(false));
 })();
