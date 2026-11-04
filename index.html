@@ -730,6 +730,8 @@ function repair(o){
   fillDefaults(newGame(),o);
   if(!isFinite(o.cash)||o.cash<0)o.cash=0;
   o.share=Math.min(.5,Math.max(0,+o.share||0));
+  o.stage=clamp(o.stage|0,0,STAGES.length-1);o.city=clamp(o.city|0,0,CITIES.length-1);o.gen=Math.max(1,o.gen|0);
+  ['energy','rep'].forEach(k=>{if(!isFinite(o[k]))o[k]=50});
   return o;
 }
 function readKey(k){try{const r=localStorage.getItem(k);return r?JSON.parse(r):null}catch(e){return null}}
@@ -1097,19 +1099,21 @@ Object.assign(EV,{
     text:d=>`Un permis pour agrandir ton propre ${nm(d.b).toLowerCase()} attend ta signature de maire.`,
     ch:[{t:'Signer, c’est un bon projet',go:d=>{mod(1.5,6,d.b);if(chance(.45))sched('scandale',3);return 'Les travaux commencent dès la semaine suivante.'}},
       {t:'Laisser ton adjoint décider',go:()=>{repD(3);return 'Une décision prudente, saluée par l’opposition elle-même.'}},
-      {t:'Refuser par principe',go:()=>{repD(6);S.pol.pop+=5;FXC.push('📊 Popularité +5');return 'Un maire qui refuse un cadeau à lui-même ? Les habitants adorent.'}}]},
+      {t:'Refuser par principe',go:()=>{repD(6);polPopD(5);return 'Un maire qui refuse un cadeau à lui-même ? Les habitants adorent.'}}]},
   scandale:{sched:true,cat:'pol',def:0,who:'📰',name:'La presse locale',title:'Conflit d’intérêts',
     text:()=>'« Le maire s’accorde un permis pour sa propre boutique » : l’article fait la une.',
-    ch:[{t:'Présenter des excuses publiques',go:()=>{repD(-8);S.pol.pop-=10;FXC.push('📊 Popularité −10');return 'Ça limite les dégâts, mais l’image en prend un coup.'}},{t:'Nier en bloc',go:()=>{repD(-18);S.pol.pop-=22;FXC.push('📊 Popularité −22');return 'Personne n’y croit. L’opposition réclame ta démission.'}}]},
+    ch:[{t:'Présenter des excuses publiques',go:()=>{repD(-8);polPopD(-10);return 'Ça limite les dégâts, mais l’image en prend un coup.'}},{t:'Nier en bloc',go:()=>{repD(-18);polPopD(-22);return 'Personne n’y croit. L’opposition réclame ta démission.'}}]},
   greve:{cat:'pol',w:4,cond:()=>S.pol.office==='maire',def:1,who:'🗑️',name:'Les éboueurs',title:'Grève des éboueurs',
     text:()=>'Les poubelles débordent dans toute la ville. Les éboueurs réclament une hausse de salaire.',
-    ch:[{t:'Négocier avec le budget de la ville',go:()=>{const c=costSec(60);S.pol.budget=Math.max(0,S.pol.budget-c);FXC.push('🏛️ Budget −'+fmt(c));S.pol.pop+=4;FXC.push('📊 Popularité +4');return 'Accord trouvé en 48 heures. La ville respire.'}},
-      {t:'Attendre que ça passe',go:()=>{satD('all','clean',-20);S.pol.pop-=8;FXC.push('📊 Popularité −8');return 'Trois semaines de rues sales. Tes propres boutiques en souffrent.'}}]},
+    ch:[{t:'Négocier avec le budget de la ville',go:()=>{const c=costSec(60);S.pol.budget=Math.max(0,S.pol.budget-c);FXC.push('🏛️ Budget −'+fmt(c));polPopD(4);return 'Accord trouvé en 48 heures. La ville respire.'}},
+      {t:'Attendre que ça passe',go:()=>{satD('all','clean',-20);polPopD(-8);return 'Trois semaines de rues sales. Tes propres boutiques en souffrent.'}}]},
   mercato:{cat:'club',w:6,cond:()=>S.club.own&&(monthOf(S.day)===5||monthOf(S.day)===6),def:1,who:'⚽',name:'Un agent de joueurs',title:'Le mercato d’été',
-    text:()=>`« J’ai un attaquant qui peut faire monter ton club. Il coûte ${fmt(recruitCost()*2.5)}. »`,
-    ch:[{t:'Le recruter',go:()=>{const c=Math.round(recruitCost()*2.5);if(S.cash<c){return 'Tu n’as pas les fonds. L’agent raccroche.'}S.cash-=c;dispCash=Math.min(dispCash,S.cash);FXC.push('−'+fmt(c));S.club.str=clamp(S.club.str+randInt(7,12),0,99);FXC.push('⚽ Niveau du club +10');return 'Présentation au stade devant des milliers de supporters.'}},
-      {t:'Garder l’équipe actuelle',go:()=>{if(chance(.3)){S.club.str=clamp(S.club.str-5,0,99);FXC.push('⚽ Niveau du club −5');return 'Ton meilleur joueur, frustré, part chez un rival.'}return 'Le groupe reste soudé.'}}]}
+    text:()=>`« J’ai un attaquant qui peut faire monter ton club. Il coûte ${fmt(mercatoCost())}. »`,
+    ch:[{t:'Le recruter',go:()=>{const C=ecoC(),c=mercatoCost();if(S.cash<c){return 'Tu n’as pas les fonds. L’agent raccroche.'}S.cash-=c;dispCash=Math.min(dispCash,S.cash);FXC.push('−'+fmt(c));const p=C.squad[randInt(0,C.squad.length-1)],g=randInt(7,12);p.note=clamp(p.note+g,0,99);C.str=ecoStr();FXC.push(`⚽ ${p.name} remplacé par une recrue plus forte (+${g})`);return 'Présentation au stade devant des milliers de supporters.'}},
+      {t:'Garder l’équipe actuelle',go:()=>{if(chance(.3)){const C=ecoC();if(C.squad&&C.squad.length){const b=C.squad.reduce((a,p)=>p.note>a.note?p:a,C.squad[0]);b.note=clamp(b.note-5,1,99);C.str=ecoStr();FXC.push(`⚽ ${b.name} −5`)}else{C.str=clamp(C.str-5,0,99);FXC.push('⚽ Niveau du club −5')}return 'Ton meilleur joueur, frustré, part chez un rival.'}return 'Le groupe reste soudé.'}}]}
 });
+function polPopD(n){const P=S.pol;if(P.office==='maire')appD(n);else if(P.cand)pollD(n);else{P.pop=clamp((P.pop||0)+n,0,100);FXC.push(`📊 Popularité ${n>0?'+':''}${n}`)}}
+function mercatoCost(){const C=ecoC();return Math.round(ecoPrice(Math.round(ecoStr())+8,C.div)*.8)}
 ['rencontre','emmenager','mariage','bebe','dispute','ado','bilan','sport','conflit','greve','mercato'].forEach(k=>{if(!EV_POOL.includes(k))EV_POOL.push(k)});
 
 /* ================= BORN AT RANDOM (inspired by life-lottery games) ================= */
@@ -2172,18 +2176,19 @@ function buyProp(pid){
   toast(`${propName(o)} achetée. Loyer : +${fmt(propRent(o,1))} par mois.`);checkTrophies();
 }
 function renovProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l||l>=3)return;const c=renovCost(o,l);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);S.props[pid]=l+1;computeNb();sfx('good');addXP(5);toast(`Rénovée ! Loyer : +${fmt(propRent(o,l+1))} par mois.`)}
-function sellProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l)return;const v=Math.round(propBase(o)*(.7+.3*l));delete S.props[pid];earn(v);computeNb();sfx('sale');toast(`Vendue pour ${fmt(v)}.`)}
+function sellProp(pid){const o=DECOR.find(x=>x.pid===pid),l=S.props[pid];if(!o||!l)return;const v=Math.round(propBase(o)*(.7+.3*l));delete S.props[pid];if(S.propUp)delete S.propUp[pid];G.bucket=-1;earn(v);computeNb();sfx('sale');toast(`Vendue pour ${fmt(v)}.`)}
 function upgradeStage(){const n=STAGES[S.stage+1];if(!n)return;if(S.cash<n.cost){toast(`Il te manque ${fmt(n.cost-S.cash)}.`);sfx('no');return}spend(n.cost);S.stage++;sfx('rank');addXP(40);toast(`Nouveau chez-toi : ${n.name.toLowerCase()}. ${n.perk}`)}
 function checkTrophies(){FXC=[];if(S.stats.reviews5>=50)trophy('t_avis');if(ownedCount()>=10)trophy('t_proprio');if(S.city>=4)trophy('t_monde');if(S.kids.length>=3)trophy('t_famille');if(S.gen>=3)trophy('t_dynastie');if(FXC.length)toast(FXC.join(' '));FXC=[]}
 function franchise(){
   const ns=newStars();if(ns<1||conqDone()<7)return;
   if(S.mkt&&S.mkt.a)S.mkt.a.forEach((x,i)=>{if(x.qty){S.mkt.sel=i;mktSell('max')}});
+  const vie=V(),hd=vieHomeDef(),homeSale=hd&&hd.price?vieSaleValue():0;if(hd&&hd.price)vie.home=null;
   const keep={stars:S.stars+ns,city:Math.min(S.city+1,CITIES.length-1),trophies:S.trophies,claimed:S.claimed,notified:S.notified,lifetimeAll:S.lifetimeAll,rep:Math.max(40,Math.round(S.rep*.6+20)),
     stats:S.stats,counts:S.counts,xp:S.xp,streak:S.streak,lastDaily:S.lastDaily,sound:S.sound,started:true,hintSeen:true,day:S.day,hero:S.hero,journal:S.journal,flags:{dimanche:S.flags.dimanche,assistant:S.flags.assistant,karim:S.flags.karim,famUsed:S.flags.famUsed,vipPlus:S.flags.vipPlus,lastKid:S.flags.lastKid},
-    energy:Math.max(60,S.energy),share:0,partner:S.partner,kids:S.kids,gen:S.gen,dynasty:S.dynasty,sitBonus:S.sitBonus,speed:S.speed,cohort:S.cohort,grandkids:S.grandkids,yearsMarried:S.yearsMarried};
-  S=Object.assign(newGame(),keep);S.pol.nextElec=S.day+12;dispCash=S.cash;sel=null;applyCityBiz(S.city);S.mkt=freshMkt();genCity(S.city);camTo(11,10,true);addXP(100);sfx('rank');checkTrophies();
+    energy:Math.max(60,S.energy),share:0,partner:S.partner,kids:S.kids,gen:S.gen,dynasty:S.dynasty,sitBonus:S.sitBonus,speed:S.speed,cohort:S.cohort,grandkids:S.grandkids,yearsMarried:S.yearsMarried,vie,meta:S.meta,evMem:S.evMem};
+  S=Object.assign(newGame(),keep);if(homeSale>0)S.cash+=homeSale;S.pol.nextElec=S.day+12;dispCash=S.cash;sel=null;applyCityBiz(S.city);S.mkt=freshMkt();genCity(S.city);camTo(11,10,true);addXP(100);sfx('rank');checkTrophies();
   const c=CITIES[S.city];
-  S.journal.unshift({day:S.day,who:c.e,name:c.n,title:'Nouvelle franchise',choice:'Ouvrir une franchise',res:`Tu t’installes à ${c.n}${S.partner&&S.partner.stage!=='couple'?' avec ta famille':''}. ${c.t}`,fx:[`⭐ ${S.stars} étoiles`]});
+  S.journal.unshift({day:S.day,who:c.e,name:c.n,title:'Nouvelle franchise',choice:'Ouvrir une franchise',res:`Tu t’installes à ${c.n}${S.partner&&S.partner.stage!=='couple'?' avec ta famille':''}. ${c.t}`,fx:[`⭐ ${S.stars} étoiles`].concat(homeSale>0?[`🏠 Logement revendu +${fmt(homeSale)}`]:[])});
   modal(`<div class="reveal-box pop">${c.e}</div><h2>Bienvenue à ${c.n}</h2><p>${c.t}</p>
     <p>Tu repars de zéro, mais avec <strong>${S.stars} étoile${S.stars>1?'s':''} de franchise</strong> : +${S.stars*10} % sur tous tes revenus.</p>
     <p class="hint">Nouvelle ville, nouveaux marchés : ${BIZ.map(b=>b.e).join(' ')}. Un nouveau produit à la bourse locale : ${mkt().e} ${mkt().n}. Ta famille, tes trophées et ton histoire te suivent.</p>
@@ -2274,7 +2279,6 @@ function decide(i,auto){
     <div class="fxchips">${entry.fx.filter(f=>!/^[+−][0-9]/.test(f)&&!/^(📣|⚡|😊|❤️ Couple|❤️‍🩹|📊)/.test(f)).map(f=>`<span class="fxchip ${/−|×0|💔/.test(f)?'neg':''}">${f}</span>`).join('')}</div>
     ${follow?'<p class="follow">📌 Cette décision aura une suite dans les prochains mois…</p>':''}
     <button class="btn big" style="margin-top:16px" data-a="close">Continuer</button>`;
-  closeModal();
   modal(`<div class="suspense"><div class="reveal-box">${who}</div><p class="dots"><span>.</span><span>.</span><span>.</span></p><p class="hint">${esc(ct)}</p></div>`);
   setTimeout(()=>{if(!modalOpen)return;$('#layer .sheet').innerHTML=html;if(dc>0){burstAt(innerWidth/2,innerHeight*.45,10,null)}requestAnimationFrame(()=>requestAnimationFrame(()=>document.querySelectorAll('.dto').forEach(e=>e.style.width=e.dataset.w+'%')))},950);
 }
@@ -2370,7 +2374,7 @@ function newDay(auto){
   clubMonth(pm,m);
   if(typeof vieMonth==='function')vieMonth(pm);
   // story
-  if(S.event&&S.day>S.event.deadline){const E=evDef();decide(E.def||0,true)}
+  if(S.event&&S.day>S.event.deadline){const E=evDef();if(E)decide(E.def||0,true);else S.event=null}
   if(!S.event){const pe=pickEvent();if(pe)startEvent(pe[0],pe[1])}
   checkTrophies();
   if(!auto)toast(`${dateLabel(S.day)}${ev?' : '+ev.n:''}`);
@@ -2414,7 +2418,6 @@ function inherit(name){
   S.pol.office=null;S.pol.cand=false;S.pol.pop=0;S.pol.nextElec=S.day+12;S.flags.lastKid=-99;S.share=0;
   FXC=[];checkTrophies();
   S.journal.unshift({day:S.day,who:S.hero.av,name:'Succession',title:`${S.hero.name} reprend l’empire`,choice:`Génération ${S.gen}`,res:`Droits de succession : ${fmt(lostCash)} et ${Math.round((1-keepLvl)*100)} % des niveaux d’affaires perdus.`,fx:[`👑 Génération ${S.gen}`]});
-  closeModal();
   modal(`<div class="reveal-box pop">${S.hero.av}</div><h2>${esc(S.hero.name)}, ${S.hero.age} ans, génération ${S.gen}</h2><p>Tu reprends l’empire familial. ${fmt(lostCash)} sont partis en droits de succession, et chaque affaire a perdu ${Math.round((1-keepLvl)*100)} % de ses niveaux.</p><p class="hint" style="margin-top:8px">Les propriétés, les améliorations, les trophées et le club restent dans la famille. À toi de faire mieux que tes parents.</p><button class="btn big" style="margin-top:16px" data-a="close">Relever le défi</button>`);
   render();
 }
@@ -2498,18 +2501,18 @@ function renderSheet(){
       <div class="bs-sec bs-row">${S.event?'<button class="btn pinkb" data-a="openev">Une décision t’attend</button>':''}<button class="btn ghost" data-a="tab" data-t="vie">Ma vie</button></div>
       ${n?`<div class="bs-sec"><h3>Déménager : ${n.name}</h3><p class="hint">${n.perk}</p><button class="btn ${S.cash>=n.cost?'go':''}" style="margin-top:8px" data-a="stage" data-cost="${n.cost}" ${S.cash>=n.cost?'':'disabled'}>Emménager pour ${fmt(n.cost)}</button></div>`:''}`;return}
   if(sel==='mairie'){const P=S.pol;
-    el.innerHTML=`<div class="bs-head"><div class="bs-ic">🏛️</div><div><h2>Hôtel de ville</h2><p class="hint">${P.office==='maire'?`Tu es le maire, mandat n°${P.terms}`:P.cand?'Tu es '+gx(S.hero,'candidat','candidate'):`Prochaines élections : ${dateLabel(P.nextElec)}`}</p></div>${x}</div>
-      <div class="bs-sec">${P.office==='maire'?`<div class="kv"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Projets réalisés</span><b>${P.projects.length}/${PROJECTS.length-1}</b></div>`:P.cand?gaugeHTML('Popularité',P.pop):'<p class="hint">Avec assez de réputation, tu pourras te présenter.</p>'}</div>
+    el.innerHTML=`<div class="bs-head"><div class="bs-ic">🏛️</div><div><h2>Hôtel de ville</h2><p class="hint">${P.office==='maire'?`Tu es ${gx(S.hero,'le maire','la maire')}, mandat n°${P.terms}`:P.cand?'Tu es '+gx(S.hero,'candidat','candidate'):`Prochaines élections : ${dateLabel(P.nextElec)}`}</p></div>${x}</div>
+      <div class="bs-sec">${P.office==='maire'?`<div class="kv"><span>Budget municipal</span><b>${fmt(P.budget)}</b></div><div class="kv"><span>Projets réalisés</span><b>${P.projects.length}/${PROJ_ALL.filter(p=>p.id!=='fete').length}</b></div>`:P.cand?gaugeHTML('Intentions de vote',P.dist?pollPct():P.pop):'<p class="hint">Avec assez de réputation, tu pourras te présenter.</p>'}</div>
       <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="pol">Voir la mairie</button></div>`;return}
   if(sel==='stade'){const C=S.club;
     el.innerHTML=`<div class="bs-head"><div class="bs-ic">⚽</div><div><h2>${C.own?esc(C.name):'Stade municipal'}</h2><p class="hint">${C.own?`${DIVS[C.div]}, ${C.pts} pts en ${C.played} matchs`:'Le club local cherche un repreneur.'}</p></div>${x}</div>
-      <div class="bs-sec">${C.own?`${gaugeHTML('Niveau',C.str)}${C.last?`<p class="review-mini">Dernier match : ${esc(C.name)} ${C.last.gf}-${C.last.ga} ${C.last.opp}</p>`:''}`:`<div class="kv"><span>Prix du club</span><b>${fmt(clubCost())}</b></div>`}</div>
+      <div class="bs-sec">${C.own?`${gaugeHTML('Niveau',ecoStr())}${C.last?`<p class="review-mini">Dernier match : ${esc(C.name)} ${C.last.gf}-${C.last.ga} ${C.last.opp}</p>`:''}`:`<div class="kv"><span>Prix du club</span><b>${fmt(clubCost2())}</b></div>`}</div>
       <div class="bs-sec"><button class="btn go" data-a="goquest" data-f="club">${C.own?'Gérer le club':'Voir l’offre de rachat'}</button></div>`;return}
   if(isProp(sel)){const o=DECOR.find(z=>z.pid===sel);if(!o){el.hidden=true;return}const l=S.props[sel],near=nearBiz(o);
-    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${TH_.dome?'🫧':o.t==='apt'?'🏢':'🏠'}</div><div><h2>${propName(o)}</h2><p class="hint">${l?`À toi, niveau ${l}/3`:'À vendre'}</p></div>${x}</div>
+    el.innerHTML=`<div class="bs-head"><div class="bs-ic">${TH_.dome?'🫧':o.t==='apt'?'🏢':'🏠'}</div><div><h2>${propName(o)}</h2><p class="hint">${l?(l>=4?'À toi, résidence moderne':`À toi, niveau ${l}/3`):'À vendre'}</p></div>${x}</div>
       <div class="bs-sec"><div class="kv"><span>Loyer par mois</span><b>${fmt(propRent(o,l||1))}</b></div>
       <div class="kv"><span>Bonus de quartier</span><b>${near.length?near.map(b=>b.e).join(' ')+' +4 % chacun':'aucune boutique à proximité'}</b></div></div>
-      <div class="bs-sec">${l?(l<3?`<button class="btn go" data-a="renov" data-id="${sel}" data-cost="${renovCost(o,l)}" ${S.cash>=renovCost(o,l)?'':'disabled'}>Rénover pour ${fmt(renovCost(o,l))}</button> `:'<p class="hint">Rénovation maximale.</p>')+`<button class="btn ghost small" style="margin-top:8px" data-a="sellprop" data-id="${sel}">Revendre</button>`
+      <div class="bs-sec">${l?(l<3?`<button class="btn go" data-a="renov" data-id="${sel}" data-cost="${renovCost(o,l)}" ${S.cash>=renovCost(o,l)?'':'disabled'}>Rénover pour ${fmt(renovCost(o,l))}</button> `:l===3?`<button class="btn go" data-a="rebuild" data-id="${sel}" data-cost="${rebuildCost(o)}" ${S.cash>=rebuildCost(o)?'':'disabled'}>Reconstruire pour ${fmt(rebuildCost(o))}</button> `:'<p class="hint">Résidence moderne : rien de plus à faire.</p>')+`<button class="btn ghost small" style="margin-top:8px" data-a="sellprop" data-id="${sel}">Revendre</button>`
         :`<button class="btn big go" data-a="buyprop" data-id="${sel}" data-cost="${propPrice(o)}" ${S.cash>=propPrice(o)?'':'disabled'}>Acheter pour ${fmt(propPrice(o))}</button><p class="hint" style="margin-top:6px">Chaque achat fait grimper le prix du suivant.</p>`}</div>`;return}
   const b=BIZ_BY[sel];if(!b){el.hidden=true;return}const st=S.biz[b.id];
   if(!st.lvl){el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>Terrain à vendre</h2><p class="hint">Futur ${b.n.toLowerCase()}</p></div>${x}</div>
@@ -3338,6 +3341,12 @@ function ecoHash(s){let h=7;for(const ch of String(s||'x'))h=(h*31+ch.charCodeAt
 function ecoM(){return CITY_MULT(S.city||0)}
 function ecoPM(){return 1/(S.speed||1)}
 function ecoC(){const C=S.club;
+  if(C.own){
+    if(!Array.isArray(C.squad)||!C.squad.length){const base=clamp(Math.round(C.str||30),15,90);
+      C.squad=POSTES.map(p=>({poste:p,name:pick(PNAMES),note:clamp(base+randInt(-3,3),10,99),fit:70,inj:0}))}
+    if(!Array.isArray(C.table)||!C.table.some(t=>t&&t.me)){C.table=genTable(clamp(C.div|0,0,DIVS.length-1));C.table[0].n=C.name}
+    if(!Array.isArray(C.seasons))C.seasons=[];if(!Array.isArray(C.form))C.form=[];if(C.morale==null)C.morale=55;
+  }
   if(!C.ecoV){C.ecoV=1;if(C.own){C.stade=[0,2,4,6][clamp(C.stade|0,0,3)];C.coach=[0,2,3,5][clamp(C.coach|0,0,3)]}}
   if(C.tix==null)C.tix=1;C.shop=C.shop||0;C.med=C.med||0;C.acad=C.acad||0;C.signs=C.signs||0;C.seasonRev=C.seasonRev||0;
   if(C.kit==null)C.kit=ecoHash(C.name)%ECO_KITS.length;
@@ -5837,7 +5846,13 @@ tick=(f=>function(){try{f()}catch(e){reportErr(e,'temps')}})(tick);
 /* ===== FIN FILET DE SÉCURITÉ ===== */
 /* ================= BOOT ================= */
 (function boot(){
-  applyCityBiz(S.city);if(!S.mkt)S.mkt=freshMkt();genCity(S.city);
+  applyCityBiz(S.city);
+  if(!S.mkt||!Array.isArray(S.mkt.a)){const old=S.mkt;S.mkt=freshMkt();
+    if(old){S.mkt.profit=+old.profit||0;S.mkt.cap=+old.cap||0;if(old.qty>0){S.mkt.a[0].qty=old.qty;S.mkt.a[0].avg=+old.avg||S.mkt.a[0].price}}}
+  if(!(S.mkt.sel>=0&&S.mkt.sel<3))S.mkt.sel=0;
+  if(S.event&&!EV[S.event.id])S.event=null;
+  S.sched=(S.sched||[]).filter(s=>s&&EV[s.id]);
+  genCity(S.city);
   const away=S.started&&!S.dead?Math.min((Date.now()-(S.lastSeen||Date.now()))/1000,4*3600):0;
   let off=0,rentOff=0;
   if(away>30){BIZ.forEach(b=>{const st=S.biz[b.id];if(st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*away});rentOff=dailyRent()*away/DAY_SEC}
