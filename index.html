@@ -6315,24 +6315,29 @@ function ryFixPlan(){const L=[];openIds().forEach(id=>{const b=BIZ_BY[id],st=S.b
   Object.keys(QK).forEach(k=>{const a=ACTS.find(x=>x.k===k);if(!a||cd[a.id]>S.day||st.q[k]>=95)return;L.push({id,k,a,c:actCost(b,a),q:st.q[k]})})});
   return L.sort((x,y)=>x.q-y.q)}
 function ryHirePlan(){const L=[];openIds().forEach(id=>{const b=BIZ_BY[id],st=S.biz[id];if(!b||!st)return;const s=st.staff||{clean:0,wait:0,qual:0};
-  Object.keys(QK).forEach(k=>{if((s[k]|0)<3)L.push({id,k,c:staffCost(b,s[k]|0),q:st.q[k]})})});return L.sort((x,y)=>x.c-y.c)}
+  Object.keys(QK).forEach(k=>{if((s[k]|0)<3)L.push({id,k,c:staffCost(b,s[k]|0),q:st.q[k]})})});return L.sort((x,y)=>x.q-y.q||x.c-y.c)}
+/* Ce que « Tout régler » peut payer maintenant, dans l'ordre (jauges les plus basses d'abord) */
+function ryHireAfford(L){let c=S.cash,n=0,t=0;for(const it of L){if(c<it.c)continue;c-=it.c;t+=it.c;n++}return{n,t}}
 function ryFixAll(){const L=ryFixPlan();let n=0,spent=0,lowE=false,lowC=false;
   for(const it of L){const st=S.biz[it.id];if(S.cash<it.c){lowC=true;continue}if(S.energy<it.a.nrg){lowE=true;continue}
     spend(it.c);spent+=it.c;S.energy=clamp(S.energy-it.a.nrg,0,100);st.q[it.k]=clamp(st.q[it.k]+it.a.gain,0,100);st.cd[it.a.id]=S.day+it.a.cd;S.counts.actions++;n++}
   if(!n){toast(lowE?'Trop crevé pour ça ce mois-ci.':lowC?'Pas assez d’argent pour régler quoi que ce soit.':'Rien à régler pour l’instant.');sfx('no');return}
   addXP(5*n);sfx('good');toast(`${n} coup${n>1?'s':''} de boost payé${n>1?'s':''} (${fmt(spent)}).${n<L.length?` ${L.length-n} en attente : ${lowE?'plus d’énergie':'plus assez d’argent'}.`:''}`)}
 function ryHireAll(){const L=ryHirePlan();let n=0,spent=0;
-  for(const it of L){if(S.cash<it.c)break;const st=S.biz[it.id],s=st.staff||(st.staff={clean:0,wait:0,qual:0});spend(it.c);spent+=it.c;s[it.k]=(s[it.k]|0)+1;st.q[it.k]=clamp(st.q[it.k]+25,0,100);S.counts.actions++;n++}
+  let skip=0;for(const it of L){if(S.cash<it.c){skip++;continue}const st=S.biz[it.id],s=st.staff||(st.staff={clean:0,wait:0,qual:0});spend(it.c);spent+=it.c;s[it.k]=(s[it.k]|0)+1;st.q[it.k]=clamp(st.q[it.k]+25,0,100);S.counts.actions++;n++}
   if(!n){toast('Pas assez d’argent pour une embauche.');sfx('no');return}
-  addXP(10*n);sfx('rank');toast(`${n} embauche${n>1?'s':''} définitive${n>1?'s':''} (${fmt(spent)}).`)}
+  addXP(10*n);sfx('rank');toast(`${n} embauche${n>1?'s':''} définitive${n>1?'s':''} (${fmt(spent)}).${skip?` ${skip} autre${skip>1?'s':''} plus tard, quand tu auras l’argent.`:''}`)}
 vAvis=(f=>function(){const html=f(),F=ryFixPlan(),H=ryHirePlan();if(!openIds().length)return html;
   const fc=F.reduce((a,x)=>a+x.c,0),fe=F.reduce((a,x)=>a+x.a.nrg,0),hc=H.reduce((a,x)=>a+x.c,0);
+  const A=ryHireAfford(H);
   const panel=`<div class="panel ry-fix"><h3>Tout régler d’un coup</h3>
-    <p class="hint">Les jauges les plus basses passent en premier. Si l’argent ou l’énergie manquent, on fait ce qui est possible et on s’arrête là.</p>
-    <div class="kv"><span>Coups de boost disponibles (${F.length})</span><b>${F.length?fmt(fc)+' · énergie '+fe:'—'}</b></div>
-    <div class="kv"><span>Personnel encore à embaucher (${H.length})</span><b>${H.length?fmt(hc):'—'}</b></div>
-    <div class="bs-row" style="margin-top:8px"><button class="btn small go" data-a="ry_fixall" ${F.length&&S.cash>=Math.min(...F.map(x=>x.c))?'':'disabled'}>Tout régler${F.length?' ('+fmt(fc)+')':''}</button>
-    <button class="btn small ghost" data-a="ry_hireall" ${H.length&&S.cash>=H[0].c?'':'disabled'}>Embaucher partout${H.length?' ('+fmt(hc)+')':''}</button></div></div>`;
+    <p class="hint">Embauche du personnel définitif, en commençant par les jauges les plus basses. Payé une fois, il travaille pour toujours ; dès le 2e niveau, la jauge remonte toute seule. S’il manque de l’argent, on embauche ce qui est possible.</p>
+    <div class="kv"><span>Embauches à faire (${H.length})</span><b>${H.length?fmt(hc):'Tout le monde est là'}</b></div>
+    <div class="kv"><span>Possibles maintenant</span><b>${A.n?A.n+' pour '+fmt(A.t):'—'}</b></div>
+    <button class="btn go" style="margin-top:8px;width:100%" data-a="ry_hireall" ${A.n?'':'disabled'}>Tout régler${A.n?' : '+A.n+' embauche'+(A.n>1?'s':'')+' ('+fmt(A.t)+')':''}</button>
+    <div class="kv" style="margin-top:10px"><span>Coups de boost (temporaires, ${F.length})</span><b>${F.length?fmt(fc)+' · énergie '+fe:'—'}</b></div>
+    <p class="hint">Un coup de boost remonte une jauge pour un temps puis elle redescend. Utile en urgence, mais l’argent ne reste pas.</p>
+    <button class="btn small ghost" style="margin-top:6px" data-a="ry_fixall" ${F.length&&S.cash>=Math.min(...F.map(x=>x.c))?'':'disabled'}>Coups de boost partout${F.length?' ('+fmt(fc)+')':''}</button></div>`;
   const i=html.indexOf('<div class="panel"><div class="ug-h">');return i<0?html+panel:html.slice(0,i)+panel+html.slice(i)})(vAvis);
 
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="ry_"]');if(!b||b.disabled)return;
@@ -7740,6 +7745,259 @@ mktSell=(f=>function(n){const before=S.mkt?S.mkt.profit:0;const r=f.apply(this,a
 mktGains=()=>{const b=S.counts&&S.counts.bourse;return b?(b[String(S.city||0)]||0):0};
 conqGoals=(f=>function(){const L=f.apply(this,arguments);return L.map(g=>/à la bourse locale/.test(g.t)?{t:g.t,p:()=>[Math.round(mktGains()),mktGoal2()]}:g)})(conqGoals);
 /* ===== FIN TUTORIEL ===== */
+/* ===== AGENT PERSO ===== */
+/* Naissance au hasard d'office, look du perso modifiable, réglage « Je cherche », genre des gérants,
+   mairie cohérente avec le déblocage (candidature depuis l'onglet, moitié de la campagne remboursée),
+   fiche énergie + repos, nom du stade, sondage présenté chaque semaine, code de transfert simplifié.
+   Champs ajoutés (tous optionnels) : S.hero.look, S.vie.seek, S.flags.peRest, S.club.stadeNm, S.pol.camp.spent, S.meta.pollShown. */
+
+/* ---------- 1. Création : on naît au hasard, sans choix ---------- */
+intro=function(){CR={step:0,name:'',av:AVATARS[0],age:22,origin:'metro',sit:'etudiant',mode:'hasard',g:null};
+  modal(`<div class="logo">Flip<br>Empire</div><h2>Une vie commence</h2>
+  <p>Chaque seconde, quatre bébés naissent sur Terre. L’un d’eux, c’est toi.</p>
+  <p class="hint" style="margin-top:8px">Ta famille, ton prénom, ta ville : le hasard décide. Tu fais quelques choix jusqu’à tes 18 ans, puis tu lances tes affaires. Ton look, lui, se change quand tu veux.</p>
+  <button class="btn big go" style="margin-top:18px;width:100%" data-a="pe_born">Naître</button>`)};
+function peBorn(){const g=prRandG();CR.g=g;CR.name=prPickName(g,[]);CR.av=adultAvOf(g);CR.mode='hasard';startChildhood()}
+/* Premier amour de l'enfance : l'autre genre */
+chStep=(f=>function(){const keep=FIRST.slice();try{if(CH&&CH.age===14){const l=CH.g==='f'?PR_M:PR_F;FIRST.splice(0,FIRST.length,...l)}return f.apply(this,arguments)}finally{FIRST.splice(0,FIRST.length,...keep)}})(chStep);
+/* Fin de l'enfance : proposer de choisir son look */
+finishChildhood=(f=>function(){const r=f.apply(this,arguments);try{const s=$('#layer .sheet'),b=s&&s.querySelector('[data-a=close]');
+  if(b&&!s.querySelector('[data-a=pe_look]'))b.insertAdjacentHTML('beforebegin','<button class="btn ghost" style="margin-top:16px;width:100%" data-a="pe_look">Choisir mon look</button>')}catch(e){}return r})(finishChildhood);
+
+/* ---------- 2. Look du perso ---------- */
+const PE_TONES=[['🏻','Très clair'],['🏼','Clair'],['🏽','Mat'],['🏾','Foncé'],['🏿','Très foncé']];
+const PE_HAIR={f:[['brun','Bruns'],['boucles','Bouclés'],['roux','Roux'],['blond','Blonds'],['blanc','Blancs'],['rase','Rasés']],
+  m:[['brun','Bruns'],['boucles','Bouclés'],['roux','Roux'],['blond','Blonds'],['blanc','Blancs'],['chauve','Chauve'],['barbe','Barbu']]};
+const PE_OUT=[['','Normale',''],['costume','Costume','💼'],['tablier','Chef','🍳'],['atelier','Atelier','🔧'],['geek','Geek','💻'],['artiste','Artiste','🎨'],['scene','Scène','🎤'],['labo','Labo','🔬'],['jardin','Jardin','🌾']];
+const PE_ACC=[['','Rien'],['🕶️','Soleil'],['👓','Lunettes'],['🎩','Chapeau'],['🧢','Casquette'],['🎀','Nœud'],['🌸','Fleur'],['🎧','Casque'],['⌚','Montre'],['👑','Couronne']];
+const PE_BG=[['','Jaune','var(--sticker)'],['rose','Rose','#F6B3CF'],['bleu','Bleu','#A9D2FF'],['vert','Vert','#A8E6BC'],['violet','Violet','#CDBDFF'],['orange','Orange','#FFC294'],['gris','Gris','#D5DBE0']];
+const PE_ZWJ='‍';
+function peAv(L,g){const t=L.tone||'🏽',b=g==='f'?'👩':'👨',o=PE_OUT.find(x=>x[0]===L.out);
+  if(o&&o[2])return b+t+PE_ZWJ+o[2];
+  switch(L.hair){case 'boucles':return b+t+PE_ZWJ+'🦱';case 'roux':return b+t+PE_ZWJ+'🦰';case 'blanc':return b+t+PE_ZWJ+'🦳';case 'rase':case 'chauve':return b+t+PE_ZWJ+'🦲';
+    case 'blond':return '👱'+t+PE_ZWJ+(g==='f'?'♀️':'♂️');case 'barbe':return g==='f'?b+t:'🧔'+t;default:return b+t}}
+function peSkin(){try{const sk=metaEq('avatar');return sk&&sk.id!=='av_none'?sk:null}catch(e){return null}}
+function peBaseAv(){const m=S.meta;return peSkin()&&m&&m.baseAv?m.baseAv.av:S.hero.av}
+function peLook(){const h=S.hero;if(h.look&&typeof h.look==='object'&&h.look.name===h.name)return h.look;
+  const a=String(peBaseAv()||''),o=PE_OUT.find(x=>x[2]&&a.includes(x[2]));
+  const hair=/🦰/u.test(a)?'roux':/🦱/u.test(a)?'boucles':/🦳/u.test(a)?'blanc':/🦲/u.test(a)?(gOf(h)==='f'?'rase':'chauve'):/👱/u.test(a)?'blond':/🧔/u.test(a)?'barbe':'brun';
+  return {name:h.name,tone:toneOf(a)||'🏽',hair,out:o?o[0]:'',acc:'',bg:''}}
+function peSetAv(av){const m=S.meta;if(peSkin()&&m){m.baseAv={av,name:S.hero.name}}else S.hero.av=av;try{metaApply()}catch(e){}}
+function peBg(L){const b=PE_BG.find(x=>x[0]===((L&&L.bg)||''));return b?b[2]:'var(--sticker)'}
+function peAvHTML(cls){const L=S.hero.look&&S.hero.look.name===S.hero.name?S.hero.look:null,sk=document.documentElement.hasAttribute('data-av');
+  return `<div class="${cls} pe-av"${L&&L.bg&&!sk?` style="background:${peBg(L)}"`:''}>${S.hero.av}${L&&L.acc&&!peSkin()?`<i class="pe-acc">${L.acc}</i>`:''}</div>`}
+let PE_DRAFT=null;
+function peLookHTML(){const L=PE_DRAFT,g=gOf(S.hero),av=peAv(L,g),sk=peSkin();
+  const row=(t,k,list,lab)=>`<h3 class="pe-h">${t}</h3><div class="pe-row">${list.map(x=>`<button class="pe-c ${(L[k]||'')===x[0]?'on':''}" data-a="pe_set" data-k="${k}" data-v="${x[0]}" aria-label="${x[1]}" title="${x[1]}">${lab(x)}</button>`).join('')}</div>`;
+  return `<h2>Ton look</h2><p class="hint">${esc(S.hero.name)}, ${gx(S.hero,'né','née')} ${S.hero.place?'à '+esc(S.hero.place):'quelque part'} : ça, c’est le hasard. Le reste, c’est toi.</p>
+  <div class="pe-prev" style="background:${peBg(L)}">${av}${L.acc?`<i class="pe-acc">${L.acc}</i>`:''}</div>
+  ${row('Teint','tone',PE_TONES,x=>`<span>${peAv(Object.assign({},L,{tone:x[0]}),g)}</span><small>${x[1]}</small>`)}
+  ${row('Cheveux','hair',PE_HAIR[g],x=>`<span>${peAv(Object.assign({},L,{hair:x[0],out:''}),g)}</span><small>${x[1]}</small>`)}
+  ${row('Tenue','out',PE_OUT,x=>`<span>${peAv(Object.assign({},L,{out:x[0]}),g)}</span><small>${x[1]}</small>`)}
+  <p class="hint" style="margin-top:4px">Avec une tenue de métier, la coiffure ne se voit plus.</p>
+  ${row('Accessoire','acc',PE_ACC,x=>`<span>${x[0]||'–'}</span><small>${x[1]}</small>`)}
+  ${row('Fond','bg',PE_BG,x=>`<span class="pe-dot" style="background:${x[2]}"></span><small>${x[1]}</small>`)}
+  ${sk?`<p class="hint" style="margin-top:8px">Tu portes le costume « ${esc(sk.n)} » de la boutique. Ton look réapparaît quand tu choisis « Mon perso » dans la boutique.</p>`:''}
+  <div style="display:grid;gap:8px;margin-top:14px"><button class="btn big go" data-a="pe_lookok">Garder ce look</button><button class="btn ghost" data-a="close">Annuler</button></div>`}
+function peOpenLook(){PE_DRAFT=Object.assign({},peLook());modal(peLookHTML())}
+
+/* ---------- 3. Couple : « Je cherche » (par défaut l'autre genre) ---------- */
+prPartnerG=function(){const s=S.vie&&S.vie.seek,h=gOf(S.hero);if(s==='f'||s==='m')return s;if(s==='any')return prRandG();return h==='f'?'m':'f'};
+function peSeekHTML(){const s=(S.vie&&S.vie.seek)||'',cur=s||(gOf(S.hero)==='f'?'m':'f');
+  return `<div class="panel pe-seek"><div class="kv"><span><b>Je cherche</b></span><span class="hint">${S.partner?'Pour tes prochaines rencontres':'Rencontres et profils'}</span></div>
+  <div class="chips" style="margin-top:6px">${[['f','Une femme'],['m','Un homme'],['any','Peu importe']].map(([k,n])=>`<button class="chip ${cur===k?'onchip':''}" data-a="pe_seek" data-v="${k}">${n}</button>`).join('')}</div></div>`}
+vieFamille=(f=>function(){const h=f.apply(this,arguments),i=h.indexOf('<div class="sec-head"><h2>Ta lignée');return i<0?h+peSeekHTML():h.slice(0,i)+peSeekHTML()+h.slice(i)})(vieFamille);
+
+/* ---------- 4. Gérants : avatar et accords selon le nom ---------- */
+function mgrG(n){n=String(n||'').trim();
+  if(/^(Mme|Mlle|Madame|Mademoiselle|Tata|Tante|Mère|Mamie|Miss|Mrs|Ms|Lady|Señora|Doña|Dona|Signora|Frau|Sœur|Obâchan|Okami|Ingénieure|Ta |Ton associée|Ton ex-associée)/i.test(n)||/(ova|eva|ska)$/i.test(n))return 'f';
+  if(/^(M\.|Monsieur|Tonton|Oncle|Papy|Père|Mr|Sir|Señor|Don |Herr|Signor |Capitaine|Ton |Dr )/i.test(n))return 'm';
+  const w=n.split(/[\s,]/)[0],g=nameG(w);if(g)return g;
+  if(/ la |(ienne|ière|euse|trice|esse|ée)(\s|,|$)/i.test(n))return 'f';
+  if(!/\s/.test(n)&&/(nn|ette|elle|ine|ia|ie|a)$/i.test(n))return 'f';return 'm'}
+const mgrAv=id=>mgrG(MGR_NAMES[id])==='f'?'👩🏽‍💼':'👨🏽‍💼';
+if(EV.augmentation){EV.augmentation.whoF=d=>mgrAv(d.b);
+  const r=EV.augmentation.ch&&EV.augmentation.ch[1];if(r)r.go=d=>{const f=mgrG(MGR_NAMES[d.b])==='f';if(chance(.5)){S.biz[d.b].mgr=false;S.biz[d.b].running=false;FXC.push(`🚪 ${BIZ_BY[d.b].e} n’a plus de gérant`);return 'Démission ! Il faudra retrouver quelqu’un.'}satD(d.b,'wait',-15);return `${f?'Elle':'Il'} reste, mais le cœur n’y est plus.`}}
+
+/* ---------- 5. Mairie : pas de candidature avant l'onglet, candidature possible depuis l'onglet ---------- */
+const peMairieLocked=()=>typeof tabLocked==='function'&&tabLocked('mairie')&&!S.pol.office&&!S.pol.cand;
+polMonth=(f=>function(){const P=S.pol;decInit();const lock=peMairieLocked(),C=P.camp,old=C&&C.ask;
+  if(lock&&C){C.ask=P.nextElec;S.sched=(S.sched||[]).filter(x=>x.id!=='elec_annonce')}
+  const r=f.apply(this,arguments);if(lock&&C&&P.camp===C)C.ask=old;return r})(polMonth);
+startEvent=(f=>function(id){if(id==='elec_annonce'&&peMairieLocked())return;return f.apply(this,arguments)})(startEvent);
+function peUnlockMairie(){if(S.unl&&!S.unl.all&&!S.unl.mairie){S.unl.mairie=1;try{ongBuildTabs();unlDOM()}catch(e){}}}
+decStartCampaign=(f=>function(){peUnlockMairie();const r=f.apply(this,arguments);if(S.pol.camp)S.pol.camp.spent=0;return r})(decStartCampaign);
+function peCandidate(){const P=S.pol;decInit();if(P.cand||P.office==='maire')return;
+  const t=P.nextElec-S.day,partial=!(t>=3&&t<=DEC_CAMP);if(partial)P.nextElec=S.day+DEC_CAMP;
+  decStartCampaign();P.camp.ask=P.nextElec;S.sched=(S.sched||[]).filter(x=>x.id!=='elec_annonce');
+  S.journal.unshift({day:S.day,who:'🗳️',name:'Mairie',title:gx(S.hero,'Candidat','Candidate')+' aux municipales',choice:partial?'Élection partielle':'Élections municipales',res:`Vote en ${dateLabel(P.nextElec)}.`,fx:[]});
+  sfx('rank');toast(`Tu es ${gx(S.hero,'candidat','candidate')}. Vote en ${dateLabel(P.nextElec)}, dans ${P.nextElec-S.day} mois.`)}
+/* Moitié des dépenses de campagne remboursée en cas de victoire */
+let PE_CAMP_CTX=0;
+const peCampOn=()=>S.pol&&S.pol.cand&&S.pol.camp&&(PE_CAMP_CTX>0||(S.event&&/^(camp_|debat)/.test(S.event.id)));
+spend=(f=>function(x){if(x>0&&peCampOn())S.pol.camp.spent=(S.pol.camp.spent||0)+x;return f.apply(this,arguments)})(spend);
+pay=(f=>function(){const before=S.cash,r=f.apply(this,arguments);if(before>S.cash&&peCampOn())S.pol.camp.spent=(S.pol.camp.spent||0)+(before-S.cash);return r})(pay);
+campAct=(f=>function(){PE_CAMP_CTX++;try{return f.apply(this,arguments)}finally{PE_CAMP_CTX--}})(campAct);
+endorse=(f=>function(){PE_CAMP_CTX++;try{return f.apply(this,arguments)}finally{PE_CAMP_CTX--}})(endorse);
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a=dec_war]');if(b){PE_CAMP_CTX++;setTimeout(()=>{PE_CAMP_CTX=Math.max(0,PE_CAMP_CTX-1)},0)}},true);
+election=(f=>function(){const P=S.pol,spent=Math.round((P.camp&&P.camp.spent)||0),was=P.office==='maire';const r=f.apply(this,arguments);
+  if(P.office==='maire'&&spent>0){const back=Math.round(spent/2);earn(back);
+    S.journal.unshift({day:S.day,who:'💶',name:'La préfecture',title:'Frais de campagne remboursés',choice:was?'Réélection':'Élection',res:`Ta campagne a coûté ${fmt(spent)} : l’État t’en rembourse la moitié, ${fmt(back)}.`,fx:['+'+fmt(back)]});
+    queueModal(`<div class="reveal-box pop">💶</div><h2>Campagne remboursée à moitié</h2><p>Ta campagne t’a coûté <b>${fmt(spent)}</b>. Comme tu es ${gx(S.hero,'élu','élue')}, l’État te rembourse la moitié.</p><div class="cashdelta">+${fmt(back)}</div><button class="btn big" style="margin-top:16px" data-a="close">Super</button>`)}
+  return r})(election);
+/* Onglet Mairie : candidature à tout moment, leviers de la confiance */
+function peApprHTML(){const P=S.pol,T=DEC_TAX[P.tax||0],tr=Math.round((T.a+(50-P.appr)*.02)*10)/10,a=Math.round(P.appr);
+  const st=a>=70?['pos','Très haute : réélection bien partie']:a>=55?['pos','Bonne']:a>=40?['','Moyenne : à surveiller']:['neg','Basse : ta réélection est en danger'];
+  return `<div class="sec-head"><h2>Faire monter la confiance</h2><p>${a}/100</p></div><div class="panel pe-appr">
+  <div class="kv"><span>Niveau</span><b class="${st[0]}">${st[1]}</b></div><div class="kv"><span>Tendance chaque mois</span><b class="${tr>=0?'pos':'neg'}">${tr>0?'+':''}${String(tr).replace('.',',')}</b></div>
+  <ol class="pe-lev"><li><b>Inaugure des grands projets</b> avec le budget de la ville : +4 à +8 chacun (médiathèque et écoles : +8).</li>
+  <li><b>Garde les impôts bas</b> : +0,5 par mois. Normaux : rien. Élevés : −0,7 par mois, mais plus de budget.</li>
+  <li><b>Tranche bien les dossiers</b> de la mairie (les décisions du mois) : jusqu’à +8.</li>
+  <li><b>Tiens tes promesses</b> : chacune tenue t’aide à la réélection, chacune oubliée te coûte.</li>
+  <li>Si tu ne fais rien, la confiance revient peu à peu vers 50.</li></ol>
+  <p class="hint">Au-dessus de 70, tes quartiers te suivent quand tu te représentes.</p></div>`}
+vMairie=(f=>function(){let h=f.apply(this,arguments);const P=S.pol;
+  if(P.office==='maire'&&!P.cand){const i=h.indexOf('<div class="sec-head"><h2>💶 Impôts locaux');h=i<0?h+peApprHTML():h.slice(0,i)+peApprHTML()+h.slice(i)}
+  else if(!P.cand){const t=P.nextElec-S.day,inWin=t>=3&&t<=DEC_CAMP;
+    h+=`<div class="panel pe-cand"><h3 style="margin:0 0 4px">Te présenter maintenant</h3><p class="hint">${inWin?`Les municipales ont lieu en ${dateLabel(P.nextElec)} : tu peux entrer dans la course tout de suite.`:`Pas envie d’attendre ${dateLabel(P.nextElec)} ? Présente-toi : une élection partielle aura lieu dans ${DEC_CAMP} mois.`} Une campagne coûte de l’argent ; si tu gagnes, l’État t’en rembourse la moitié.</p>
+    <button class="btn go" style="margin-top:8px" data-a="pe_cand">Me présenter (vote ${inWin?'en '+dateLabel(P.nextElec):'dans '+DEC_CAMP+' mois'})</button></div>`}
+  else{const sp=Math.round((P.camp&&P.camp.spent)||0);h=h.replace('<div class="sec-head"><h2>💰 Budget de campagne</h2>',`<p class="hint" style="margin:8px 2px">Dépensé pour ta campagne : <b>${fmt(sp)}</b>. Si tu gagnes, l’État t’en rembourse la moitié (${fmt(Math.round(sp/2))}).</p><div class="sec-head"><h2>💰 Budget de campagne</h2>`)}
+  return h})(vMairie);
+
+/* ---------- 7. Énergie : fiche claire et repos ---------- */
+function peNrgParts(){const L=[],un=openIds().filter(id=>!S.biz[id].mgr).length,together=S.partner&&S.partner.stage!=='couple';
+  L.push([`Ton logement (${STAGES[S.stage].name})`,STAGES[S.stage].regen]);
+  if(S.flags.assistant)L.push(['Ton assistant',3]);if(S.hero.origin==='campagne')L.push(['Enfance à la campagne',2]);if(together)L.push(['Vie à deux',2]);if(hasP('musique'))L.push(['La musique',1]);
+  try{const hd=vieHomeDef();if(hd){const x=[0,1,1,2,3,3,4][hd.cf]||0;if(x)L.push(['Ton foyer (Vie)',x])}const fh=famHappy().v;if(fh>=70)L.push(['Famille heureuse',2]);else if(fh<=30)L.push(['Famille malheureuse',-1])}catch(e){}
+  if(un)L.push([`${un} boutique${un>1?'s':''} sans gérant`,-2*un]);if(S.flags.dimanche)L.push(['Ouvert le dimanche',-3]);if(S.hero.health<30)L.push(['Santé fragile',-2]);
+  if(peActive()==='repos')L.push(['Semaine du repos (sondage)',10]);return L}
+const PE_REST_CD=3;
+const peRestIn=()=>S.flags.peRest==null?0:S.flags.peRest+PE_REST_CD-S.day;
+function peNrgHTML(){const L=peNrgParts(),net=L.reduce((a,x)=>a+x[1],0),cd=peRestIn(),e=Math.round(S.energy);
+  return `<h2>Ton énergie : ${e}/100</h2><p class="hint">${e<20?'Tu es à bout : tu gagnes 20 % de moins et ta santé baisse.':e<40?'Tu fatigues. Sous 20, tes revenus baissent de 20 %.':'Ça va. Sous 20, tes revenus baissent de 20 % et ta santé trinque.'}</p>
+  <div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Chaque mois</h3>${L.map(x=>`<div class="kv"><span>${x[0]}</span><b class="${x[1]<0?'neg':'pos'}">${x[1]>0?'+':''}${x[1]}</b></div>`).join('')}
+  <div class="kv" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><span><b>Total par mois</b></span><b class="${net<0?'neg':'pos'}">${net>0?'+':''}${net}</b></div>
+  <p class="hint" style="margin-top:4px">Les actions (coups de boost, sorties, campagne) en consomment en plus.</p></div>
+  <div class="panel"><h3 style="margin:0 0 6px">Pour regagner de l’énergie</h3><ol class="pe-lev">
+  <li><b>Engage des gérants</b> : chaque boutique sans gérant te coûte 2 par mois.</li>
+  <li><b>Change de logement</b> (Vie → Moi) : jusqu’à +12 par mois.</li>
+  <li><b>Pars en vacances</b> en famille (Vie → Famille) : +10 d’un coup.</li>
+  <li><b>Un foyer confortable</b> et une famille heureuse : +1 à +6 par mois.</li>
+  <li><b>Prends un mois de repos</b> : +30 tout de suite, mais tes revenus baissent de 30 % ce mois-ci. Une fois tous les ${PE_REST_CD} mois.</li></ol>
+  <button class="btn ${cd>0?'ghost':'go'}" style="margin-top:8px;width:100%" data-a="pe_rest" ${cd>0||S.energy>=95?'disabled':''}>${cd>0?`Repos possible dans ${cd} mois`:S.energy>=95?'Tu es en pleine forme':'Prendre un mois de repos'}</button></div>
+  <button class="btn big" style="margin-top:12px;width:100%" data-a="close">Fermer</button>`}
+function peRest(){if(peRestIn()>0||S.energy>=95)return;S.flags.peRest=S.day;S.energy=clamp(S.energy+30,0,100);S.hero.health=clamp(S.hero.health+3,0,100);
+  S.mods.push({m:.7,until:S.day,biz:null});sfx('good');toast('Un mois au calme. Énergie +30, santé +3. Revenus −30 % jusqu’au mois prochain.')}
+vieMoi=(f=>function(){let h=f.apply(this,arguments);
+  h=h.replace(/<div class="hero-av">[\s\S]*?<\/div>/,()=>peAvHTML('hero-av'));
+  h=h.replace('</div></div>\n',()=>'<button class="btn small ghost pe-lookbtn" data-a="pe_look">Changer de look</button></div></div>\n');
+  h=h.replace(/<p class="hint" style="margin-top:6px">Sous 20 d.énergie[^<]*<\/p>/,()=>`<p class="hint" style="margin-top:6px">Sous 20 d’énergie, tu gagnes 20 % de moins et ta santé trinque. Ton logement t’en redonne chaque mois ; chaque boutique sans gérant t’en coûte 2.</p><button class="btn small" style="margin-top:6px" data-a="pe_nrg">D’où vient mon énergie ?</button>`);
+  return h})(vieMoi);
+/* Toucher « Énergie » en haut ouvre la fiche */
+document.addEventListener('click',e=>{const s=e.target.closest&&e.target.closest('.hgauges > span');if(s&&s.querySelector('#hg-nrg')&&S.started&&!modalOpen)modal(peNrgHTML())});
+
+/* ---------- 10. Club : nom du stade ---------- */
+const peStade=()=>S.club.stadeNm||'Stade municipal';
+vClub=(f=>function(){const h=f.apply(this,arguments),C=S.club;if(!C.own)return h;const k=`<h2>${esc(C.name)}</h2>`,i=h.indexOf(k);if(i<0)return h;
+  return h.slice(0,i+k.length)+`<p class="hint pe-stade">🏟️ ${esc(peStade())} <button class="pe-link" data-a="pe_stade">Renommer</button></p>`+h.slice(i+k.length)})(vClub);
+function peStadeModal(){modal(`<h2>Nom du stade</h2><p class="hint">Il s’affiche sur la page de ton club.</p><input id="pe-stade" maxlength="32" autocomplete="off" value="${esc(S.club.stadeNm||'')}" placeholder="Stade ${esc(S.hero.name)}" style="width:100%;margin-top:10px">
+  <div style="display:grid;gap:8px;margin-top:12px"><button class="btn big go" data-a="pe_stadeok">Valider</button><button class="btn ghost" data-a="close">Annuler</button></div>`);setTimeout(()=>{const i=$('#pe-stade');if(i)i.focus()},50)}
+
+/* ---------- 9. Sondage : choix clairs, présenté chaque semaine ---------- */
+(function(){const T={coffre:['🎁','Coffre du jour doublé','Toute la semaine, le coffre du jour rapporte deux fois plus d’argent.'],
+  jetons:['🎟️','Jetons doublés','Toute la semaine, chaque jeton gagné compte double.'],
+  neon:['🌈','Festival néon','Le thème Néon et la pluie de confettis sont offerts toute la semaine.'],
+  carnaval:['🎭','Carnaval en ville','Ta carte se pare de guirlandes et de confettis toute la semaine.'],
+  prime:['🏛️','Prime de la mairie','Dès lundi, tes revenus sont multipliés par 1,5 pendant 3 mois de jeu.'],
+  puces:['🧺','Grand marché aux puces','Lundi, un chèque égal à 30 minutes de tes revenus.'],
+  mercato:['⚽','Mercato express','Lundi, ton club gagne +5 de niveau (sans club : 15 jetons).'],
+  joker:['🃏','Joker de série','Un jour sans jouer te sera pardonné : ta série de connexions continue.']};
+  META_POLL.forEach(o=>{const t=T[o.id];if(t){o.e=t[0];o.t=t[1];o.d=t[2]}});
+  [{id:'soldes',e:'🏷️',t:'Semaine des soldes',d:'+20 % de ventes dans toutes tes boutiques, toute la semaine.'},
+   {id:'repos',e:'😴',t:'Semaine du repos',d:'Ton énergie remonte de 10 de plus à chaque mois de jeu, toute la semaine.'}].forEach(o=>{if(!META_POLL_BY[o.id]){META_POLL.push(o);META_POLL_BY[o.id]=o}})})();
+let PE_ACT={t:0,id:null};
+function peActive(){const n=Date.now();if(n-PE_ACT.t>2000){PE_ACT.t=n;try{PE_ACT.id=metaActiveId()}catch(e){PE_ACT.id=null}}return PE_ACT.id}
+permMult=(f=>function(){const r=f.apply(this,arguments);return peActive()==='soldes'?r*1.2:r})(permMult);
+newDay=(f=>function(){const r=f.apply(this,arguments);try{if(S.started&&!S.dead&&peActive()==='repos')S.energy=clamp(S.energy+10,0,100)}catch(e){}return r})(newDay);
+metaPollHTML=(f=>async function(){const h=await f.apply(this,arguments);
+  return h.replace(/(<h3 style="margin:14px 0 6px;text-align:left">)/,'<p class="pe-pollhow"><b>Comment ça marche :</b> tu votes une fois par semaine. Le choix qui a le plus de voix s’applique à tous les joueurs la semaine suivante, du lundi au dimanche.</p>$1')})(metaPollHTML);
+metaPollCheck=(f=>function(){const m=S.meta,b=m&&m.pollDone;const r=f.apply(this,arguments);try{if(m&&m.pollDone!==b)m.pollShown=metaWeek()}catch(e){}return r})(metaPollCheck);
+function pePollAuto(){try{if(!S.started||S.dead||modalOpen||CH||(typeof tutOn==='function'&&tutOn()))return;if(!unlAll()&&!(S.unl&&S.unl.objectifs))return;
+  const m=metaInit(),w=metaWeek();if(m.votes[w]||m.pollShown===w||m.pollDone!==w)return;m.pollShown=w;save();metaOpenPoll()}catch(e){}}
+
+/* ---------- 11. Changer d'appareil : code court, copier / coller ---------- */
+const PE_B64=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
+async function peCode(){save();const txt=JSON.stringify(S);
+  try{if(typeof CompressionStream==='function'){const s=new Blob([txt]).stream().pipeThrough(new CompressionStream('gzip'));const u=new Uint8Array(await new Response(s).arrayBuffer());return 'FE2:'+PE_B64(u)}}catch(e){}
+  return exportSave()}
+async function peDecode(code){code=String(code||'').replace(/\s+/g,'');if(!code)return null;
+  if(code.startsWith('FE2:')){if(typeof DecompressionStream!=='function')return null;
+    const bin=atob(code.slice(4)),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
+    const s=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));const txt=await new Response(s).text();
+    return btoa(unescape(encodeURIComponent(txt)))}
+  return code}
+function peSyncHTML(tab){return `<h2>Changer d’appareil</h2><p class="hint">Ta partie est gardée dans ce navigateur. Copie ton code ici, puis sur l’autre appareil : Empire → Compte → « Coller un code ».</p>
+  <div class="seg" role="tablist" style="margin-top:12px"><button class="${tab==='exp'?'on':''}" data-a="pe_sync" data-v="exp">Copier mon code</button><button class="${tab==='imp'?'on':''}" data-a="pe_sync" data-v="imp">Coller un code</button></div>
+  ${tab==='exp'?`<textarea id="pe-code" readonly style="width:100%;height:110px;margin-top:10px;font-size:.72rem">Préparation du code…</textarea>
+  <button class="btn big go" style="margin-top:10px;width:100%" data-a="pe_copy">Copier mon code</button>`
+  :`<textarea id="pe-paste" placeholder="Colle ton code ici" style="width:100%;height:110px;margin-top:10px;font-size:.72rem"></textarea><p class="hint" style="margin-top:6px">La partie de cet appareil sera remplacée.</p>
+  <button class="btn big go" style="margin-top:10px;width:100%" data-a="pe_load">Charger cette partie</button>`}
+  <button class="btn ghost" style="margin-top:8px;width:100%" data-a="close">Fermer</button>`}
+let PE_CODE='';
+async function peSync(tab){modal(peSyncHTML(tab==='imp'?'imp':'exp'));if(tab==='imp')return;PE_CODE=await peCode();const t=$('#pe-code');if(t)t.value=PE_CODE}
+async function peCopy(){const c=PE_CODE||await peCode(),t=$('#pe-code');let ok=false;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(c);ok=true}}catch(e){}
+  if(!ok&&t){try{t.focus();t.select();ok=document.execCommand('copy')}catch(e){}}
+  toast(ok?'Code copié. Colle-le sur ton autre appareil.':'Copie impossible : sélectionne le texte et copie-le à la main.')}
+async function peLoad(){const t=$('#pe-paste');let code=null;try{code=await peDecode(t&&t.value)}catch(e){code=null}
+  if(code&&importSave(code)){toast('Partie chargée.');setTimeout(()=>location.reload(),300)}else toast('Ce code ne marche pas. Vérifie qu’il est complet.')}
+
+/* ---------- Clics ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a;
+  if(a==='savexp'||a==='saveimp'){e.stopImmediatePropagation();e.preventDefault();peSync(a==='saveimp'?'imp':'exp')}},true);
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-a^="pe_"]');if(!b||b.disabled)return;const a=b.dataset.a,v=b.dataset.v;
+  switch(a){
+    case 'pe_born':peBorn();return;
+    case 'pe_look':peOpenLook();return;
+    case 'pe_set':if(!PE_DRAFT)return;PE_DRAFT[b.dataset.k]=v;if(b.dataset.k==='hair')PE_DRAFT.out='';{const sc=$('#layer .sheet'),y=sc?sc.scrollTop:0;modal(peLookHTML());const s2=$('#layer .sheet');if(s2)s2.scrollTop=y}return;
+    case 'pe_lookok':{if(!PE_DRAFT)return;const L=Object.assign({},PE_DRAFT,{name:S.hero.name});S.hero.look=L;peSetAv(peAv(L,gOf(S.hero)));PE_DRAFT=null;save();closeModal();sfx('good');toast('Nouveau look enregistré.');break}
+    case 'pe_seek':V().seek=v;sfx('tap');toast(v==='any'?'Rencontres : peu importe.':v==='f'?'Rencontres : des femmes.':'Rencontres : des hommes.');break;
+    case 'pe_cand':peCandidate();break;
+    case 'pe_nrg':modal(peNrgHTML());return;
+    case 'pe_rest':peRest();save();modal(peNrgHTML());break;
+    case 'pe_stade':peStadeModal();return;
+    case 'pe_stadeok':{const i=$('#pe-stade'),n=(i&&i.value||'').trim().replace(/\s+/g,' ').slice(0,32);S.club.stadeNm=n||null;save();closeModal();toast(n?`Bienvenue au ${n}.`:'Nom du stade remis par défaut.');break}
+    case 'pe_sync':peSync(v);return;
+    case 'pe_copy':peCopy();return;
+    case 'pe_load':peLoad();return;
+    default:return}
+  try{render()}catch(err){}});
+/* Compte (Empire) : ton perso */
+vEmpire=(f=>function(){return f().replace('<div class="foot">',()=>`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 8px">Ton perso</h3><div class="pe-emp">${peAvHTML('hero-av')}<div><p class="hint">Teint, cheveux, tenue, accessoire : change de look quand tu veux.</p><button class="btn small" style="margin-top:6px" data-a="pe_look">Changer de look</button></div></div></div><div class="foot">`)})(vEmpire);
+(function peBoot(){
+  try{if(S.vie&&S.vie.seek&&!['f','m','any'].includes(S.vie.seek))delete S.vie.seek}catch(e){}
+  const st=document.createElement('style');st.textContent=`
+.pe-av{position:relative;flex:none}
+.pe-acc{position:absolute;right:-6px;top:-8px;font-style:normal;font-size:.6em;line-height:1}
+.pe-prev{width:104px;height:104px;border-radius:50%;margin:12px auto 4px;display:grid;place-items:center;font-size:60px;border:3px solid var(--ink);position:relative}
+.pe-h{font-size:.92rem;margin:12px 0 6px;text-align:left}
+.pe-row{display:flex;flex-wrap:wrap;gap:6px}
+.pe-c{min-width:56px;min-height:56px;padding:4px 6px;border:2px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+.pe-c span{font-size:1.5rem;line-height:1.1}
+.pe-c small{font-size:.62rem;color:var(--muted);max-width:72px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-c.on{border-color:var(--ink);box-shadow:2px 2px 0 var(--sticker)}
+.pe-dot{display:block;width:26px;height:26px;border-radius:50%;border:2px solid var(--ink)}
+.pe-lookbtn{margin-top:8px}
+.pe-emp{display:flex;gap:12px;align-items:center}
+.pe-link{background:none;border:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer;padding:6px 4px;min-height:32px}
+.pe-lev{margin:4px 0 6px 18px;padding:0;font-size:.88rem;line-height:1.35;text-align:left}
+.pe-lev li{margin:3px 0}
+.pe-pollhow{font-size:.86rem;line-height:1.35;background:var(--line);border-radius:10px;padding:8px 10px;margin:12px 0 0;text-align:left}
+.pe-cand{margin-top:10px}
+.hgauges > span:has(#hg-nrg){cursor:pointer}`;document.head.appendChild(st);
+  setInterval(pePollAuto,4000);
+})();
+/* ===== FIN AGENT PERSO ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
