@@ -5,7 +5,7 @@
 - Fait : progression par ville type hôtel de ville (prix ×1,58 de plus par ville), immobilier d'investissement (Tout acheter, Améliorer au max), bourse liée à la ville.
 - En cours : nouvelles villes avant la Lune, ville vivante (suivre un habitant).
 
-## 2026-11-04 : Claude de Nils, agent VIVANT (branche fe/vivant, pas encore en ligne)
+## 2026-11-04 : Claude de Nils, agent VIVANT (en ligne, version 2026-11-04-0958)
 - Nouveau bloc `AGENT VIVANT` avant BOOT : passants avec une petite journée, files d'attente devant les commerces du joueur, bus (arrêts sur la 1re route verticale), taxis, camionnettes de livraison, distance entre voitures et carrefours, heures de pointe.
 - Suivre un passant : toucher un bonhomme (jamais prioritaire sur un commerce) ou le bouton bonhomme sous les boutons de zoom. Fiche en bas à gauche, « Quelqu'un d'autre », « Recentrer » après un glissement.
 - Rien de sauvegardé (aucun champ dans `S`). Remplace updateEnts, spawnLogic, spawnClient, spawnExit ; enveloppe genCity, drawPerson, drawCarAt, drawWorld, tapAt.
