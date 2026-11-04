@@ -8170,6 +8170,126 @@ vMarche=(f=>function(){let h=f();const g=mktGoal2(),a=Math.round(mktGains()),ok=
   return h.replace('<h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>','</details><h3 style="margin-top:12px;font-size:.95rem">Ordres automatiques</h3>')})(vMarche);
 (()=>{const st=document.createElement('style');st.textContent='.pg-big{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.pg-big .btn{min-height:54px;font-size:1.02rem}.pg-mk .obj-bar{margin-top:6px}';document.head.appendChild(st)})();
 /* ===== FIN AGENT PROGRESSION ===== */
+/* ===== AGENT RENDU3D ===== */
+/* Rendu « jouet brillant » (référence : jeux de plateau 3D cartoon) :
+   1. Le plateau est une maquette posée sur un socle arrondi, avec tranche, liseré et ombre douce.
+   2. Les volumes ont un léger dégradé (haut plus clair, pied plus sombre) et un liseré de lumière sur les arêtes : effet « gonflé ».
+   3. Les toits ont un débord, un faîtage brillant et un dégradé.
+   4. Plus la ville est avancée, plus le socle est riche (pierre, marbre, liserés dorés, lumières de nuit) et plus les reflets sont marqués.
+   Tout ce qui est fixe est cuit dans le cache du sol : pas de coût par image. */
+const R3={on:true};
+const r3L=()=>Math.min(13,gfxL());
+/* Matières du socle par ville : dessus, tranche, liseré, liseré doré ? */
+const R3SOCLE=[
+  {top:'#F0DDB4',side:'#C98E5A',band:'#A56C40',gold:0},   /* Ta ville : bois clair */
+  {top:'#EDE6D6',side:'#A9B0B8',band:'#7E8790',gold:0},   /* Nantes : tuffeau et ardoise */
+  {top:'#F4D7B0',side:'#D08A5E',band:'#A9653F',gold:0},   /* Lyon : terre cuite */
+  {top:'#F6EBD2',side:'#5FA9C9',band:'#3C86A8',gold:1},   /* Marseille : pierre et bleu mer */
+  {top:'#F5EAD3',side:'#4C5A6E',band:'#36414F',gold:1},   /* Paris : pierre et zinc */
+  {top:'#EFE7DA',side:'#A44A36',band:'#7D3526',gold:1},   /* Londres : brique */
+  {top:'#E3E5E8',side:'#3D4450',band:'#262B33',gold:1},   /* New York : granit */
+  {top:'#F7EDE6',side:'#B8343A',band:'#7E1F26',gold:2},   /* Tokyo : laque rouge */
+  {top:'#FBF1DC',side:'#D9B676',band:'#B08A44',gold:2},   /* Dubaï : sable et or */
+  {top:'#F4EFE2',side:'#2FA39A',band:'#1C7C76',gold:2},   /* Rio : faïence turquoise */
+  {top:'#F6ECE0',side:'#A8262E',band:'#6E141B',gold:2},   /* Shanghai : laque */
+  {top:'#E2F4F0',side:'#2A7F99',band:'#165C72',gold:2},   /* Atlantide : nacre et lagon */
+  {top:'#E6E6EE',side:'#6E7084',band:'#4A4B5C',gold:2},   /* Lune : régolithe */
+  {top:'#F2D6C2',side:'#A9472A',band:'#73301C',gold:2}    /* Mars : roche rouge */
+];
+function r3Rgb(h,k){const c=rgbOf(h);return [c[0]*k,c[1]*k,c[2]*k]}
+function r3Col(h,k,a){/* couleur assombrie la nuit, sans passer par la saturation de la carte */
+  const c=r3Rgb(h,k),n=TH_.moon?Math.max(NIGHT,.35):NIGHT,m=n*.72;
+  const v=[c[0]+(c[0]*.22+8-c[0])*m,c[1]+(c[1]*.28+14-c[1])*m,c[2]+(c[2]*.4+38-c[2])*m].map(x=>Math.max(0,Math.min(255,x|0)));
+  return a==null?`rgb(${v[0]},${v[1]},${v[2]})`:`rgba(${v[0]},${v[1]},${v[2]},${a})`}
+/* Forme arrondie du socle, tracée dans le repère des tuiles (x,y) puis projetée en iso */
+function r3Shape(g,m,rad){const a=-m,b=N+m;g.beginPath();g.moveTo(a+rad,a);g.arcTo(b,a,b,b,rad);g.arcTo(b,b,a,b,rad);g.arcTo(a,b,a,a,rad);g.arcTo(a,a,b,a,rad);g.closePath()}
+function r3Iso(g,z){g.transform(TW/2,TH/2,-TW/2,TH/2,0,-z)}
+function r3Socle(){
+  const L=r3L(),M=R3SOCLE[L]||R3SOCLE[0],gl=TH_.sea?R3SOCLE[11]:TH_.mars?R3SOCLE[13]:M;
+  const c=document.createElement('canvas');c.width=G.cv.width;c.height=G.cv.height;const g=c.getContext('2d');
+  const base=()=>g.setTransform(G.sc,0,0,G.sc,-G.minX*G.sc,-G.minY*G.sc);
+  const m=.62,rad=1.25,zTop=-18,H=24+L*1.2;
+  const ext=(z)=>{const cx=-m+rad,cy=N+m-rad,k=rad*Math.SQRT1_2;/* points extrêmes gauche et droite à l'altitude z */
+    const Lp=[((cx-k)-(cy+k))*TW/2,((cx-k)+(cy+k))*TH/2-z];const Rp=[-Lp[0],Lp[1]];return [Lp,Rp]};
+  /* 1. ombre douce sous le socle */
+  base();for(let i=0;i<6;i++){g.save();r3Iso(g,zTop-H-4-i*2.5);r3Shape(g,m+.05+i*.11,rad+i*.11);g.restore();g.fillStyle=`rgba(20,30,60,${(.07*(1-NIGHT*.4)).toFixed(3)})`;g.fill()}
+  /* 2. tranche : bandes du bas vers le haut */
+  const slab=(z0,z1,col,dark)=>{base();const [L0,R0]=ext(z0),[L1,R1]=ext(z1);
+    const gr=g.createLinearGradient(L0[0],0,R0[0],0);gr.addColorStop(0,r3Col(col,1.02*dark));gr.addColorStop(.42,r3Col(col,.9*dark));gr.addColorStop(.5,r3Col(col,.8*dark));gr.addColorStop(.58,r3Col(col,.68*dark));gr.addColorStop(1,r3Col(col,.6*dark));
+    g.fillStyle=gr;g.save();r3Iso(g,z0);r3Shape(g,m,rad);g.restore();g.fill();g.beginPath();g.moveTo(L0[0],L0[1]);g.lineTo(R0[0],R0[1]);g.lineTo(R1[0],R1[1]);g.lineTo(L1[0],L1[1]);g.closePath();g.fill()};
+  const zb=zTop-H;
+  slab(zb,zb+5,gl.band,.8);                       /* pied sombre */
+  slab(zb+5,zTop-5,gl.side,1);                    /* tranche */
+  if(gl.gold){slab(zTop-9,zTop-6,'#F2C14E',1.08);if(gl.gold>1)slab(zb+6,zb+8,'#E8B23A',1)}
+  slab(zTop-5,zTop,gl.band,1.05);                 /* corniche */
+  /* reflet vertical doux sur la tranche (lumière à gauche) */
+  base();{const [L0,R0]=ext(zb),[L1]=ext(zTop);g.save();g.globalCompositeOperation='source-atop';const gr=g.createLinearGradient(0,L1[1],0,L0[1]+N*TH/2);gr.addColorStop(0,'rgba(255,255,255,.16)');gr.addColorStop(.35,'rgba(255,255,255,0)');gr.addColorStop(1,'rgba(0,0,0,.18)');g.fillStyle=gr;g.fillRect(L0[0]-20,L1[1]-N*TH,R0[0]-L0[0]+40,N*TH*2+H+60);g.restore()}
+  /* 3. dessus du socle (cadre autour du plateau) */
+  base();g.save();r3Iso(g,zTop);r3Shape(g,m,rad);g.restore();
+  {const gr=g.createLinearGradient(0,-20,0,N*TH);gr.addColorStop(0,r3Col(gl.top,1.04));gr.addColorStop(1,r3Col(gl.top,.9));g.fillStyle=gr;g.fill()}
+  g.lineWidth=2.2;g.strokeStyle=`rgba(255,255,255,${(.75*(1-NIGHT*.6)).toFixed(3)})`;g.stroke();
+  base();g.save();r3Iso(g,zTop);r3Shape(g,m-.1,rad-.1);g.restore();g.lineWidth=1;g.strokeStyle=r3Col(gl.gold?'#D9A63A':gl.band,1,.7);g.stroke();
+  /* 4. lumières de nuit sur la corniche (villes avancées) */
+  if(L>=5&&NIGHT>.3){base();const z=zTop-2.5,[L1,R1]=ext(z),Bt=[0,((N+m-rad)*2+rad*Math.SQRT2)*TH/2-z];
+    g.globalCompositeOperation='lighter';const a=(NIGHT-.3)/.7,col=L>=9?'255,190,240':'255,214,140';
+    for(let i=0;i<=40;i++){const t=i/40,P=t<.5?[L1[0]+(Bt[0]-L1[0])*t*2,L1[1]+(Bt[1]-L1[1])*t*2]:[Bt[0]+(R1[0]-Bt[0])*(t-.5)*2,Bt[1]+(R1[1]-Bt[1])*(t-.5)*2];
+      const gr=g.createRadialGradient(P[0],P[1],0,P[0],P[1],7);gr.addColorStop(0,`rgba(${col},${(.9*a).toFixed(3)})`);gr.addColorStop(.25,`rgba(${col},${(.35*a).toFixed(3)})`);gr.addColorStop(1,`rgba(${col},0)`);g.fillStyle=gr;g.fillRect(P[0]-7,P[1]-7,14,14)}
+    g.globalCompositeOperation='source-over'}
+  return c}
+/* Le socle passe derrière le sol déjà dessiné */
+G.minX=-N*TW/2-80;G.minY=-24;G.w=N*TW+160;G.h=N*TH+150;
+buildGround=(f=>function(){f();if(!R3.on||GFX.thumb)return;try{const s=r3Socle(),g=G.cv.getContext('2d');g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='destination-over';g.drawImage(s,0,0);g.restore()}catch(e){console.warn(e)}})(buildGround);
+
+/* ---------- Volumes « gonflés » ---------- */
+/* Dégradés mis en cache : chaque face est dessinée dans un carré unité transformé, donc un seul dégradé par couleur */
+const R3G=new Map();
+function r3Grad(k,mk){let g=R3G.get(k);if(!g){if(R3G.size>3000)R3G.clear();g=mk();R3G.set(k,g)}return g}
+function r3Face(P0,P1,h,cTop,cMid,cBot,aoS,c){/* face verticale : P0→P1 au sol, hauteur h ; v=0 au sol, v=1 en haut */
+  const g=r3Grad(cTop+cMid+cBot+aoS,()=>{const g=c.createLinearGradient(0,0,0,1);g.addColorStop(0,cBot);g.addColorStop(1-aoS,cMid);g.addColorStop(1,cTop);return g});
+  c.save();c.transform(P1[0]-P0[0],P1[1]-P0[1],0,-h,P0[0],P0[1]);c.fillStyle=g;c.fillRect(0,-.004,1,1.008);c.restore()}
+function r3Top(A,B,D,c0,c1){const g=r3Grad('t'+c0+c1,()=>{const g=ctx.createLinearGradient(0,0,1,1);g.addColorStop(0,c0);g.addColorStop(1,c1);return g});
+  ctx.save();ctx.transform(B[0]-A[0],B[1]-A[1],D[0]-A[0],D[1]-A[1],A[0],A[1]);ctx.fillStyle=g;ctx.fillRect(-.004,-.004,1.008,1.008);ctx.restore()}
+
+const r3Box0=box;
+let R3AO='rgba(20,24,40,.22)';
+/* Couleurs plus franches, un peu plus à chaque ville */
+for(let i=0;i<C2.sat.length;i++)C2.sat[i]=+(C2.sat[i]+.1+Math.min(i,12)*.008).toFixed(3);
+box=function(x,y,w,d,h,col,o){o=o||{};
+  if(!R3.on||R3.gr===0||h<3||w+d<.35||typeof col!=='string'||col[0]!=='#')return r3Box0(x,y,w,d,h,col,o);
+  const z0=o.z0||0;
+  const Dg=iso(x,y+d,z0),Cg=iso(x+w,y+d,z0),Bg=iso(x+w,y,z0),Ag=iso(x,y,z0);
+  const D=[Dg[0],Dg[1]-h],C=[Cg[0],Cg[1]-h],B=[Bg[0],Bg[1]-h],A=[Ag[0],Ag[1]-h];
+  const kl=o.kl||.86,kr=o.kr||.66,kt=o.kt||1.05;
+  const L=r3L(),top=o.top||col,ao=z0<2;
+  poly(ctx,[Dg,Cg,C,D],shade(col,kl));poly(ctx,[Cg,Bg,B,C],shade(col,kr));poly(ctx,[A,B,C,D],shade(top,kt));
+  /* pied assombri (occlusion au sol) et haut des façades éclairé */
+  const ah=Math.min(h*.35,7);
+  if(ao){ctx.fillStyle=R3AO;ctx.beginPath();ctx.moveTo(Dg[0],Dg[1]);ctx.lineTo(Cg[0],Cg[1]);ctx.lineTo(Bg[0],Bg[1]);ctx.lineTo(Bg[0],Bg[1]-ah);ctx.lineTo(Cg[0],Cg[1]-ah);ctx.lineTo(Dg[0],Dg[1]-ah);ctx.closePath();ctx.fill()}
+  const la=(.6+L*.02)*(1-NIGHT*.8);
+  if(la>.04&&R3.rim!==0){const t=Math.min(3,h*.22);ctx.fillStyle=`rgba(255,248,230,${(la*.42).toFixed(2)})`;ctx.beginPath();ctx.moveTo(D[0],D[1]);ctx.lineTo(C[0],C[1]);ctx.lineTo(B[0],B[1]);ctx.lineTo(B[0],B[1]+t);ctx.lineTo(C[0],C[1]+t);ctx.lineTo(D[0],D[1]+t);ctx.closePath();ctx.fill();
+    ctx.fillStyle=`rgba(255,255,255,${la.toFixed(2)})`;const e=1.2;ctx.beginPath();ctx.moveTo(D[0],D[1]);ctx.lineTo(C[0],C[1]);ctx.lineTo(B[0],B[1]);ctx.lineTo(B[0]-e*.9,B[1]-e*.45);ctx.lineTo(C[0],C[1]-e);ctx.lineTo(D[0]+e*.9,D[1]-e*.45);ctx.closePath();ctx.fill()}
+  const fL=(u,z)=>[Dg[0]+(Cg[0]-Dg[0])*u,Dg[1]+(Cg[1]-Dg[1])*u-z];
+  const fR=(u,z)=>[Bg[0]+(Cg[0]-Bg[0])*u,Bg[1]+(Cg[1]-Bg[1])*u-z];
+  return {hex:[iso(x,y+d),iso(x+w,y+d),iso(x+w,y),B,A,D],fL,fR,top:iso(x+w/2,y+d/2,z0+h)};
+};
+/* ---------- Toits à deux pentes : débord, faîtage brillant ---------- */
+const r3Pitched0=pitched;
+pitched=function(x,y,w,d,h,col,wall){
+  if(!R3.on||typeof col!=='string'||col[0]!=='#')return r3Pitched0(x,y,w,d,h,col,wall);
+  const rh=Math.min(16,d*14),A=iso(x,y,h),B=iso(x+w,y,h),C=iso(x+w,y+d,h),D=iso(x,y+d,h),R1=iso(x,y+d/2,h+rh),R2=iso(x+w,y+d/2,h+rh);
+  const ov=.16,ex=(P,Q)=>[P[0]+(P[0]-Q[0])*ov,P[1]+(P[1]-Q[1])*ov];
+  const D2=ex(D,R1),C2=ex(C,R2),A2=ex(A,R1),B2=ex(B,R2);
+  poly(ctx,[A2,B2,R2,R1],shade(col,.7));
+  poly(ctx,[C,B,R2],shade(wall,.62));
+  /* épaisseur du débord */
+  poly(ctx,[D2,C2,[C2[0],C2[1]+1.6],[D2[0],D2[1]+1.6]],shade(col,.55));
+  poly(ctx,[C2,B2,[B2[0],B2[1]+1.4],[C2[0],C2[1]+1.4]],shade(col,.45));
+  const gr=ctx.createLinearGradient(0,R1[1],0,D2[1]);gr.addColorStop(0,shade(col,1.12));gr.addColorStop(1,shade(col,.88));
+  ctx.fillStyle=gr;ctx.beginPath();ctx.moveTo(D2[0],D2[1]);ctx.lineTo(C2[0],C2[1]);ctx.lineTo(R2[0],R2[1]);ctx.lineTo(R1[0],R1[1]);ctx.closePath();ctx.fill();
+  const la=(.55+r3L()*.02)*(1-NIGHT*.75);
+  if(la>.05){ctx.strokeStyle=`rgba(255,255,255,${la.toFixed(3)})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(R1[0],R1[1]);ctx.lineTo(R2[0],R2[1]);ctx.lineTo(B2[0],B2[1]);ctx.stroke()}
+};
+/* ===== FIN AGENT RENDU3D ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
