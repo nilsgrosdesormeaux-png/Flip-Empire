@@ -8212,7 +8212,7 @@ function r3Socle(){
   const ext=(z)=>{const cx=-m+rad,cy=N+m-rad,k=rad*Math.SQRT1_2;/* points extrêmes gauche et droite à l'altitude z */
     const Lp=[((cx-k)-(cy+k))*TW/2,((cx-k)+(cy+k))*TH/2-z];const Rp=[-Lp[0],Lp[1]];return [Lp,Rp]};
   /* 1. ombre douce sous le socle */
-  base();for(let i=0;i<6;i++){g.save();r3Iso(g,zTop-H-4-i*2.5);r3Shape(g,m+.05+i*.11,rad+i*.11);g.restore();g.fillStyle=`rgba(20,30,60,${(.07*(1-NIGHT*.4)).toFixed(3)})`;g.fill()}
+  base();for(let i=0;i<12;i++){g.save();r3Iso(g,zTop-H-4-i*1.3);r3Shape(g,m+.04+i*.056,rad+i*.056);g.restore();g.fillStyle=`rgba(20,30,60,${(.038*(1-NIGHT*.4)).toFixed(3)})`;g.fill()}
   /* 2. tranche : bandes du bas vers le haut */
   const slab=(z0,z1,col,dark)=>{base();const [L0,R0]=ext(z0),[L1,R1]=ext(z1);
     const gr=g.createLinearGradient(L0[0],0,R0[0],0);gr.addColorStop(0,r3Col(col,1.02*dark));gr.addColorStop(.42,r3Col(col,.9*dark));gr.addColorStop(.5,r3Col(col,.8*dark));gr.addColorStop(.58,r3Col(col,.68*dark));gr.addColorStop(1,r3Col(col,.6*dark));
@@ -8238,7 +8238,18 @@ function r3Socle(){
   return c}
 /* Le socle passe derrière le sol déjà dessiné */
 G.minX=-N*TW/2-80;G.minY=-24;G.w=N*TW+160;G.h=N*TH+150;
-buildGround=(f=>function(){f();if(!R3.on||GFX.thumb)return;try{const s=r3Socle(),g=G.cv.getContext('2d');g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='destination-over';g.drawImage(s,0,0);g.restore()}catch(e){console.warn(e)}})(buildGround);
+/* Lumière douce sur le plateau (plus clair au fond à gauche, plus sombre devant à droite) et arête avant brillante */
+function r3Light(){const g=G.cv.getContext('2d');g.save();g.setTransform(G.sc,0,0,G.sc,-G.minX*G.sc,-G.minY*G.sc);
+  const A=iso(0,0),B=iso(N,0),C=iso(N,N),D=iso(0,N);g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1]);g.lineTo(C[0],C[1]);g.lineTo(D[0],D[1]);g.closePath();g.save();g.clip();
+  g.globalCompositeOperation='source-atop';const n=NIGHT;
+  let gr=g.createLinearGradient(D[0],A[1],B[0],C[1]);gr.addColorStop(0,`rgba(255,250,220,${(.16*(1-n)).toFixed(3)})`);gr.addColorStop(.5,'rgba(255,255,255,0)');gr.addColorStop(1,`rgba(10,20,60,${(.12+.06*n).toFixed(3)})`);
+  g.fillStyle=gr;g.fillRect(D[0],A[1],B[0]-D[0],C[1]-A[1]);
+  /* reflet de soleil qui balaie le plateau */
+  if(n<.6){const cx=iso(N*.3,N*.3);gr=g.createRadialGradient(cx[0],cx[1],0,cx[0],cx[1],N*TW*.45);gr.addColorStop(0,`rgba(255,250,215,${(.13*(1-n)).toFixed(3)})`);gr.addColorStop(1,'rgba(255,250,215,0)');g.fillStyle=gr;g.fillRect(D[0],A[1],B[0]-D[0],C[1]-A[1])}
+  g.restore();
+  g.globalCompositeOperation='source-over';g.lineJoin='round';g.lineWidth=1.6;g.strokeStyle=`rgba(255,255,255,${(.6*(1-n*.7)).toFixed(3)})`;g.beginPath();g.moveTo(D[0],D[1]+.5);g.lineTo(C[0],C[1]+.5);g.lineTo(B[0],B[1]+.5);g.stroke();
+  g.restore()}
+buildGround=(f=>function(){f();if(!R3.on||GFX.thumb)return;try{r3Light()}catch(e){console.warn(e)}try{const s=r3Socle(),g=G.cv.getContext('2d');g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='destination-over';g.drawImage(s,0,0);g.restore()}catch(e){console.warn(e)}})(buildGround);
 
 /* ---------- Volumes « gonflés » ---------- */
 /* Dégradés mis en cache : chaque face est dessinée dans un carré unité transformé, donc un seul dégradé par couleur */
@@ -8381,6 +8392,15 @@ drawHouse=function(o){const r=r3House0(o);
       if(NIGHT<.5)r3Star(p[0],p[1]-.5,1.3+k*1.4,k*(1-NIGHT*1.6),'#FFFFFF');
       else{ctx.globalCompositeOperation='lighter';cGlow(p[0],p[1]-6,26,26,.35*k);ctx.globalCompositeOperation='source-over'}}}
   return r};
+
+/* ---------- Façades vitrées : reflet du ciel en biais (villes modernes) ---------- */
+const r3Win0=cWin;
+cWin=function(f,cols,floors,start,seed,zo){r3Win0(f,cols,floors,start,seed,zo);
+  if(!R3.on||R3.rim===0||NIGHT>.45||!cLod()||floors-start<3)return;const P=cPal();if(P.win!=='band'&&P.win!=='grid'&&P.win!=='gulf')return;
+  const z0=start*FH+(zo||0),z1=floors*FH-2,a=(.1+r3L()*.008)*(1-NIGHT*2),u=((seed||0)%7)/7*.5,w=.16,s=.38;
+  ctx.fillStyle=`rgba(255,255,255,${a.toFixed(3)})`;const p=[f(u,z0),f(u+w,z0),f(Math.min(1,u+w+s),z1),f(Math.min(1,u+s),z1)];
+  ctx.beginPath();ctx.moveTo(p[0][0],p[0][1]);for(let i=1;i<4;i++)ctx.lineTo(p[i][0],p[i][1]);ctx.closePath();ctx.fill();
+  const q2=[f(u+w+.05,z0),f(u+w+.1,z0),f(Math.min(1,u+w+.1+s),z1),f(Math.min(1,u+w+.05+s),z1)];ctx.beginPath();ctx.moveTo(q2[0][0],q2[0][1]);for(let i=1;i<4;i++)ctx.lineTo(q2[i][0],q2[i][1]);ctx.closePath();ctx.fill()};
 
 /* ---------- Garde-fou de fluidité : si la carte met trop de temps à se dessiner, on retire les reflets fins ---------- */
 R3.ms=0;R3.slow=0;
