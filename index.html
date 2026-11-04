@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-1445">
+<meta name="fe-build" content="2026-11-04-1453">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7612,7 +7612,7 @@ function vvCardUpdate(){const e=VV.follow,c=VV.card;if(!e||!e.v||!c||c.hidden)re
 const bizGate=c=>Math.min(150,10+8*(c||0));
 function bizGateOk(b){const i=BIZ.indexOf(b);if(i<=0)return true;const pv=BIZ[i-1];return (S.biz[pv.id].lvl|0)>=bizGate(S.city)}
 quote=(f=>function(b){const q=f(b);if(S.biz[b.id].lvl===0&&!bizGateOk(b)){const pv=BIZ[BIZ.indexOf(b)-1];return Object.assign({},q,{ok:false,label:`D’abord ${pv.n} au niveau ${bizGate(S.city)}`})}return q})(quote);
-cityGoal2=()=>CITY_GOAL0*cityCost(S.city||0)*Math.pow(1.5,S.city||0);
+cityGoal2=()=>Math.max(1000,Math.round(BIZ.reduce((t,b)=>t+b.base*10/b.time,0)*600));
 function conqGoals(){
   const c=S.city||0,cn=c?CITIES[c].n:'ta ville',lv=Math.min(400,75+30*c),nb=Math.min(8,4+Math.floor(c/3)),
     pct=Math.min(.6,.15+.04*c),sat=Math.min(88,70+Math.round(c*1.5));

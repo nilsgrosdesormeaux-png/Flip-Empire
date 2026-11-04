@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1453)
+- Objectif « Gagne X dans cette ville » trop dur à Rio (80 Sx € avant) : il vaut maintenant 10 minutes de revenu des 8 affaires au niveau 10 (Ta ville 2 Md €, Rio 867 Qa €). Coefficient à ajuster avec les retours de Nils (ligne cityGoal2).
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1445)
 - Objectif bourse trop dur : il demandait 4,65 Md € à Londres (mesuré : impossible à atteindre). Maintenant proportionnel à l'entrepôt : prix × capacité × (0,4 + 0,1 × ville) → 24 k € à Londres, 1 440 € à Ta ville.
 - À vérifier en jouant : si la bourse reste trop facile ou trop dure, ajuster le coefficient dans mktGoal2.
