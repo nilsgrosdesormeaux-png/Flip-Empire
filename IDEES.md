@@ -42,8 +42,8 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - FAIT (04b) : retour en partie plafonné, plus de championnats en rafale.
 - Club de foot et Mairie dans des blocs (onglets) à part.
 - Immobilier beaucoup plus complet : vraie partie investissement, bien visible ; prix qui montent fort avec la ville ; acheter tout d'un coup et améliorer au maximum en un clic.
-- Bâtiments achetés/améliorés qui gardent le style de leur ville (Paris doit rester Paris, Tokyo Tokyo).
-- Plus de villes et de niveaux avant la Lune (grandes villes, autres thèmes pour la fin).
+- FAIT (branche fe/villes) : bâtiments achetés/améliorés qui gardent le style de leur ville (Paris reste Paris, Tokyo reste Tokyo), avec corniche dorée et fanion pour les reconnaître.
+- FAIT (branche fe/villes) : 13 villes. Rio, Shanghai et Atlantide (ville sous la mer) avant la Lune, puis Mars en dernier. Chacune a ses monuments, ses commerces, son marché, ses fêtes et une décision. Les anciennes parties sur la Lune sont replacées sur la Lune.
 - FAIT (04b) : décisions moins fréquentes, pause pendant une décision, bouton Pause.
 - La bourse doit dépendre un minimum de la ville.
 - FAIT (04b) : « Tout régler » dans Clients.

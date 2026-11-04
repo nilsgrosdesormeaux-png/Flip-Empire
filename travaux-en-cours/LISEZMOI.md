@@ -14,12 +14,8 @@ Objectif (voir IDEES.md « Demandes du 4 novembre ») :
 État : l'agent venait d'écrire le bloc `/* ===== AGENT IMMO ===== */` (après FIN AGENT ECO). Rien de testé.
 Note : CITY_MULT ne s'applique pas aux boutiques/gérants/améliorations/logements du QG.
 
-## villes-ville-vivante.patch (~110 lignes)
-Objectif :
-1. Bâtiments améliorés qui gardent le style de leur ville (Paris reste Paris…).
-2. 4-5 villes de plus avant la Lune (grandes villes, puis thèmes de fin type sous-marin / orbital / Mars) : toutes les tables par ville (CITIES, THEMES, C2PAL/CP, C2.sat, C2MAP, CITY_BIZ, MKT, bornes « 8 » codées en dur).
-3. Ville vivante : routines des habitants, voitures, toucher un habitant pour le suivre (prénom accordé avec `gx`).
-État : début seulement (préparation), le gros bloc `/* ===== AGENT VILLES ===== */` n'était pas encore écrit.
+## Villes (fait, branche fe/villes)
+Les villes et le style des bâtiments sont dans le bloc AGENT VILLES. Reste « ville vivante » (habitants, voitures, suivre un habitant), traité à part.
 
 ## Autres tâches en attente
 - Club et Mairie dans des onglets à part.
