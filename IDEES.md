@@ -49,5 +49,5 @@ Liste d'envies de Nils, avec l'état au 2026-11-03. À mettre à jour quand un p
 - FAIT (fe/immo) : bourse locale, 4 valeurs dont le grand groupe de la ville ; prix et nervosité suivent la ville ; anciennes bourses revendues au cours du jour.
 - FAIT (04b) : « Tout régler » dans Clients.
 - FAIT (fe/immo) : prix ×12×1,58 par ville, revenus ×12 ; simulé : chaque ville prend 30 à 50 % de temps de plus (9 ou 14 villes). Boutons « Tout acheter » et « Au max » aussi pour les boutiques.
-- Vie de la ville : habitants et voitures plus vivants, pouvoir suivre la journée d'un habitant par curiosité.
+- FAIT : vie de la ville. Passants avec une journée (travail, déjeuner, courses, chien, footing, livreurs, touristes, bus), files d'attente devant tes commerces (plus longues quand ils marchent bien), bus avec arrêts, taxis, camionnettes de livraison, petits bouchons, heures de pointe. Toucher un passant (ou le bouton bonhomme sur la carte) : la caméra le suit et une fiche montre son prénom, son métier et la suite de sa journée.
 - Publier soi-même sur la branche après chaque tâche terminée et testée.
