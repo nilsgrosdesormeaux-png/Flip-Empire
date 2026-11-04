@@ -4538,7 +4538,7 @@ const C2PAL=[
   {walls:['#F7E2B0','#F4C9A0','#EADBC2','#CFE6CF','#F6D2C4','#DCE8F2'],roof:'#CF5A3E',roof2:'#A84E3A',flat:'#CDB89C',trim:'#4F8FB0',door:'#7A4A34',glass:'#A9D3E4',leaf:['#5DAE45','#76BE4E','#4C9B3E'],grass:['#82C25A','#7DBC55'],park:'#74BA50',walk:'#E9DFCC',road:'#5B6173',water:null},
   {walls:['#F6F1E4','#EEE7D6','#E7DDC8','#F2E9D3'],roof:'#4F5F78',roof2:'#43516B',flat:'#A3ABB6',trim:'#3E8A6E',door:'#2F5E50',glass:'#A6CDE0',leaf:['#57A548','#6CB451','#4A9442'],grass:['#80C05C','#7BBA57'],park:'#70B452',walk:'#E4DED0',road:'#585E70',water:'#4C9DBC'},
   {walls:['#F2A66C','#F7CB7C','#EA8F78','#F5BB8E','#F0D69C','#E58360'],roof:'#C85B3A',roof2:'#AA4A30',flat:'#D5A882',trim:'#5E9150',door:'#5A3424',glass:'#A6CCD6',leaf:['#5DA442','#73B24C','#4E9440'],grass:['#8AC35C','#84BD57'],park:'#78B652',walk:'#EDDBC0',road:'#5E5F6C',water:'#3FA2C4'},
-  {walls:['#F2E5C6','#EBDBB6','#F6ECD5'],roof:'#6E8199',roof2:'#5D6F86',flat:'#8D9BAD',trim:'#2C3038',door:'#1F3550',glass:'#A2C4D8',leaf:['#5AA347','#6BB04F','#4B9040'],grass:['#84BE5E','#7FB859'],park:'#E6D6AE',walk:'#E9DFC8',road:'#575D6B',water:'#4893BA'},
+  {walls:['#F2E5C6','#EBDBB6','#F6ECD5'],roof:'#6E8199',roof2:'#5D6F86',flat:'#C9BCA4',trim:'#2C3038',door:'#1F3550',glass:'#A2C4D8',leaf:['#5AA347','#6BB04F','#4B9040'],grass:['#84BE5E','#7FB859'],park:'#E6D6AE',walk:'#E9DFC8',road:'#575D6B',water:'#4893BA'},
   {walls:['#B7563A','#C4684B','#A04B34','#CD7C53','#F3EEE3'],roof:'#3F4B5B',roof2:'#353F4D',flat:'#8A817B',trim:'#F7F3EA',door:'#1E5240',glass:'#9CC0D2',leaf:['#4F9E44','#62AE4C','#43893C'],grass:['#76BC56','#71B551'],park:'#6AB24C',walk:'#D3CEC6',road:'#484D57',water:'#4D8EA3'},
   {walls:['#A05C40','#BC7A4E','#D8C9AE','#82594A','#AEB7BE','#CC8C5C'],roof:'#4B505A',roof2:'#3F444D',flat:'#928C86',trim:'#2C2C2E',door:'#3A2A22',glass:'#9DC2D6',leaf:['#55A049','#66AE50','#488F42'],grass:['#80BE5C','#7AB857'],park:'#70B350',walk:'#D2D0CB',road:'#464B56',water:'#3E88B4'},
   {walls:['#F6F4EF','#F4DCD2','#D3E6F0','#EFE4CA','#DDEBD6','#EEDDEA'],roof:'#3C4556',roof2:'#B5443A',flat:'#C2BDC6',trim:'#59606C',door:'#4A4F57',glass:'#AECFE0',leaf:['#5DA650','#70B656','#4E9746'],grass:['#86C265','#80BB5F'],park:'#78B85A',walk:'#DDDFE0',road:'#4B515C',water:'#3A9CCD'},
@@ -4563,8 +4563,10 @@ function c2Shade(h,k){
   return `rgb(${Math.max(0,Math.min(255,r|0))},${Math.max(0,Math.min(255,g|0))},${Math.max(0,Math.min(255,b|0))})`;
 }
 const c2SC=new Map();let c2N=-1,c2D=-1,c2C=-1;
+/* Remplacement de quelques gris d’origine par des teintes de la ville (entrepôts) */
+const C2MAP=[{'#C9CDD1':'#E2D3BA','#B4BAC0':'#5E9AA0'},{'#C9CDD1':'#E4E2D8','#B4BAC0':'#4F7F8C'},{'#C9CDD1':'#EBC8A0','#B4BAC0':'#B8643E'},{'#C9CDD1':'#E0D6C0','#B4BAC0':'#6E8199'},{'#C9CDD1':'#B5644A','#B4BAC0':'#4A5560'},{'#C9CDD1':'#B07858','#B4BAC0':'#5E6A6E'},{'#C9CDD1':'#E6E9EE','#B4BAC0':'#C04A3C'},{'#C9CDD1':'#F0E2C6','#B4BAC0':'#C9A55A'},{}];
 shade=function(h,k){const ci=Math.min(gfxL(),8);if(NIGHT!==c2N||DUSK!==c2D||ci!==c2C){c2N=NIGHT;c2D=DUSK;c2C=ci;C2S=C2.sat[ci];C2W=C2.warm[ci];c2SC.clear()}
-  const key=h+k;let v=c2SC.get(key);if(v===undefined){v=h.length===7&&h[0]==='#'?c2Shade(h,k):cShadeRaw(h,k);if(c2SC.size>4000)c2SC.clear();c2SC.set(key,v)}return v};
+  const mp=C2MAP[ci][h];if(mp)h=mp;const key=h+k;let v=c2SC.get(key);if(v===undefined){v=h.length===7&&h[0]==='#'?c2Shade(h,k):cShadeRaw(h,k);if(c2SC.size>4000)c2SC.clear();c2SC.set(key,v)}return v};
 
 /* Couleurs utiles */
 const c2Hex=h=>rgbOf(h);
@@ -4677,7 +4679,7 @@ tree=function(o){const P=cPal(),ci=Math.min(gfxL(),8);
   if(kind==='plane'){ctx.fillStyle=shade('#8A7258',1);ctx.fillRect(p[0]-1.3*s,p[1]-11*s,2.6*s,11*s);box(o.x-.17*s,o.y-.17*s,.34*s,.34*s,11*s,leaf,{z0:9*s});if(cLod()){const t=iso(o.x,o.y,20*s);ctx.fillStyle=shade(leaf,1.25);ctx.beginPath();ctx.ellipse(t[0]-2*s,t[1]-1*s,4*s,2*s,0,0,7);ctx.fill()}return}
   if(kind==='street'){poly(ctx,quadT(o.x-.16,o.y-.16,o.x+.16,o.y+.16),shade('#6B5A48',1))}
   ctx.fillStyle=shade('#6A4A32',1);ctx.fillRect(p[0]-1.4*s,p[1]-10*s,2.8*s,10*s);
-  const tall=kind==='tall',ry=(tall?13:8.6)*s,rx=(tall?6.6:8.8)*s,cy=p[1]-(tall?19:15)*s;
+  const tall=kind==='tall',ry=(tall?13:8.6)*s,rx=(tall?6.6:8.8)*s,cy=p[1]-(tall?19:15)*s;if(!RM&&!GFX.thumb){const sw=Math.sin(T*1.1+hs%17)*.7*s;p[0]=p[0]+sw}
   ctx.fillStyle=shade(leaf,.68);ctx.beginPath();ctx.ellipse(p[0]+1.6*s,cy+1.8*s,rx,ry,0,0,7);ctx.fill();
   ctx.fillStyle=shade(leaf,.9);ctx.beginPath();ctx.ellipse(p[0]-.6*s,cy-.4*s,rx*.86,ry*.84,0,0,7);ctx.fill();
   ctx.fillStyle=shade(leaf,1.08);ctx.beginPath();ctx.ellipse(p[0]-2.2*s,cy-2.6*s,rx*.58,ry*.55,0,0,7);ctx.fill();
@@ -4757,8 +4759,11 @@ drawHouse=function(o){const r=c2House(o);
     ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.ellipse(p[0]-rx*.45,p[1]-hh*.62,rx*.12,hh*.2,-.6,0,7);ctx.fill();
     if(NIGHT>.5)cGlow(p[0],p[1],rx*2.2,ry*1.6,.35*NIGHT);
     return r}
+  const ci=Math.min(gfxL(),8);if(o.t==='apt'&&NIGHT>.4&&r.fL){const hh=o.f*FH;
+    if(ci===7){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.8*NIGHT;q(r.fL,0,1,hh-3,hh-1,'#FFC86A');q(r.fR,0,1,hh-3,hh-1,'#E0A040');ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}
+    else if((ci===5||ci===6)&&o.f>=7&&Math.sin(T*2.5+o.x)>.2){const t=iso(o.x+o.w/2,o.y+o.d/2,hh+6);ctx.fillStyle='#FF4D4D';ctx.beginPath();ctx.arc(t[0],t[1],1.8,0,7);ctx.fill();cGlow(t[0],t[1],14,14,.7)}}
   if(TH_.dome||!cLod()||(S.props&&S.props[o.pid])||((S.propUp||{})[o.pid])||o.roof||cPal().sig==='zinc')return r;
-  const sd=cHash(o)%7,h=o.f*FH+(o.t==='apt'?0:0);
+  const sd=cHash(o)%7,h=o.f*FH;
   if(sd===1||sd===4){const x0=o.x+o.w*.12,y0=o.y+o.d*.58,x1=o.x+o.w*.5,y1=o.y+o.d*.9;poly(ctx,quadT(x0,y0,x1,y1,h+.4),shade('#7A5536',1));poly(ctx,quadT(x0+.03,y0+.03,x1-.03,y1-.03,h+1.6),shade(cPal().leaf[sd%2],1));
     if(sd===4){const t=iso((x0+x1)/2,(y0+y1)/2,h+1.6);ctx.fillStyle=shade('#FF6F91',1);ctx.fillRect(t[0]-3,t[1]-1,1.8,1.8);ctx.fillStyle=shade('#FFD447',1);ctx.fillRect(t[0]+2,t[1]-.5,1.8,1.8)}}
   else if(sd===2){const c=iso(o.x+o.w*.32,o.y+o.d*.74,h);ctx.strokeStyle=shade('#5A5F66',1);ctx.lineWidth=.8;line(c,[c[0],c[1]-8]);const col=['#E4573D','#3C8DC5','#F2C230'][cHash(o)%3];ctx.fillStyle=shade(col,1);ctx.beginPath();ctx.moveTo(c[0]-7,c[1]-6);ctx.lineTo(c[0],c[1]-11);ctx.lineTo(c[0]+7,c[1]-6);ctx.closePath();ctx.fill()}
