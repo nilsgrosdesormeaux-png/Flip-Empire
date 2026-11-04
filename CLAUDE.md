@@ -11,7 +11,7 @@ https://nilsgrosdesormeaux-png.github.io/Flip-Empire/
 
 ## Structure de index.html
 - Sections repérables par `/* ================= NOM ================= */` (DATA, STATE, ECONOMY, STORY EVENTS, CITY ENGINE, TAB VIEWS, GAME TICK, EVENTS, BOOT…).
-- Blocs ajoutés ensuite, juste avant BOOT, chacun entre `/* ===== AGENT X ===== */` et `/* ===== FIN AGENT X ===== */` : ECO (club, immobilier), VIE (couple, enfants, logement), META (boutique, sondage, séries), GRAPHISME + CARTE (rendu de la carte), DECISIONS (événements, mairie), UI (objectifs, récompenses, rangement), MATCH (jour de match), FILET DE SÉCURITÉ (bandeau d'erreur).
+- Blocs ajoutés ensuite, juste avant BOOT, chacun entre `/* ===== AGENT X ===== */` et `/* ===== FIN AGENT X ===== */` : ECO (club, immobilier), VIE (couple, enfants, logement), META (boutique, sondage, séries), GRAPHISME + CARTE (rendu de la carte), DECISIONS (événements, mairie), UI (objectifs, récompenses, rangement), MATCH (jour de match), FILET DE SÉCURITÉ (bandeau d'erreur), DIFFICULTÉ (prix ×20, blocage entre commerces, objectifs de ville), TUTORIEL (déblocage progressif des onglets + tutoriel de départ ; `S.unl` / `S.tut`, les anciennes parties gardent tout débloqué).
 - Une `function` redéfinie plus bas remplace l'originale : avant de modifier une fonction, vérifie avec `grep -n "function nom("` qu'elle n'est pas redéfinie dans un bloc plus bas.
 - État du jeu : objet global `S`, sauvegardé dans `localStorage` (clé `flipEmpire_v9`). Tout nouveau champ doit être ajouté dans `newGame()` ou initialisé défensivement : les sauvegardes des joueurs doivent toujours se recharger.
 

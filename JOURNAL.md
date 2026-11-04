@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1137)
+- Bloc TUTORIEL avant BOOT : tutoriel de départ (4 étapes) et onglets débloqués petit à petit (UNL : objectifs, vie, immo+bourse, club, mairie) ; S.unl et S.tut ; boutons Boutique/Sondage du bandeau et résultat du sondage masqués au début.
+- Testé : vraie création de partie au clic, rechargement en plein tutoriel, ancienne sauvegarde et import d'ancien code = tout débloqué, franchise = tout reste débloqué.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1023)
 - Tout ce qui s'achète coûte 20× plus cher (constante HARD_K dans cityPrices : commerces, niveaux, gérants, améliorations, logement QG, personnel, immeubles, rénovations) ; revenus et loyers inchangés ; argent de départ et d'arrivée = 1,3× la première boutique.
 - Temps ×4 réservé au Pass Empire (sans pass : ×2 max ; une sauvegarde en ×4 repasse en ×2).
