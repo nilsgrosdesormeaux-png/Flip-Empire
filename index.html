@@ -8319,6 +8319,8 @@ pitched=function(x,y,w,d,h,col,wall){
 .sheet{box-shadow:0 6px 0 color-mix(in srgb,var(--ink) 10%,transparent),var(--sh2)}
 .chip{box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--ink) 8%,transparent)}
 @media (prefers-reduced-motion:reduce){.cash.bump{transform:none}}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{text-shadow:none}}
+:root[data-theme="dark"] .btn{text-shadow:none}
 `;document.head.appendChild(st)})();
 
 /* ---------- Effets de gain : pièces dorées brillantes, éclats, chiffres dorés ---------- */
