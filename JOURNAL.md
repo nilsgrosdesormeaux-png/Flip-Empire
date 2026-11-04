@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1013)
+- Difficulté (bloc DIFFICULTÉ avant BOOT) : un commerce ne s'ouvre que si le précédent atteint le niveau 10+8×ville ; objectifs de conquête qui grandissent avec la ville (niveau 75+30×ville, 15→60 % des bâtiments, satisfaction 70→88 %, gains ×1,5 par ville, division du club qui monte) ; immobilier plus cher en fin de voyage (prix ×cityDiff^1,25).
+- Reste : vérifier en jouant que le rythme plaît à Nils (ajuster bizGate et conqGoals si trop dur).
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-0941)
 - Fait : onglets séparés Immo, Club, Mairie (8 onglets ; Bourse dans Affaires) ; 3 bugs META corrigés.
 - Fait : progression par ville type hôtel de ville (prix ×1,58 de plus par ville), immobilier d'investissement (Tout acheter, Améliorer au max), bourse liée à la ville.

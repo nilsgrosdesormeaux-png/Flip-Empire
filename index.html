@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-04-0958">
+<meta name="fe-build" content="2026-11-04-1013">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -2798,7 +2798,7 @@ function renderSheet(){
   const b=BIZ_BY[sel];if(!b){el.hidden=true;return}const st=S.biz[b.id];
   if(!st.lvl){el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>Terrain à vendre</h2><p class="hint">Futur ${b.n.toLowerCase()}</p></div>${x}</div>
       <div class="bs-sec"><div class="kv"><span>Revenus au niveau 1</span><b>${fmt(b.base*permMult())} toutes les ${b.time} s</b></div><div class="kv"><span>Gérant possible</span><b>${MGR_NAMES[b.id]}</b></div></div>
-      <div class="bs-sec"><button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${S.cash>=b.cost?'':'disabled'}>Acheter et ouvrir pour ${fmt(b.cost)}</button></div>`;return}
+      <div class="bs-sec"><button class="btn big go" id="sh-buy" data-a="bbuy" data-id="${b.id}" ${quote(b).ok?'':'disabled'}>${bizGateOk(b)?'Acheter et ouvrir pour '+fmt(b.cost):quote(b).label}</button></div>`;return}
   const q=quote(b),np=nextPalier(st.lvl),ups=UPG.filter(u=>u.biz===b.id),last=S.reviews.find(r=>r.id===b.id);
   el.innerHTML=`<div class="bs-head"><div class="bs-ic">${b.e}</div><div><h2>${b.n}</h2><p class="hint">${tierOf(st.lvl)}, niveau ${st.lvl}, ${floorsOf(b)} étage${floorsOf(b)>1?'s':''}${nbCache[b.id]?`, quartier +${Math.round(nbCache[b.id]*100)} %`:''}</p></div>${x}</div>
     <div class="bs-sec"><div class="kv"><span>Par vente</span><b id="sh-rev">${fmt(revenue(b))}</b></div><div class="kv"><span>Toutes les</span><b>${b.time} s</b></div><div class="minibar"><i id="sh-bar"></i></div>
@@ -2814,7 +2814,7 @@ function liveSheet(){
   const b=BIZ_BY[sel];if(!b)return;const st=S.biz[b.id];
   const bar=$('#sh-bar');if(bar)bar.style.width=(st.running?Math.min(1,st.prog)*100:0)+'%';
   const rv=$('#sh-rev');if(rv)rv.textContent=fmt(revenue(b));
-  const bb=$('#sh-buy');if(bb){if(st.lvl){const q=quote(b);if(bb.textContent!==q.label)bb.textContent=q.label;bb.disabled=!q.ok}else bb.disabled=S.cash<b.cost}
+  const bb=$('#sh-buy');if(bb){if(st.lvl){const q=quote(b);if(bb.textContent!==q.label)bb.textContent=q.label;bb.disabled=!q.ok}else bb.disabled=!quote(b).ok}
   const mg=$('#sh-mgr');if(mg)mg.disabled=S.cash<MGR[b.id];const rn=$('#sh-run');if(rn)rn.disabled=st.running;
 }
 
@@ -2834,7 +2834,7 @@ function vGestion(){
 }
 function vAffaires(){
   const rows=BIZ.map(b=>{const st=S.biz[b.id];
-    if(!st.lvl)return `<div class="gl"><div class="gl-ic" style="filter:grayscale(1)">${b.e}</div><div><h3>${b.n}</h3><p class="hint">Pas encore ouvert</p><div class="bs-row" style="margin-top:6px"><button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${S.cash>=b.cost?'':'disabled'}>Ouvrir pour ${fmt(b.cost)}</button></div></div></div>`;
+    if(!st.lvl)return `<div class="gl"><div class="gl-ic" style="filter:grayscale(1)">${b.e}</div><div><h3>${b.n}</h3><p class="hint">Pas encore ouvert</p><div class="bs-row" style="margin-top:6px"><button class="btn small go" id="g-buy-${b.id}" data-a="bbuy" data-id="${b.id}" ${quote(b).ok?'':'disabled'}>${bizGateOk(b)?'Ouvrir pour '+fmt(b.cost):quote(b).label}</button></div></div></div>`;
     const q=quote(b),s=satOf(b.id);
     return `<div class="gl"><div class="gl-ic">${b.e}</div><div><h3>${b.n} <span id="g-rev-${b.id}">${fmt(revenue(b))}</span></h3>
       <div class="minibar"><i id="g-bar-${b.id}"></i></div><p class="hint">${tierOf(st.lvl)}, niveau ${st.lvl}${st.mgr?', avec gérant':''}. Clients <b style="color:${s<35?'var(--loss)':s<60?'#B8860B':'var(--money)'}">${Math.round(s)} %</b>${modMult(b.id)!==1?`, effets en cours ×${fmtM(modMult(b.id))}`:''}</p>
@@ -3033,7 +3033,7 @@ function updateLive(){
   const fz=$('#frz');if(fz)fz.textContent=now<S.frenzyUntil?`Frénésie ×5, ${Math.ceil((S.frenzyUntil-now)/1000)} s`:'';
   if(S.tab==='gestion'&&S.gTab==='affaires')BIZ.forEach(b=>{const st=S.biz[b.id];
     const bar=document.getElementById('g-bar-'+b.id);if(bar)bar.style.width=(st.running?Math.min(1,st.prog)*100:0)+'%';
-    const bt=document.getElementById('g-buy-'+b.id);if(bt){if(st.lvl){const q=quote(b);if(bt.textContent!==q.label)bt.textContent=q.label;bt.disabled=!q.ok}else bt.disabled=S.cash<b.cost}
+    const bt=document.getElementById('g-buy-'+b.id);if(bt){if(st.lvl){const q=quote(b);if(bt.textContent!==q.label)bt.textContent=q.label;bt.disabled=!q.ok}else bt.disabled=!quote(b).ok}
     const mg=document.getElementById('g-mgr-'+b.id);if(mg)mg.disabled=S.cash<MGR[b.id];const rv=document.getElementById('g-rev-'+b.id);if(rv&&st.lvl)rv.textContent=fmt(revenue(b))});
   if(S.tab==='gestion')document.querySelectorAll('#main [data-cost]').forEach(u=>{if(u.dataset.a==='upg'){const up=UPG.find(x=>x.id===u.dataset.id);u.disabled=S.cash<+u.dataset.cost||(up.biz&&!S.biz[up.biz].lvl)}else if(u.dataset.a==='act'){const st=S.biz[u.dataset.id],a=ACTS.find(x=>x.id===u.dataset.x);u.disabled=st.cd[a.id]>S.day||S.cash<+u.dataset.cost||S.energy<a.nrg}else u.disabled=S.cash<+u.dataset.cost});
   if(S.tab==='marche'&&S.mkt)mktLive();
@@ -4066,7 +4066,7 @@ function immoRepAll(){const P=immoRepPlan();if(!P.list.length){toast('Pas assez 
 function shopPlan(only,kinds){
   const want=k=>!kinds||kinds.includes(k),items=[];
   BIZ.forEach(b=>{if(only&&b.id!==only)return;const st=S.biz[b.id];
-    if(!st.lvl&&want('open'))items.push({k:'open',id:b.id,c:b.cost});
+    if(!st.lvl&&want('open')&&bizGateOk(b))items.push({k:'open',id:b.id,c:b.cost});
     if(!st.mgr&&want('mgr'))items.push({k:'mgr',id:b.id,c:MGR[b.id],dep:st.lvl?null:b.id});
     if(want('upg'))UPG.forEach(u=>{if(u.biz===b.id&&!S.upg.includes(u.id))items.push({k:'upg',id:u.id,c:u.cost,dep:st.lvl?null:b.id})});
     if(only&&st.lvl&&want('staff')){const s=st.staff||{clean:0,wait:0,qual:0};['clean','wait','qual'].forEach(k=>{for(let v=s[k]|0;v<3;v++)items.push({k:'staff',id:b.id,s:k,c:staffCost(b,v)})})}});
@@ -7602,6 +7602,31 @@ function vvCardUpdate(){const e=VV.follow,c=VV.card;if(!e||!e.v||!c||c.hidden)re
     b.addEventListener('click',()=>{if(VV.follow&&VV.camOn)vvUnfollow();else vvFollowRandom()});mc.appendChild(b)}
 })();
 /* ===== FIN AGENT VIVANT ===== */
+/* ===== DIFFICULTÉ ===== */
+/* Passer d'une ville à l'autre doit prendre du temps (courbe type hôtel de ville) :
+   1. un commerce ne s'ouvre que si le précédent a atteint un niveau qui monte avec la ville ;
+   2. les objectifs de conquête grandissent avec la ville ;
+   3. l'immobilier coûte plus cher dans les villes avancées (rendement un peu plus bas). */
+const bizGate=c=>Math.min(150,10+8*(c||0));
+function bizGateOk(b){const i=BIZ.indexOf(b);if(i<=0)return true;const pv=BIZ[i-1];return (S.biz[pv.id].lvl|0)>=bizGate(S.city)}
+quote=(f=>function(b){const q=f(b);if(S.biz[b.id].lvl===0&&!bizGateOk(b)){const pv=BIZ[BIZ.indexOf(b)-1];return Object.assign({},q,{ok:false,label:`D’abord ${pv.n} au niveau ${bizGate(S.city)}`})}return q})(quote);
+cityGoal2=()=>CITY_GOAL0*cityCost(S.city||0)*Math.pow(1.5,S.city||0);
+function conqGoals(){
+  const c=S.city||0,cn=c?CITIES[c].n:'ta ville',lv=Math.min(400,75+30*c),nb=Math.min(8,4+Math.floor(c/3)),
+    pct=Math.min(.6,.15+.04*c),sat=Math.min(88,70+Math.round(c*1.5));
+  return [
+    {t:`Ouvre les 8 affaires de ${cn}`,p:()=>[openIds().length,8]},
+    {t:`Fais grandir ${nb} affaires jusqu’au niveau ${lv}`,p:()=>[BIZ.filter(b=>S.biz[b.id].lvl>=lv).length,nb]},
+    {t:`Possède ${Math.round(pct*100)} % des bâtiments de la ville`,p:()=>[ownedCount(),Math.ceil(propsList().length*pct)]},
+    {t:`Atteins ${sat} % de satisfaction avec tes 8 affaires`,p:()=>[openIds().length>=8?Math.round(avgSat()):0,sat]},
+    {t:`Gagne ${fmt(mktGoal2())} à la bourse locale`,p:()=>[Math.max(0,Math.round(S.mkt.profit)),mktGoal2()]},
+    {t:`Gagne ${fmt(cityGoal2())} dans cette ville`,p:()=>[S.lifetime,cityGoal2()]},
+    c%2===0?{t:'Deviens maire de la ville',p:()=>[S.pol.office?1:0,1]}:{t:`Fais monter ton club jusqu’en ${DIVS[Math.min(DIVS.length-1,2+Math.floor(c/4))]}`,p:()=>[S.club.div,Math.min(DIVS.length-1,2+Math.floor(c/4))]}
+  ];
+}
+propBase=o=>(o.t==='apt'?9000:900)*o.f*cityRev(S.city||0)*Math.pow(cityDiff(S.city||0),1.25)*(1+.04*((S.pol&&S.pol.projects)||[]).length);
+propRent=(o,l)=>propBase(o)*.035/Math.pow(cityDiff(S.city||0),.75)*[0,1,3,8,24][l]*blockMult(o)*(.85+(S.rep||50)/330);
+/* ===== FIN DIFFICULTÉ ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
