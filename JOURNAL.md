@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-2248)
+- Personnel (recrutement pour la satisfaction des clients) : prix FIXE, lié au prix du commerce de la ville (1er niveau 0,5×, 2e 2×, 3e 6×). Il ne dépend plus des gains. Avant : jusqu'à 5 Md € en ville 1.
+- Reste : vérifier en jouant le prix des gérants et des améliorations, qui sont aussi fixes par ville.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-2133)
 - Retiré : le bloc AGENT RENDU3D (socle doré, boutons brillants…) : Nils le trouve « très IA », pire qu'avant. Retour au rendu de la version 1911.
 - Nils n'aime pas non plus le look personnalisable (emojis) : à refaire. Prochaine passe graphique : skills de design (frontend-design, ux designer), vraie étude de Monopoly Go, rien de doré/brillant gadget.
