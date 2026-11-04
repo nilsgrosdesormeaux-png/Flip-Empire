@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-04 : Claude de Nils (version 2026-11-04-1903)
+- Bloc AGENT PERSO (avant BOOT) : naissance au hasard d'office (« Naître ») ; look modifiable (teint, cheveux dont blonds/roux, tenue, accessoire) dans Vie → Moi / Empire → Compte ; « Je cherche : une femme / un homme / peu importe » (défaut : autre genre) ; gérants au genre de leur nom.
+- Mairie : pas de candidature avant le déblocage ; « Me présenter » à tout moment (partielle en 6 mois) ; carte « Faire monter la confiance » ; moitié de la campagne remboursée si élu.
+- Énergie : fiche détaillée + « Prendre un mois de repos ». Clients : « Tout régler » = employés permanents d'abord ; boosts à part. Sondage expliqué, choix clairs, ouvert d'office 1×/semaine. Stade renommable. Code de transfert plus simple (FE2:…).
+- Reste : vraie synchro = Supabase (compte + table des sauvegardes). En cours : économie/villes (Marseille, argent à l'arrivée, objectifs), puis graphismes.
+
 ## 2026-11-04 : Claude de Nils (version 2026-11-04-1501)
 - Bug corrigé : l'objectif bourse comptait le bénéfice net (une vente à perte le faisait reculer, et rien ne se comptait). Maintenant il additionne les bénéfices des ventes, par ville, sauvegardés dans S.counts.bourse.
 - Objectif bourse : 10 000 € à Ta ville, ×3 à chaque ville (Londres 810 k €, Rio 65,6 M €).
