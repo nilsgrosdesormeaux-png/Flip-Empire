@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1139)
+- Sondage hebdo : 4 options publiées : refonte du foot, refonte de la famille, nouvelle ville (Istanbul, Le Caire, Sydney), choix mystère. ATTENTION : ces 4 options sont EN CONSTRUCTION, leur contenu n'est pas encore dans le jeu (le vote gagnant ne fait qu'afficher un message).
+- À faire ensuite : refonte du foot (effectif de 15, composition), puis famille, puis les villes.
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1106)
 - BUG CORRIGÉ : la fête de la ville (maire) était refaisable à l'infini (revenus ×1,5 à chaque fois, coût calculé sur les revenus). Maintenant une fois par an, et jamais pendant une fête en cours.
 - Reste à vérifier : le coût de la fête est encore lié aux revenus (costSec).
