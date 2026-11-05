@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1141)
+- Sondage : 5e option « Pouvoir changer son vote ». Si elle gagne, on peut changer son vote la semaine suivante (testé : vote changé seulement avec le droit).
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1139)
 - Sondage hebdo : 4 options publiées : refonte du foot, refonte de la famille, nouvelle ville (Istanbul, Le Caire, Sydney), choix mystère. ATTENTION : ces 4 options sont EN CONSTRUCTION, leur contenu n'est pas encore dans le jeu (le vote gagnant ne fait qu'afficher un message).
 - À faire ensuite : refonte du foot (effectif de 15, composition), puis famille, puis les villes.

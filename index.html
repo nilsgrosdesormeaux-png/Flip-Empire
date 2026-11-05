@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1139">
+<meta name="fe-build" content="2026-11-05-1141">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4752,6 +4752,7 @@ function metaRain(){if(typeof RM!=='undefined'&&RM)return;if(typeof skRain==='fu
 
 /* ---------- Sondage hebdomadaire ---------- */
 const META_POLL=[
+  {id:'revote',e:'🔁',t:'Pouvoir changer son vote',d:'Pendant une semaine, tu peux changer ton vote.',once:()=>{const m=metaInit();m.revoteWeek=metaWeek();return '🔁 Tu peux changer ton vote cette semaine.'}},
   {id:'refonte_foot',e:'⚽',t:'Refonte totale du foot',d:'Nouvel écran de club, équipe de 15 joueurs, composition de match en grand.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'La famille se promène dans la ville et vit dans une vraie maison.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Tu choisis ensuite entre Istanbul, Le Caire et Sydney.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
@@ -4767,7 +4768,7 @@ const META_POLL=[
   {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
 ];
 const META_POLL_BY=Object.fromEntries(META_POLL.map(o=>[o.id,o]));
-function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
+function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere','revote']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
 const metaSimVotes=(week,o)=>3+metaHash(week+'|'+o)%12;
 function metaCounts(week){const p=metaPoll(week),all=(metaGet(META_LS.votes)||{})[week]||{},counts={};
   p.opts.forEach(o=>counts[o]=metaSimVotes(week,o));Object.values(all).forEach(o=>{if(o in counts)counts[o]++});
@@ -4796,10 +4797,10 @@ async function metaPollHTML(){
 }
 async function metaOpenPoll(){metaPollCheck();modal(await metaPollHTML())}
 async function metaVote(o){
-  const w=metaWeek(),m=metaInit();if(m.votes[w]){toast('Tu as déjà voté cette semaine.');return metaOpenPoll()}
+  const w=metaWeek(),m=metaInit(),canRe=m.revoteWeek===w;if(m.votes[w]&&!canRe){toast('Tu as déjà voté cette semaine.');return metaOpenPoll()}
   if(!metaPoll(w).opts.includes(o))return;
-  const r=await BACKEND.vote(w,o);m.votes[w]=r.ok?o:r.option||o;
-  if(r.ok){metaGain(10,'merci pour ton vote');metaRain();sfx('rank')}else toast('Tu as déjà voté cette semaine.');
+  const r=await BACKEND.vote(w,o);m.votes[w]=(r.ok||canRe)?o:r.option||o;
+  if(r.ok||canRe){if(r.ok)metaGain(10,'merci pour ton vote');metaRain();sfx('rank')}else toast('Tu as déjà voté cette semaine.');
   metaSave();metaHud(true);modal(await metaPollHTML());
 }
 
