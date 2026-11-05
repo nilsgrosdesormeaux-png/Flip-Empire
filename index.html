@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1217">
+<meta name="fe-build" content="2026-11-05-1230">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -8047,8 +8047,10 @@ metaPollHTML=(f=>async function(){const h=await f.apply(this,arguments);
   return h.replace(/(<h3 style="margin:14px 0 6px;text-align:left">)/,'<p class="pe-pollhow"><b>Comment ça marche :</b> tu votes une fois par semaine. Le choix qui a le plus de voix s’applique à tous les joueurs la semaine suivante, du lundi au dimanche.</p>$1')})(metaPollHTML);
 metaPollCheck=(f=>function(){const m=S.meta,b=m&&m.pollDone;const r=f.apply(this,arguments);try{if(m&&m.pollDone!==b)m.pollShown=metaWeek()}catch(e){}return r})(metaPollCheck);
 function pePollAuto(){try{if(!S.started||S.dead||modalOpen||CH||(typeof tutOn==='function'&&tutOn()))return;if(!unlAll()&&!(S.unl&&S.unl.objectifs))return;
-  const m=metaInit(),w=metaWeek();if(m.votes[w]||m.pollShown===w||m.pollDone!==w)return;m.pollShown=w;save();metaOpenPoll()}catch(e){}}
+  const m=metaInit(),w=metaWeek();if(m.votes[w]||window.__pollAutoShown)return;window.__pollAutoShown=true;metaOpenPoll()}catch(e){}}
 
+/* Au lancement du jeu : le sondage s'ouvre tant qu'on n'a pas voté cette semaine (une fois par lancement) */
+setInterval(()=>{if(!window.__pollAutoShown)pePollAuto()},3000);
 /* ---------- 11. Changer d'appareil : code court, copier / coller ---------- */
 const PE_B64=u=>{let s='';for(let i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)};
 async function peCode(){save();const txt=JSON.stringify(S);
