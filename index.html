@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-0938">
+<meta name="fe-build" content="2026-11-05-1010">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -7827,6 +7827,19 @@ setInterval(()=>{try{chronoTick()}catch(e){}},1000);
 vEmpire=(f=>function(){const h=f();const C=S.chrono||{};const rows=Object.keys(C).sort((a,b)=>a-b).map(k=>{const r=C[k];const m=v=>v==null?'pas encore':Math.round(v/60000)+' min';
   return `<tr><td>${esc(CITIES[k]?CITIES[k].n:'?')}</td><td>${m(r.open8)}</td><td>${m(r.lvl20)}</td></tr>`}).join('');
   if(!rows)return h;return h.replace('<div class="foot">',`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Temps par ville</h3><p class="hint">Temps réel depuis ton arrivée.</p><table class="ltable"><tr><td></td><td>8 affaires ouvertes</td><td>tout au niveau 20</td></tr>${rows}</table></div><div class="foot">`)})(vEmpire);
+/* Diagnostic (Empire → Compte) : tous les multiplicateurs appliqués aux revenus, et le rapport coût / revenu */
+function diagHTML(){
+  const b=BIZ[0],rev1=(()=>{const l=S.biz[b.id].lvl;S.biz[b.id].lvl=1;const v=revenue(b)/b.time;S.biz[b.id].lvl=l;return v})();
+  const rows=[['Réputation',((.8+S.rep/250)).toFixed(2)],['Étoiles de franchise ('+S.stars+')',(1+.1*S.stars).toFixed(2)],['Trophées ('+S.trophies.length+'/13)',trophyMult().toFixed(2)],
+    ['Rang (XP '+S.xp+')',(1+.05*rankIdx()).toFixed(2)],['Améliorations globales',globalUpg().toExponential(2)],['Étape du logement',STAGES[S.stage].mult.toFixed(2)],
+    ['Bonus de départ (sitBonus)',(S.sitBonus||1).toFixed(2)],['Projets de maire',projMult().toFixed(2)],['Événement en cours (tempMult)',tempMult().toFixed(2)],['Revenus de base (permMult)',permMult().toExponential(2)]];
+  return `<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Diagnostic</h3><p class="hint">Pour régler la progression. Envoie cette capture à Claude.</p>
+    <table class="ltable">${rows.map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join('')}
+    <tr><td>Ville</td><td>${esc(CITIES[S.city].n)}</td></tr>
+    <tr><td>1re boutique : coût</td><td>${fmt(b.cost)}</td></tr>
+    <tr><td>1re boutique : revenu/s au niveau 1</td><td>${fmt(rev1)}</td></tr>
+    <tr><td>Rapport coût ÷ revenu/s (en secondes)</td><td>${(b.cost/Math.max(rev1,1e-9)).toExponential(2)}</td></tr></table></div>`}
+vEmpire=(f=>function(){const h=f();return h.replace('<div class="foot">',()=>diagHTML()+'<div class="foot">')})(vEmpire);
 /* ===== FIN TUTORIEL ===== */
 /* ===== AGENT PERSO ===== */
 /* Naissance au hasard d'office, look du perso modifiable, réglage « Je cherche », genre des gérants,
