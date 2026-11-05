@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1017">
+<meta name="fe-build" content="2026-11-05-1021">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -8194,7 +8194,7 @@ vObjectifs=(f=>function(){let h=f();const th=pgTheme(S.city||0);
   if((S.tresor||0)>0)h=h.replace('<div class="route">',pgTresorHTML()+'<div class="route">');return h})(vObjectifs);
 /* Locaux (le QG de l’entreprise) : pas le même mot que le logement de la vie */
 [['Garage','Tu stockes tout dans le garage. Énergie +4 par mois.'],['Petit local','Un vrai local avec une vitrine. Énergie +6 par mois, revenus +5 %.']].forEach(([n,p],i)=>{STAGES[i].name=n;STAGES[i].perk=p});
-(()=>{const m=MISSIONS.find(x=>x.id==='m9');if(m){m.t='Loue un petit local';m.h='Touche tes locaux sur la carte.'}if(typeof MTXT!=='undefined')MTXT.m9=['Loue un petit local','Touche tes locaux sur la carte.']})();
+(()=>{const m=MISSIONS.find(x=>x.id==='m9');if(m){m.t='Prends un petit local pour ton QG';m.h='Touche ton QG sur la carte, puis « S’agrandir ».'}if(typeof MTXT!=='undefined')MTXT.m9=['Prends un petit local pour ton QG','Touche ton QG sur la carte, puis « S’agrandir ».']})();
 /* Ticket à gratter : gagne une fois sur trois, gains plus petits (même moyenne) */
 if(EV.d_ticket&&typeof LK==='function')EV.d_ticket.ch[0]=LK('Gratter',.35,()=>{money(90);return pick(['Gagné ! Le buraliste n’en revient pas.','Trois cerises. Tu repars avec le sourire.','Petit gain, mais gain quand même.'])},()=> 'Perdu. Comme d’habitude.',2);
 /* Bourse : objectif visible, gros boutons, mode d’emploi en trois lignes */
