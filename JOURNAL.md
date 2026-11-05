@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1145)
+- Option « Pouvoir changer son vote » retirée. À la place : on peut changer son vote à tout moment de la semaine.
+- Sondage plus visible : le bouton 🗳️ pulse en rose tant qu'on n'a pas voté cette semaine.
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1141)
 - Sondage : 5e option « Pouvoir changer son vote ». Si elle gagne, on peut changer son vote la semaine suivante (testé : vote changé seulement avec le droit).
 

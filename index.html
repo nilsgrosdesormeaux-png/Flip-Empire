@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1142">
+<meta name="fe-build" content="2026-11-05-1145">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4581,8 +4581,7 @@ const BACKEND={
   playerId(){let id=metaGet(META_LS.pid);if(!id){id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():'p'+Date.now().toString(36)+Math.random().toString(36).slice(2);metaSet(META_LS.pid,id)}return id},
   /* Serveur : insert into votes(week,player_id,option) ; la contrainte unique refuse un 2e vote */
   async vote(week,option){const all=metaGet(META_LS.votes)||{},pid=this.playerId();all[week]=all[week]||{};
-    if(all[week][pid])return{ok:false,reason:'already_voted',option:all[week][pid]};
-    all[week][pid]=option;metaSet(META_LS.votes,all);return{ok:true,option}},
+    const changed=!!all[week][pid];all[week][pid]=option;metaSet(META_LS.votes,all);return{ok:true,option,changed}},
   /* Serveur : select option,count(*) from votes where week=? group by option */
   async results(week){return metaCounts(week)},
   /* Serveur : abonnements et achats validés par Stripe (webhook) */
@@ -4752,7 +4751,6 @@ function metaRain(){if(typeof RM!=='undefined'&&RM)return;if(typeof skRain==='fu
 
 /* ---------- Sondage hebdomadaire ---------- */
 const META_POLL=[
-  {id:'revote',e:'🔁',t:'Pouvoir changer son vote',d:'Si cette option gagne, tu pourras changer ton vote la semaine suivante. Tu ne peux pas changer ton vote aujourd’hui.',once:()=>{const m=metaInit();m.revoteWeek=metaWeek();return '🔁 Tu peux changer ton vote cette semaine.'}},
   {id:'refonte_foot',e:'⚽',t:'Refonte totale du foot',d:'Le club aura un nouvel écran, une équipe de 15 joueurs, et une vraie composition de match (11 titulaires, 4 remplaçants) avec le terrain en grand. Le banc élargi se paiera avec l’argent du jeu.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'Ta famille apparaîtra dans la ville : on la verra marcher, aller à l’école ou au parc. Elle vivra dans une vraie maison, et non plus dans un bureau abstrait.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Une nouvelle ville sera ajoutée à la fin de la carte. Après le vote, tu choisiras entre Istanbul (bazar, Bosphore), Le Caire (pyramides, Nil) et Sydney (opéra, port).',once:()=>'🚧 En construction : bientôt dans le jeu.'},
@@ -4768,7 +4766,7 @@ const META_POLL=[
   {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
 ];
 const META_POLL_BY=Object.fromEntries(META_POLL.map(o=>[o.id,o]));
-function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere','revote']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
+function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
 const metaSimVotes=(week,o)=>3+metaHash(week+'|'+o)%12;
 function metaCounts(week){const p=metaPoll(week),all=(metaGet(META_LS.votes)||{})[week]||{},counts={};
   p.opts.forEach(o=>counts[o]=metaSimVotes(week,o));Object.values(all).forEach(o=>{if(o in counts)counts[o]++});
@@ -4797,10 +4795,10 @@ async function metaPollHTML(){
 }
 async function metaOpenPoll(){metaPollCheck();modal(await metaPollHTML())}
 async function metaVote(o){
-  const w=metaWeek(),m=metaInit(),canRe=m.revoteWeek===w;if(m.votes[w]&&!canRe){toast('Tu as déjà voté cette semaine.');return metaOpenPoll()}
+  const w=metaWeek(),m=metaInit();
   if(!metaPoll(w).opts.includes(o))return;
-  const r=await BACKEND.vote(w,o);m.votes[w]=(r.ok||canRe)?o:r.option||o;
-  if(r.ok||canRe){if(r.ok)metaGain(10,'merci pour ton vote');metaRain();sfx('rank')}else toast('Tu as déjà voté cette semaine.');
+  const r=await BACKEND.vote(w,o);m.votes[w]=o;
+  if(r.changed){toast('Ton vote a été changé.');sfx('tap')}else{metaGain(10,'merci pour ton vote');metaRain();sfx('rank')}
   metaSave();metaHud(true);modal(await metaPollHTML());
 }
 
@@ -6843,7 +6841,7 @@ var ONG_HUD_IC={shop:'<path d="M5 8h14l-1 12H6zM9 8V6.5a3 3 0 0 1 6 0V8"/>',poll
 function metaHud(force){const r=document.querySelector('#hud .hgauges');if(!r)return;let x=r.querySelector('.meta-hud');
   if(x&&!force)return;if(x)x.remove();const voted=!!metaInit().votes[metaWeek()];
   const ic=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${(ONG_HUD_IC||{})[k]||''}</svg>`;
-  r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn ghost ong-hb" data-a="meta_shop" aria-label="Boutique" title="Boutique">${ic('shop')}</button><button class="btn ghost ong-hb" data-a="meta_poll" aria-label="Sondage de la semaine${voted?'':', pas encore voté'}" title="Sondage">${ic('poll')}${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
+  r.insertAdjacentHTML('beforeend',`<span class="meta-hud"><button class="btn ghost ong-hb" data-a="meta_shop" aria-label="Boutique" title="Boutique">${ic('shop')}</button><button data-a="meta_poll" aria-label="Sondage de la semaine${voted?'':', pas encore voté'}" title="Sondage" class="btn ghost ong-hb${voted?'':' meta-pulse'}">${ic('poll')}${voted?'':'<i class="meta-dot"></i>'}</button></span>`)}
 /* Coffre du jour : jetons seulement si le coffre a vraiment été ouvert */
 var ONG_DAILY_OK=false;
 function metaOnDaily(){if(!ONG_DAILY_OK)return;ONG_DAILY_OK=false;const m=metaInit();
@@ -7835,6 +7833,8 @@ setInterval(()=>{try{chronoTick()}catch(e){}},1000);
 vEmpire=(f=>function(){const h=f();const C=S.chrono||{};const rows=Object.keys(C).sort((a,b)=>a-b).map(k=>{const r=C[k];const m=v=>v==null?'pas encore':Math.round(v/60000)+' min';
   return `<tr><td>${esc(CITIES[k]?CITIES[k].n:'?')}</td><td>${m(r.open8)}</td><td>${m(r.lvl20)}</td></tr>`}).join('');
   if(!rows)return h;return h.replace('<div class="foot">',`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Temps par ville</h3><p class="hint">Temps réel depuis ton arrivée.</p><table class="ltable"><tr><td></td><td>8 affaires ouvertes</td><td>tout au niveau 20</td></tr>${rows}</table></div><div class="foot">`)})(vEmpire);
+/* Sondage visible : le bouton pulse tant qu'on n'a pas voté cette semaine */
+(function(){const st=document.createElement('style');st.textContent='@keyframes metaPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,95,162,.7)}60%{box-shadow:0 0 0 10px rgba(255,95,162,0)}}.meta-hud .meta-pulse{animation:metaPulse 1.6s ease-out infinite;border-color:#FF5FA2}';document.head.appendChild(st)})();
 /* Diagnostic (Empire → Compte) : tous les multiplicateurs appliqués aux revenus, et le rapport coût / revenu */
 function diagHTML(){
   const b=BIZ[0],rev1=(()=>{const l=S.biz[b.id].lvl;S.biz[b.id].lvl=1;const v=revenue(b)/b.time;S.biz[b.id].lvl=l;return v})();
