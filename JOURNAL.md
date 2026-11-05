@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-0938)
+- BUG CORRIGÉ : à chaque nouvelle ville, le pécule était 200 × le prix de la ville (4 Qa € à la Lune) au lieu de 1,3 × la 1re boutique. Ça finançait toute la ville d'un coup (La Lune en 2 min). Maintenant : 1,3 × la 1re boutique de la nouvelle ville.
+
 ## 2026-11-04-2346 : personnages dessinés (version 2026-11-04-2346)
 - Fusion du bloc AGENT PERSOS : personnages SVG à la place des emojis (héros, famille, rencontres, gérants, journal), écran de look, passants chibi, voitures/taxis/bus arrondis. Reste : chiens, look gardé dans la lignée.
 
