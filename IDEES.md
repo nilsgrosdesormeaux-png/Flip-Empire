@@ -67,8 +67,8 @@ Règle : chaque option change le jeu pendant plusieurs semaines et a un inconvé
 
 ### Club de foot
 - Interface du club refaite (un seul écran clair : effectif, tactique, finances, stade, supporters).
-- Effectif de 15 joueurs maximum. Au-delà : option payante « banc élargi » (plus de joueurs, plus de salaires).
-- Composition de match en grand sur l'écran : terrain visible, poste de chaque joueur, remplaçants, consignes.
+- Effectif de 15 joueurs maximum. Au-delà : option « banc élargi » payée avec l'argent du jeu (pas d'argent réel) : 5 joueurs de plus, plus de salaires.
+- Composition de match en grand sur l'écran : 11 joueurs sur le terrain, 4 remplaçants, poste de chaque joueur, consignes.
 - Vision du match plus développée et réaliste (passes, tirs, positions) au lieu de la simple frise.
 - Idées retenues du sondage : centre de jeunes (formation gratuite, entretien cher), droits TV d'un match par mois (argent fixe, moins de supporters), tournée d'été (recettes, fatigue et blessures).
 
