@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1017)
+- BUG CORRIGÉ : les étoiles de franchise (2,5 milliards dans la partie de Nils) multipliaient tous les revenus par 10^8. Cause : une formule qui les calcule à partir de la racine du total gagné. Maintenant plafonnées à 20 (+200 %), et une sauvegarde qui en a plus est ramenée à 20 à la lecture.
+- Panneau Diagnostic ajouté dans Empire.
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-0938)
 - BUG CORRIGÉ : à chaque nouvelle ville, le pécule était 200 × le prix de la ville (4 Qa € à la Lune) au lieu de 1,3 × la 1re boutique. Ça finançait toute la ville d'un coup (La Lune en 2 min). Maintenant : 1,3 × la 1re boutique de la nouvelle ville.
 
