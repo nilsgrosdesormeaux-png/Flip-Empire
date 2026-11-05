@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1141">
+<meta name="fe-build" content="2026-11-05-1142">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4752,11 +4752,11 @@ function metaRain(){if(typeof RM!=='undefined'&&RM)return;if(typeof skRain==='fu
 
 /* ---------- Sondage hebdomadaire ---------- */
 const META_POLL=[
-  {id:'revote',e:'🔁',t:'Pouvoir changer son vote',d:'Pendant une semaine, tu peux changer ton vote.',once:()=>{const m=metaInit();m.revoteWeek=metaWeek();return '🔁 Tu peux changer ton vote cette semaine.'}},
-  {id:'refonte_foot',e:'⚽',t:'Refonte totale du foot',d:'Nouvel écran de club, équipe de 15 joueurs, composition de match en grand.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
-  {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'La famille se promène dans la ville et vit dans une vraie maison.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
-  {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Tu choisis ensuite entre Istanbul, Le Caire et Sydney.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
-  {id:'mystere',e:'❔',t:'Choix mystère',d:'Une surprise, à découvrir plus tard.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'revote',e:'🔁',t:'Pouvoir changer son vote',d:'Si cette option gagne, tu pourras changer ton vote la semaine suivante. Tu ne peux pas changer ton vote aujourd’hui.',once:()=>{const m=metaInit();m.revoteWeek=metaWeek();return '🔁 Tu peux changer ton vote cette semaine.'}},
+  {id:'refonte_foot',e:'⚽',t:'Refonte totale du foot',d:'Le club aura un nouvel écran, une équipe de 15 joueurs, et une vraie composition de match (11 titulaires, 4 remplaçants) avec le terrain en grand. Le banc élargi se paiera avec l’argent du jeu.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'Ta famille apparaîtra dans la ville : on la verra marcher, aller à l’école ou au parc. Elle vivra dans une vraie maison, et non plus dans un bureau abstrait.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Une nouvelle ville sera ajoutée à la fin de la carte. Après le vote, tu choisiras entre Istanbul (bazar, Bosphore), Le Caire (pyramides, Nil) et Sydney (opéra, port).',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'mystere',e:'❔',t:'Choix mystère',d:'Une surprise qui sera décidée plus tard. Son contenu n’est pas encore connu.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
 
   {id:'coffre',e:'🎁',t:'Coffre XXL',d:'Le coffre du jour rapporte ×2 toute la semaine.'},
   {id:'jetons',e:'🎟️',t:'Semaine des jetons',d:'Tous les jetons gagnés sont doublés.'},
