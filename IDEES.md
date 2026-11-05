@@ -84,7 +84,7 @@ Règle : chaque option change le jeu pendant plusieurs semaines et a un inconvé
 
 ### Nouvelles villes
 - Choix du joueur : une ville parmi trois. Trois villes à créer : **Istanbul** (bazar, Bosphore, ponts), **Le Caire** (pyramides, Nil, marché des épices), **Sydney** (opéra, port, plages).
-- Une quatrième option : choix mystère (à définir plus tard, ne pas révéler).
+- Quatrième option du sondage, libellée exactement « Choix mystère » (contenu à définir plus tard, ne pas révéler).
 - Chaque ville suit la même progression (+27 % de temps par ville) et a ses monuments, commerces et événements.
 
 ### Ordre proposé
