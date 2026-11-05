@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1021">
+<meta name="fe-build" content="2026-11-05-1106">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -6181,7 +6181,9 @@ function polMonth(pm){
   if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(15)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
   P.acts={};P.poll=false;
 }
-function buildProject(id){const pr=PROJ_ALL.find(x=>x.id===id),P=S.pol;if(!pr)return;const c=costSec(pr.cost);if(P.office!=='maire'||P.projects.includes(id))return;if(P.budget<c){toast(`Budget municipal insuffisant (${fmt(P.budget)}).`);sfx('no');return}
+function buildProject(id){const pr=PROJ_ALL.find(x=>x.id===id),P=S.pol;if(!pr)return;const c=costSec(pr.cost);if(P.office!=='maire'||P.projects.includes(id))return;/* BUG CORRIGÉ : la fête était refaisable à l'infini (×1,5 de revenus à chaque fois). Une fête par an, et pas pendant une fête déjà en cours. */
+if(id==='fete'&&((P.feteDay!=null&&S.day-P.feteDay<12)||S.mods.some(m=>m.m===1.5&&!m.biz&&m.until>=S.day))){toast('La fête de la ville a déjà eu lieu cette année.');sfx('no');return}
+if(id==='fete')P.feteDay=S.day;if(P.budget<c){toast(`Budget municipal insuffisant (${fmt(P.budget)}).`);sfx('no');return}
   decInit();P.budget-=c;if(id!=='fete'){P.projects.push(id);P.termProj.push(id)}FXC=[];
   if(id==='parc')repD(5);if(id==='police')repD(4);if(id==='logement')repD(8);if(id==='fete')mod(1.5,2);if(id==='stadep'){if(S.club.own&&S.club.stade<3)S.club.stade++;repD(3)}
   if(id==='mediat')repD(3);if(id==='piscine')health(5);if(id==='sante')health(8);if(id==='ecole')S.kids.forEach(k=>k.talent=clamp(k.talent+6,0,100));

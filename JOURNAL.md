@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1106)
+- BUG CORRIGÉ : la fête de la ville (maire) était refaisable à l'infini (revenus ×1,5 à chaque fois, coût calculé sur les revenus). Maintenant une fois par an, et jamais pendant une fête en cours.
+- Reste à vérifier : le coût de la fête est encore lié aux revenus (costSec).
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1017)
 - BUG CORRIGÉ : les étoiles de franchise (2,5 milliards dans la partie de Nils) multipliaient tous les revenus par 10^8. Cause : une formule qui les calcule à partir de la racine du total gagné. Maintenant plafonnées à 20 (+200 %), et une sauvegarde qui en a plus est ramenée à 20 à la lecture.
 - Panneau Diagnostic ajouté dans Empire.
