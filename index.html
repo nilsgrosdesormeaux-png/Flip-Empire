@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1145">
+<meta name="fe-build" content="2026-11-05-1153">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4783,13 +4783,12 @@ async function metaPollCheck(){
 async function metaPollHTML(){
   const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=m.votes[w]||r.mine,act=META_POLL_BY[metaActiveId()];
   const end=7-((new Date(metaNow()).getDay()+6)%7);
-  const opts=mine?p.opts.map(o=>{const x=META_POLL_BY[o],pc=Math.round(r.counts[o]/r.total*100);return `<div class="meta-res ${o===mine?'me':''}"><span>${x.e} ${x.t}${o===mine?' · ton vote':''}</span><b>${pc} %</b><i style="width:${pc}%"></i></div>`}).join('')
-    :p.opts.map(o=>{const x=META_POLL_BY[o];return `<button class="meta-opt" data-a="meta_vote" data-id="${o}"><b>${x.e} ${x.t}</b><span class="hint">${x.d}</span></button>`}).join('');
+  const opts=p.opts.map(o=>{const x=META_POLL_BY[o],pc=r.total?Math.round(r.counts[o]/r.total*100):0,me=o===mine;return `<button class="meta-opt${me?' me':''}" data-a="meta_vote" data-id="${o}"><b>${x.e} ${x.t}${me?' · ton vote':''}</b><span class="hint">${x.d}</span>${mine?`<span class="hint">${pc} % des votes</span><i class="meta-bar" style="width:${pc}%"></i>`:''}</button>`}).join('');
   const nx=metaPoll(metaWeekOff(1));
   return `<div class="reveal-box pop">🗳️</div><h2>Sondage de la semaine</h2><p class="hint">Semaine ${w.split('-W')[1]} · fin dans ${end} jour${end>1?'s':''} · 1 vote par joueur</p>
   ${act?`<div class="meta-win"><span class="hint">En vigueur cette semaine (choix de la semaine dernière)</span><br>${act.e} <b>${act.t}</b><p class="hint">${act.d}</p></div>`:''}
-  <h3 style="margin:14px 0 6px;text-align:left">${mine?'Résultats provisoires':'Que veux-tu la semaine prochaine ?'}</h3><div class="meta-opts">${opts}</div>
-  ${mine?'<p class="hint" style="margin-top:8px">Merci ! Le choix gagnant s’appliquera la semaine prochaine.</p>':'<p class="hint" style="margin-top:8px">🎟️ Voter rapporte 10 jetons.</p>'}
+  <h3 style="margin:14px 0 6px;text-align:left">Que veux-tu la semaine prochaine ?</h3><div class="meta-opts">${opts}</div>
+  ${mine?'<p class="hint" style="margin-top:8px">Merci ! Tu peux changer ton vote à tout moment cette semaine. Le choix gagnant s’appliquera la semaine prochaine.</p>':'<p class="hint" style="margin-top:8px">🎟️ Voter rapporte 10 jetons. Tu pourras changer ton vote jusqu’à la fin de la semaine.</p>'}
   <div class="meta-early">${metaHasPass()?`<b>👑 En avant-première, la semaine prochaine :</b> ${nx.opts.map(o=>META_POLL_BY[o].e+' '+META_POLL_BY[o].t).join(' · ')}`:`👑 Avec le Pass Empire, découvre le sondage de la semaine prochaine en avance.`}</div>
   <button class="btn big" style="margin-top:14px" data-a="close">Fermer</button>`;
 }
@@ -7833,6 +7832,8 @@ setInterval(()=>{try{chronoTick()}catch(e){}},1000);
 vEmpire=(f=>function(){const h=f();const C=S.chrono||{};const rows=Object.keys(C).sort((a,b)=>a-b).map(k=>{const r=C[k];const m=v=>v==null?'pas encore':Math.round(v/60000)+' min';
   return `<tr><td>${esc(CITIES[k]?CITIES[k].n:'?')}</td><td>${m(r.open8)}</td><td>${m(r.lvl20)}</td></tr>`}).join('');
   if(!rows)return h;return h.replace('<div class="foot">',`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Temps par ville</h3><p class="hint">Temps réel depuis ton arrivée.</p><table class="ltable"><tr><td></td><td>8 affaires ouvertes</td><td>tout au niveau 20</td></tr>${rows}</table></div><div class="foot">`)})(vEmpire);
+/* Sondage : le choix actuel reste visible et on peut en prendre un autre */
+(function(){const st=document.createElement('style');st.textContent='.meta-opt{position:relative;overflow:hidden}.meta-opt.me{border-color:#17834A;box-shadow:0 0 0 2px #17834A}.meta-bar{position:absolute;left:0;bottom:0;height:4px;background:#17834A;border-radius:2px;display:block}';document.head.appendChild(st)})();
 /* Sondage visible : le bouton pulse tant qu'on n'a pas voté cette semaine */
 (function(){const st=document.createElement('style');st.textContent='@keyframes metaPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,95,162,.7)}60%{box-shadow:0 0 0 10px rgba(255,95,162,0)}}.meta-hud .meta-pulse{animation:metaPulse 1.6s ease-out infinite;border-color:#FF5FA2}';document.head.appendChild(st)})();
 /* Diagnostic (Empire → Compte) : tous les multiplicateurs appliqués aux revenus, et le rapport coût / revenu */
