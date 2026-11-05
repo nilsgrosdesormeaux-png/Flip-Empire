@@ -61,3 +61,34 @@ Priorité de Nils : des graphismes beaucoup plus poussés (référence : Monopol
 - Énergie : vérifier comment on la regagne. Clients : vérifier la page, « Tout régler » paie d'abord les employés permanents.
 - Sondage : présenté d'office, mieux expliqué, 4 choix compréhensibles, un vote par joueur, appliqué la semaine suivante.
 - Club : renommer son stade. Synchro ordinateur/téléphone (vraie synchro = serveur ; en attendant, code de transfert plus simple).
+
+## Sondage hebdo : nouvelles options (demande du 5 novembre, à construire)
+Règle : chaque option change le jeu pendant plusieurs semaines et a un inconvénient (pas seulement un bonus de la semaine).
+
+### Club de foot
+- Interface du club refaite (un seul écran clair : effectif, tactique, finances, stade, supporters).
+- Effectif de 15 joueurs maximum. Au-delà : option payante « banc élargi » (plus de joueurs, plus de salaires).
+- Composition de match en grand sur l'écran : terrain visible, poste de chaque joueur, remplaçants, consignes.
+- Vision du match plus développée et réaliste (passes, tirs, positions) au lieu de la simple frise.
+- Idées retenues du sondage : centre de jeunes (formation gratuite, entretien cher), droits TV d'un match par mois (argent fixe, moins de supporters), tournée d'été (recettes, fatigue et blessures).
+
+### Vie de famille
+- La famille se déplace dans la ville (style Sims) : on voit les personnages marcher, aller à l'école, au parc, au travail.
+- Une vraie maison avec la famille dedans (pas un « siège social » abstrait).
+- Idées retenues : école de quartier (enfants progressent, frais mensuels), week-end en famille (couple et santé montent, argent et énergie baissent), un chien (bonheur familial, frais chaque mois).
+
+### Ville et carte
+- Plan d'urbanisme : une zone rénovée, ses boutiques rapportent plus, chantier gênant pendant un mois.
+- Marché de producteurs : clients fidèles, prix des produits un peu plus bas.
+- Grand projet : candidature aux Jeux olympiques (chantier de plusieurs mois, grosse dépense, décision finale).
+
+### Nouvelles villes
+- Choix du joueur : une ville parmi trois. Trois villes à créer : **Istanbul** (bazar, Bosphore, ponts), **Le Caire** (pyramides, Nil, marché des épices), **Sydney** (opéra, port, plages).
+- Une quatrième option : choix mystère (à définir plus tard, ne pas révéler).
+- Chaque ville suit la même progression (+27 % de temps par ville) et a ses monuments, commerces et événements.
+
+### Ordre proposé
+1. Équipe de 15 joueurs et composition de match (club).
+2. Famille qui se déplace et maison (vie).
+3. Options de sondage sur le club et la ville.
+4. Les trois nouvelles villes, puis le choix mystère.
