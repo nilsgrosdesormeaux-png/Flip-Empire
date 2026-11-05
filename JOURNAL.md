@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-05 : Claude de Nils (version 2026-11-05-1217)
+- Sondage relié à Supabase (projet gicxucdtbibnpexzerjv) : vote = une ligne par joueur et par semaine (table public.votes). Si la table n'existe pas ou pas de réseau, le vote reste sur l'appareil (repli).
+- À faire par Nils : exécuter le SQL de la table dans le SQL Editor (voir échange du 5 novembre).
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1145)
 - Option « Pouvoir changer son vote » retirée. À la place : on peut changer son vote à tout moment de la semaine.
 - Sondage plus visible : le bouton 🗳️ pulse en rose tant qu'on n'a pas voté cette semaine.
