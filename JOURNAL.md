@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-10-1618 : Claude de Nils (version 2026-11-10-1618)
+- Bloc AGENT INTERIEUR (après OBJECTIFS) : toucher sa boutique sur la carte ouvre l'intérieur dessiné (vue en coupe, 6 scènes par type, variantes par ville, plus riche avec le niveau) ; équipe nommée animée, clients qui font la queue, services visibles et achetables dans la scène (sol sale → agent d'entretien, file → caisse en plus, mur fissuré → technicien), commandes / atelier / incidents cliquables. Pendant le tutoriel, l'ancienne fiche reste. Pas de nouveau champ dans S.
+- Reste : villes redessinées entièrement d'après vue satellite ; plusieurs designs de personnages à proposer ; sauvegarde en ligne ; tournoi 3 jours ; lisibilité (grands nombres, panneau Diagnostic).
+
 ## 2026-11-10-1559 : Claude de Nils (version 2026-11-10-1559)
 - Bloc AGENT OBJECTIFS : socle commun + 4 « affaires de la ville » par ville (17 villes, 24 types : histoire signature en 4 épisodes avec un personnage, enquêtes, contre-la-montre, conseil municipal, enchères, négociations…), repérées par nom de ville.
 - Fin du jeu à Mars (« Boucler le voyage ») : écran de bilan, Héritage (2-4 bonus), contrats galactiques, records par ville ; prestige proposé dès Paris.
