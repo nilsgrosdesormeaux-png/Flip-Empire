@@ -1054,7 +1054,7 @@ const satOf=id=>{const q=S.biz[id].q;return (q.clean+q.wait+q.qual)/3};
 const satMult=id=>.4+1.2*satOf(id)/100;
 const avgSat=()=>{const o=openIds();return o.length?o.reduce((a,id)=>a+satOf(id),0)/o.length:75};
 const trophyMult=()=>(1+.05*S.trophies.length)*(S.trophies.length>=TROPHIES.length?2:1);
-function permMult(){return (.8+S.rep/250)*(1+.1*Math.min(S.stars,20))*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-Math.min(.5,Math.max(0,S.share||0)))*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
+function permMult(){return (.8+S.rep/250)*(1+.05*Math.min(S.stars,20))*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-Math.min(.5,Math.max(0,S.share||0)))*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
 const boosted=()=>Date.now()<S.boostUntil,frenzy=()=>Date.now()<S.frenzyUntil;
 const tempMult=()=>{const ev=dayEvent(S.day);return (boosted()?2:1)*(frenzy()?5:1)*(ev?ev.m:1)};
 const modMult=id=>S.mods.reduce((a,m)=>(S.day<=m.until&&(!m.biz||m.biz===id))?a*m.m:a,1);
@@ -1701,7 +1701,7 @@ MISSIONS.forEach(m=>{const x=MTXT[m.id];if(x){m.t=x[0];m.h=x[1]}});
 {const m=MISSIONS.find(x=>x.id==='m19');m.p=()=>[S.pol.cand||S.pol.office||S.pol.terms?1:0,1]}
 /* Un objectif rempli reste acquis (S.notified survit aux franchises) : la récompense ne se perd plus si l’état change */
 MISSIONS.forEach(m=>{const c=m.c;m.c=()=>(S.notified||[]).includes(m.id)||c()});
-const missionReward=m=>Math.max(m.r,autoIncome()*60);
+const missionReward=m=>Math.max(m.r,autoIncome()*30); /* ENTREPRISE : 30 s de revenus (était 60) */
 const openMissions=()=>MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,3);
 
 /* ================= SOUND ================= */
@@ -1747,7 +1747,7 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+
 const yesterday=()=>{const d=new Date(Date.now()-864e5);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function dailyModal(){
   const next=S.lastDaily===yesterday()?S.streak+1:1,pos=((next-1)%7)+1,mult=pos===7?3:1;
-  const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
+  const reward=Math.max(250*next,autoIncome()*60*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
     <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
@@ -2444,7 +2444,7 @@ function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+600
 function catchVip(e){
   const [X,Y]=worldToPage(e.x,e.y,14);const r=Math.random();S.counts.vip++;addXP(5);sfx('vip');e.dead=true;vipEnt=null;vipNext=performance.now()+rand(180000,420000)*(S.flags.vipPlus?.6:1);
   let txt='';
-  if(r<.55){const amt=Math.max(150,inc()*120);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
+  if(r<.55){const amt=Math.max(150,inc()*60);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
   else if(r<.9){S.frenzyUntil=Date.now()+20000;txt='×5';toast('Frénésie : revenus ×5 pendant 20 secondes.')}
   else{S.rep=clamp(S.rep+3,0,100);txt='📣 +3';toast('Un client VIP parle de toi partout. Réputation +3.')}
   burstAt(X,Y,10,txt);
@@ -2471,7 +2471,7 @@ function franchise(){
   const c=CITIES[S.city];
   S.journal.unshift({day:S.day,who:c.e,name:c.n,title:'Nouvelle franchise',choice:'Ouvrir une franchise',res:`Tu t’installes à ${c.n}${S.partner&&S.partner.stage!=='couple'?' avec ta famille':''}. ${c.t}`,fx:[`⭐ ${S.stars} étoiles`].concat(homeSale>0?[`🏠 Logement revendu +${fmt(homeSale)}`]:[])});
   modal(`<div class="reveal-box pop">${c.e}</div><h2>Bienvenue à ${c.n}</h2><p>${c.t}</p>
-    <p>Tu repars de zéro, mais avec <strong>${S.stars} étoile${S.stars>1?'s':''} de franchise</strong> : +${S.stars*10} % sur tous tes revenus.</p>
+    <p>Tu repars de zéro, mais avec <strong>${S.stars} étoile${S.stars>1?'s':''} de franchise</strong> : +${S.stars*5} % sur tous tes revenus.</p>
     <p class="hint">Nouvelle ville, nouveaux marchés : ${BIZ.map(b=>b.e).join(' ')}. Un nouveau produit à la bourse locale : ${mkt().e} ${mkt().n}. Ta famille, tes trophées et ton histoire te suivent.</p>
     <button class="btn big" style="margin-top:16px" data-a="close">Découvrir la ville</button>`);
 }
@@ -4782,7 +4782,7 @@ const META_POLL=[
   {id:'neon',e:'🌈',t:'Festival néon',d:'Thème Néon et effet Confettis offerts toute la semaine.'},
   {id:'carnaval',e:'🎭',t:'Carnaval en ville',d:'Décoration Carnaval offerte sur la carte toute la semaine.'},
   {id:'prime',e:'🏛️',t:'Prime du maire',d:'Revenus ×1,5 pendant 3 mois de jeu.',once:()=>mod(1.5,3)},
-  {id:'puces',e:'🧺',t:'Grand marché aux puces',d:'Un chèque égal à 30 minutes de revenus.',once:()=>{const v=Math.max(1000,autoIncome()*1800);earn(v);return '+'+fmt(v)}},
+  {id:'puces',e:'🧺',t:'Grand marché aux puces',d:'Un chèque égal à 15 minutes de revenus.',once:()=>{const v=Math.max(1000,autoIncome()*900);earn(v);return '+'+fmt(v)}},
   {id:'mercato',e:'⚽',t:'Mercato express',d:'Ton club gagne +5 de niveau (sinon 15 jetons).',once:()=>{if(S.club&&S.club.own){S.club.str=Math.min(100,(S.club.str||0)+5);return '⚽ +5 de niveau'}metaGain(15);return '🎟️ +15 jetons'}},
   {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
 ];
@@ -4835,7 +4835,7 @@ function dailyModal(){
   metaInit();const last=metaParseDay(S.lastDaily),gap=last==null?99:metaDayNum(metaNow())-last;let cont=S.lastDaily===yesterday();META_JOKER_USE=0;
   if(!cont&&S.streak>0&&gap>=2&&gap-1<=S.meta.jokers){cont=true;META_JOKER_USE=gap-1}
   const next=cont?S.streak+1:1,pos=((next-1)%7)+1,mult=(pos===7?3:1)*(metaActiveId()==='coffre'?2:1);
-  const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
+  const reward=Math.max(250*next,autoIncome()*60*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
     <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
@@ -6202,7 +6202,7 @@ function polMonth(pm){
     if(P.office==='maire'){const html=bilanHTML();P.office=null;queueModal(html);S.journal.unshift({day:S.day,who:'🏛️',name:'Mairie',title:'Fin de mandat',choice:'Tu ne t’es pas représenté',res:'Tu rends les clés de la mairie.',fx:[]})}
     P.nextElec=S.day+DEC_TERM;}
   if(P.cand){if(P.poll)P.camp.known=1;P.camp.hist.push(pollPct());if(P.camp.hist.length>8)P.camp.hist.shift()}
-  if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(15)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
+  if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(5)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
   P.acts={};P.poll=false;
 }
 function buildProject(id){const pr=PROJ_ALL.find(x=>x.id===id),P=S.pol;if(!pr)return;const c=costSec(pr.cost);if(P.office!=='maire'||P.projects.includes(id))return;/* BUG CORRIGÉ : la fête était refaisable à l'infini (×1,5 de revenus à chaque fois). Une fête par an, et pas pendant une fête déjà en cours. */
@@ -6253,7 +6253,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
 /* ===== AGENT RYTHME ===== */
 /* Rythme des décisions, pause (bouton + pendant une décision), retour après absence, « Tout régler » chez les clients.
    Champs ajoutés (initialisés ici, les vieilles sauvegardes passent) : S.paused, S.playSec, S.flags.ryDay, S.flags.rySec. */
-const RY={gapM:5,gapS:100,schM:2,schS:40,fatM:24,mem:24,cool:48,offFull:3600,offHalf:3*3600,hidAt:0,pauseAt:0,saveAt:0,
+const RY={gapM:5,gapS:100,schM:2,schS:40,fatM:24,mem:24,cool:48,offFull:7200,offHalf:0,hidAt:0,pauseAt:0,saveAt:0,
   urgent:/^(huissier|rupture|elec_annonce|camp_|debat|majeur)/};
 function ryInit(){if(!S)return;if(typeof S.playSec!=='number'||!isFinite(S.playSec))S.playSec=0;if(typeof S.paused!=='boolean')S.paused=false;
   const f=S.flags||(S.flags={});if(typeof f.ryDay!=='number')f.ryDay=-99;if(typeof f.rySec!=='number')f.rySec=-1e6;if(!Array.isArray(S.evMem))S.evMem=[]}
@@ -6291,20 +6291,24 @@ tick=(f=>function(){
   if(S&&typeof S.playSec==='number')S.playSec+=dt;
 })(tick);
 document.addEventListener('visibilitychange',()=>{try{if(document.hidden&&S.started)save()}catch(e){}});
-/* Absence : les gérants et les loyers tournent, mais le calendrier s'arrête (pas de mois, de match ni de saison simulés).
-   Gains : 1re heure à plein, puis moitié jusqu'à 3 h de plus (2 h 30 de revenus au maximum). */
+/* Absence : les gérants et les loyers tournent 2 h au plus (au-delà, plus rien), le calendrier s'arrête (pas de mois, de match ni de saison simulés).
+   Les charges (salaires, entretien, impôts) sont retenues au même taux qu'en jeu. Les chantiers, eux, avancent pendant toute l'absence. */
 function ryAway(sec,atBoot){
   if(!S.started||S.dead||!(sec>0))return;
-  const eff=Math.min(sec,RY.offFull)+.5*Math.min(Math.max(sec-RY.offFull,0),RY.offHalf);
+  const eff=Math.min(sec,RY.offFull);
   let off=0;BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*eff});
   let rent=dailyRent()*eff/DAY_SEC;off=isFinite(off)?Math.max(0,Math.round(off)):0;rent=isFinite(rent)?Math.max(0,Math.round(rent)):0;
-  const tot=off+rent;if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
+  let chg=0;try{if(typeof enChargeRate==='function')chg=Math.round(off*enChargeRate())}catch(e){chg=0}chg=isFinite(chg)?Math.min(Math.max(0,chg),off):0;
+  const tot=Math.max(0,off+rent-chg);if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
+  let wk='';try{if(typeof wkAway==='function')wk=wkAway(sec)}catch(e){}
   if(sec<120){if(tot>0)toast(`De retour : +${fmt(tot)} pendant ton absence.`);return}
   const capped=sec>RY.offFull;
-  queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tu es ${gx(S.hero,"parti","partie")} ${ryDur(sec)}.</p>
-    <div class="panel ry-away">${off?`<div class="kv"><span>Tes gérants</span><b class="pos">+${fmt(off)}</b></div>`:''}${rent?`<div class="kv"><span>Tes loyers</span><b class="pos">+${fmt(rent)}</b></div>`:''}
+  queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tu es ${gx(S.hero,"parti","partie")} ${ryDur(sec)}.${capped?' Tes affaires ont tourné les 2 premières heures, puis tout le monde est rentré chez soi.':''}</p>
+    <div class="panel ry-away">${off?`<div class="kv"><span>Tes gérants${capped?' (2 h)':''}</span><b class="pos">+${fmt(off)}</b></div>`:''}${rent?`<div class="kv"><span>Tes loyers${capped?' (2 h)':''}</span><b class="pos">+${fmt(rent)}</b></div>`:''}
+    ${chg?`<div class="kv"><span>Salaires, entretien, impôts</span><b style="color:var(--loss)">−${fmt(chg)}</b></div>`:''}
     ${tot?`<div class="kv"><span><strong>Total</strong></span><b class="pos">+${fmt(tot)}</b></div>`:'<p class="hint">Personne ne travaillait pour toi. Embauche des gérants pour gagner quand tu n’es pas là.</p>'}</div>
-    <p class="hint" style="margin-top:8px">Le calendrier s’est arrêté pendant ce temps : aucun mois ne s’est écoulé, ton club n’a pas joué et aucune décision ne t’a échappé.${capped?' Les gains sont comptés à plein la première heure, puis à moitié, et plafonnés à 4 h d’absence.':''}</p>
+    ${wk}
+    <p class="hint" style="margin-top:8px">${capped?'Au-delà de 2 h, rien ne rentre : reviens plus souvent pour ne rien perdre. ':''}Le calendrier s’est arrêté : aucun mois n’a passé, ton club n’a pas joué, aucune décision ne t’a échappé.</p>
     <button class="btn big" style="margin-top:14px" data-a="close">${tot?'Encaisser':'Reprendre'}</button>`);
 }
 
@@ -8134,7 +8138,7 @@ vEmpire=(f=>function(){return f().replace('<div class="foot">',()=>`<div class="
    2. objectif « Gagne X » = à peu près ce que coûte la conquête de la ville ; première ville plus douce ;
    3. deux objectifs propres à chaque ville ; 4. bourse plus simple ; 5. gérants à 4 × le prix d’ouverture ;
    6. QG renommé « locaux » ; 8. ticket à gratter plus souvent gagnant. */
-const MGR_K=4,START_K=1.5,TRESOR_MAX=50;
+const MGR_K=4,START_K=1.5,TRESOR_MAX=30;
 const pgR2=x=>{if(!(x>0))return 0;const p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p};
 /* Gérants : prix proportionnel à l’ouverture de la boutique */
 let PG_LV0=50,PG_LVA=55,PG_LVB=4,PG_NB=4;
@@ -8716,6 +8720,270 @@ function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+RUS
 (function(){const fix=()=>{try{if(S&&S.speed!==1)S.speed=1;if(S&&S.boostReadyAt>Date.now()+RUSH_DUR+RUSH_CD())S.boostReadyAt=Date.now()+RUSH_CD()}catch(e){}};fix();setInterval(fix,500);
   const st=document.createElement('style');st.textContent='.hud-sp,.speedb,[data-a="speed"]{display:none!important}';document.head.appendChild(st)})();
 /* ===== FIN AGENT VITESSE ===== */
+/* ===== AGENT ENTREPRISE ===== */
+/* Demandes de Nils (novembre) : l'argent doit être plus rare, et chaque entreprise doit avoir une vie à l'intérieur.
+   1. Charges du mois : salaires, entretien, impôts locaux (prélevés à chaque mois, jamais en dessous de 0 €).
+   2. Chantiers : une amélioration ou des locaux ne sont pas instantanés (durée réelle qui grandit avec la ville et le rang),
+      2 équipes de travaux en parallèle (3 avec les bureaux). Les chantiers avancent aussi quand le jeu est fermé.
+   3. « Entrer dans l'entreprise » : commandes clients, équipe nommée, atelier (projets), incidents, spécialisation.
+   État : S.ent = {c (ville), b:{id:{team,ord,offers,offT,rd,inc,spec,chief,primeT}}, last, done} ; S.works = [{k,id,end,dur}] ; S.wkT (horloge des chantiers, s).
+   Tout est créé à la volée : les anciennes sauvegardes passent. Une franchise repart à zéro (nouvelle ville, nouvelles équipes). */
+const EN_GAIN=.6; /* gains des décisions (money) : ×0,6 */
+money=(f=>function(sec){return f(sec*EN_GAIN)})(money);
+const EN_TR={rapide:{n:['Rapide','Rapide'],d:'Fait avancer les commandes plus vite.'},soin:{n:['Soigneux','Soigneuse'],d:'Moins d’incidents.'},
+  vente:{n:['Bon vendeur','Bonne vendeuse'],d:'Ventes +4 %.'},fidele:{n:['Fidèle','Fidèle'],d:'Garde le moral deux fois plus longtemps.'},
+  ambition:{n:['Ambitieux','Ambitieuse'],d:'Se forme pour moitié prix, mais veut monter en grade.'}};
+const EN_KIND={vite:{n:'Petite commande',w:4,d:6,r:1.3,rep:1,mot:0},gros:{n:'Grosse commande',w:14,d:16,r:4.6,rep:2,mot:0},prestige:{n:'Client de prestige',w:8,d:10,r:2.2,rep:5,mot:15}};
+const EN_CL=['la mairie','un club de sport','une école du quartier','un hôtel du centre','une start-up','un couple qui se marie','un traiteur','une influenceuse','un festival d’été','une chaîne de magasins','une entreprise du port','un collectionneur','une ambassade','un grand chef','une star de la télé','un comité d’entreprise','une agence de voyages','un musée'];
+const EN_RD=[{n:'Un produit maison',d:'Ventes +10 %.',c:1.5,m:4},{n:'Une machine plus rapide',d:'Commandes 30 % plus vite, deux fois moins de pannes, ventes +5 %.',c:3,m:8,need:'sk3'},{n:'La gamme signature',d:'Ventes +15 %.',c:6,m:12,need:'chief'}];
+const EN_SPEC={qualite:{n:'Qualité',d:'Ventes +8 %, moins d’incidents, clients de prestige mieux payés.'},volume:{n:'Volume',d:'Ventes +18 %, commandes plus rapides. Entretien plus cher, les clients s’usent plus vite.'},
+  luxe:{n:'Luxe',d:'Jusqu’à +45 % si tes clients sont ravis, −20 % s’ils sont déçus. Salaires plus élevés, pas de gros volumes.'}};
+const EN_SPEC_LVL=25;
+let EN_UI={id:null,tab:'cmd'};
+const enMo=n=>Math.max(1,Math.ceil(n*(S.speed||1))); /* délais en mois, à vitesse réelle constante */
+const enCap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function enInit(){if(!S.ent||typeof S.ent!=='object'||S.ent.c!==(S.city|0))S.ent={c:S.city|0,b:{},last:null,done:0};const E=S.ent;if(!E.b||typeof E.b!=='object')E.b={};return E}
+function enPerson(sk,used){let g,n,k=0;do{g=Math.random()<.5?'f':'m';n=pick(g==='f'?PR_F:PR_M);k++}while(used&&used.includes(n)&&k<20);
+  return{n,g,age:randInt(19,56),t:pick(Object.keys(EN_TR)),sk:sk||randInt(1,2),mot:randInt(58,80),tr:0}}
+function enTeam(){const L=[];for(let i=0;i<3;i++)L.push(enPerson(0,L.map(x=>x.n)));return L}
+function enB(id){const E=enInit();let o=E.b[id];
+  if(!o||typeof o!=='object')o=E.b[id]={team:enTeam(),ord:null,offers:[],offT:0,rd:{done:0,i:-1,end:0},inc:null,spec:null,chief:-1,primeT:0};
+  if(!Array.isArray(o.team)||!o.team.length)o.team=enTeam();o.team.forEach(m=>{m.sk=clamp(m.sk|0||1,1,5);m.mot=clamp(isFinite(m.mot)?m.mot:60,0,100)});
+  if(!Array.isArray(o.offers))o.offers=[];if(!o.rd||typeof o.rd!=='object')o.rd={done:0,i:-1,end:0};o.rd.done=clamp(o.rd.done|0,0,EN_RD.length);
+  if(!(o.chief>=0&&o.chief<o.team.length))o.chief=-1;if(o.spec&&!EN_SPEC[o.spec])o.spec=null;return o}
+const enOpen=id=>!!(S.biz[id]&&S.biz[id].lvl>0);
+function enG(id){const b=BIZ_BY[id];if(!b||!enOpen(id))return 0;const v=steadyRev(b)/b.time*DAY_SEC;return Math.max(isFinite(v)?v:0,b.cost*.05)}
+const enHas=(o,t)=>o.team.filter(m=>m.t===t).length;
+function enPow(o){return o.team.reduce((a,m)=>a+m.sk*(.5+m.mot/200),0)}
+function enSpeed(id){const o=enB(id);let v=(.5+.2*enPow(o))*(1+.15*enHas(o,'rapide'));if(o.spec==='volume')v*=1.3;if(o.rd.done>=2)v*=1.3;
+  if(o.inc&&o.inc.k==='panne')v*=.3;else if(o.inc&&o.inc.k==='rupture')v*=.5;return v}
+function enSpecMult(id,o){if(o.spec==='qualite')return 1.08;if(o.spec==='volume')return 1.18;if(o.spec==='luxe')return clamp(1+.6*(satOf(id)-55)/45,.8,1.45);return 1}
+function enMult(id){if(!enOpen(id))return 1;const o=enB(id);let m=(.9+.025*enPow(o)+.04*enHas(o,'vente')+(o.chief>=0?.05:0));
+  m*=[1,1.1,1.155,1.33][o.rd.done]||1;m*=enSpecMult(id,o);
+  if(o.ord&&o.ord.p<o.ord.w)m*=.85;if(o.inc&&o.inc.k==='panne')m*=.6;else if(o.inc&&o.inc.k==='rupture')m*=.7;return isFinite(m)&&m>0?m:1}
+/* L'effet passe par S.mods (un effet par affaire, marqué ent) : c'est lu par revenue() partout */
+function enSync(){if(!S||!Array.isArray(S.mods))return;S.mods=S.mods.filter(m=>!m.ent);BIZ.forEach(b=>{if(!enOpen(b.id))return;const m=enMult(b.id);if(Math.abs(m-1)>.001)S.mods.push({m,until:1e9,biz:b.id,ent:1})})}
+
+/* ---------- 1. Charges du mois ---------- */
+const enTax=()=>Math.min(.16,.08+.005*(S.city|0))*(S.pol&&S.pol.office==='maire'?.5:1);
+function enChargeOf(id){const st=S.biz[id];if(!st||!st.lvl)return{sal:0,ent:0,g:0};const o=enB(id),G=enG(id)*(st.mgr?1:.5),s=st.staff||{},
+  nst=(s.clean|0)+(s.wait|0)+(s.qual|0),pal=PALIERS.filter(x=>st.lvl>=x).length;
+  return{g:G,sal:G*((st.mgr?.06:0)+.02*o.team.length+.012*nst+(o.chief>=0?.02:0)+(o.spec==='luxe'?.06:0)),ent:G*(.04+.008*pal+(o.spec==='volume'?.05:0))}}
+function enCharges(){let sal=0,ent=0,g=0;openIds().forEach(id=>{const x=enChargeOf(id);sal+=x.sal;ent+=x.ent;g+=x.g});const tax=g*enTax();
+  const r={sal,ent,tax,tot:sal+ent+tax,gross:g};for(const k in r)if(!isFinite(r[k]))r[k]=0;return r}
+/* Part des ventes qui part en charges (sert au retour d'absence) */
+function enChargeRate(){const c=enCharges();return c.gross>0?clamp(c.tot/c.gross,0,.9):0}
+function enPayCharges(pm){const C=enCharges(),due=Math.round(C.tot*pm);if(!(due>0))return;const paid=Math.min(Math.max(0,S.cash),due);S.cash-=paid;dispCash=Math.min(dispCash,S.cash);
+  const E=enInit();E.last={day:S.day,sal:Math.round(C.sal*pm),ent:Math.round(C.ent*pm),tax:Math.round(C.tax*pm),due,paid};
+  if(paid<due){openIds().forEach(id=>enB(id).team.forEach(m=>{m.mot=clamp(m.mot-12,0,100)}));if(S.tab==='ville'||!document.hidden)toast(`Salaires en retard : il manquait ${fmt(due-paid)}. Tes équipes font la tête.`)}}
+
+/* ---------- 2. Chantiers (améliorations et locaux) ---------- */
+const WK_UPG=[60,240,720],WK_G=[120,480,900,1500],WK_ST=[0,60,240,600,1200];
+const wkCityK=()=>Math.pow(1.15,S.city|0);
+function wkInit(){if(!Array.isArray(S.works))S.works=[];if(!isFinite(S.wkT))S.wkT=0;S.works=S.works.filter(w=>w&&(w.k==='upg'||w.k==='stage')&&isFinite(w.end))}
+const wkTeams=()=>2+(S.stage>=2?1:0);
+function wkDur(k,id){let s;if(k==='stage')s=WK_ST[clamp(id|0,0,WK_ST.length-1)]||60;else{const u=UPG.find(x=>x.id===id);if(!u)return 60;
+  s=u.biz?WK_UPG[clamp(+u.id.slice(u.biz.length)||0,0,2)]:WK_G[clamp((+u.id.slice(1)||1)-1,0,3)]}return Math.round(s*wkCityK())}
+const wkOf=(k,id)=>{wkInit();return S.works.find(w=>w.k===k&&String(w.id)===String(id))};
+const wkLeft=w=>Math.max(0,w.end-S.wkT);
+function wkName(w){if(w.k==='stage')return 'Locaux : '+(STAGES[w.id]?STAGES[w.id].name.toLowerCase():'');const u=UPG.find(x=>x.id===w.id);return u?u.n:'Chantier'}
+function wkDone(w){S.works=S.works.filter(x=>x!==w);
+  if(w.k==='upg'){const u=UPG.find(x=>x.id===w.id);if(!u||S.upg.includes(u.id))return;S.upg.push(u.id);if(u.biz&&S.biz[u.biz])S.biz[u.biz].q.qual=clamp(S.biz[u.biz].q.qual+20,0,100);
+    return `${u.n} : terminé. ${u.biz?BIZ_BY[u.biz].n+' ×'+u.x:'Toutes tes affaires ×'+u.x}.`}
+  if(w.k==='stage'&&S.stage===w.id-1){S.stage=w.id;const n=STAGES[w.id];return `Nouveaux locaux : ${n.name.toLowerCase()}. ${n.perk}`}}
+function wkAdvance(dt){wkInit();if(!(dt>0))return [];S.wkT+=dt;const out=[];S.works.slice().forEach(w=>{if(S.wkT>=w.end){const m=wkDone(w);if(m)out.push(m)}});return out}
+function wkAway(sec){const m=wkAdvance(sec);return m.length?`<div class="panel"><h3 style="margin:0 0 4px">Chantiers terminés</h3>${m.map(x=>`<p class="hint">${esc(x)}</p>`).join('')}</div>`:''}
+function wkStart(k,id,cost){wkInit();if(S.works.length>=wkTeams()){toast(`Tes ${wkTeams()} équipes de travaux sont déjà sur un chantier. Attends qu’une se libère, ou fais finir un chantier tout de suite.`);sfx('no');return false}
+  if(S.cash<cost){toast(`Il te manque ${fmt(cost-S.cash)}.`);sfx('no');return false}
+  spend(cost);const dur=wkDur(k,id);S.works.push({k,id,end:S.wkT+dur,dur,cost});sfx('buy');toast(`Chantier lancé : ${wkName(S.works[S.works.length-1])}. Prêt dans ${ryDur(dur)}.`);return true}
+const wkRush=w=>Math.max(1,Math.round((w.cost||0)*.25*wkLeft(w)/Math.max(1,w.dur)));
+function wkFinish(i){wkInit();const w=S.works[i];if(!w)return;const c=wkRush(w);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);const m=wkDone(w);sfx('rank');if(m)toast(m)}
+buyUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||S.upg.includes(id)||wkOf('upg',id))return;if(u.biz&&!enOpen(u.biz)){toast('Ouvre d’abord cette affaire.');sfx('no');return}
+  if(wkStart('upg',id,u.cost))addXP(10)};
+upgradeStage=function(){const n=STAGES[S.stage+1];if(!n||wkOf('stage',S.stage+1))return;if(wkStart('stage',S.stage+1,n.cost))addXP(40)};
+function wkHTML(){wkInit();const T=wkTeams();
+  return `<div class="panel wk"><div class="ug-h"><h3>Chantiers</h3><span class="tag">${S.works.length}/${T} équipe${T>1?'s':''}</span></div>
+  ${S.works.length?S.works.map((w,i)=>`<div class="wk-row"><div><strong>${esc(wkName(w))}</strong><div class="obj-bar"><i data-wk="${i}" style="width:${Math.round(100*(1-wkLeft(w)/Math.max(1,w.dur)))}%"></i></div><span class="hint" data-wkt="${i}">Encore ${ryDur(wkLeft(w))}</span></div>
+    <button class="btn small ghost" data-a="en_rush" data-i="${i}" ${S.cash>=wkRush(w)?'':'disabled'}>Finir : ${fmt(wkRush(w))}</button></div>`).join('')
+    :'<p class="hint">Aucun chantier. Une amélioration ou de nouveaux locaux se construisent en temps réel, même jeu fermé.</p>'}
+  ${S.stage<2?'<p class="hint" style="margin-top:6px">Une 3e équipe arrive avec les bureaux.</p>':''}</div>`}
+/* Boutons d'amélioration : « En chantier » au lieu d'« Acheter » */
+function wkPatch(h){wkInit();S.works.forEach(w=>{if(w.k!=='upg')return;const re=new RegExp(`<button class="btn small go" data-a="upg" data-id="${w.id}"[^>]*>[^<]*</button>`,'g');
+  h=h.replace(re,`<span class="tag wk-tag">Chantier : ${ryDur(wkLeft(w))}</span>`)});return h}
+vUpg=(f=>function(){return wkHTML()+wkPatch(f())})(vUpg);
+/* Achat rapide : pas plus d'améliorations que d'équipes libres, et jamais celles déjà en chantier */
+shopPlan=(f=>function(only,kinds){wkInit();const u0=S.upg;S.upg=u0.concat(S.works.filter(w=>w.k==='upg').map(w=>w.id));let P;try{P=f.apply(this,arguments)}finally{S.upg=u0}
+  let free=Math.max(0,wkTeams()-S.works.length);const keep=P.items.filter(it=>it.k!=='upg'||free-->0);if(keep.length!==P.items.length){P.tot-=P.items.filter(it=>!keep.includes(it)).reduce((a,it)=>a+it.c,0);P.items=keep;P.n=keep.length}return P})(shopPlan);
+/* Fiche de la carte : améliorations en chantier, locaux en chantier */
+renderSheet=(f=>function(){f();try{const el=$('#bsheet');if(!el||el.hidden)return;wkInit();
+  S.works.forEach(w=>{if(w.k==='upg'){const bt=el.querySelector(`[data-a="upg"][data-id="${w.id}"]`);if(bt)bt.outerHTML=`<span class="tag wk-tag">Chantier : ${ryDur(wkLeft(w))}</span>`}
+    else{const bt=el.querySelector('[data-a="stage"]');if(bt)bt.outerHTML=`<span class="tag wk-tag">Chantier en cours : ${ryDur(wkLeft(w))}</span>`}})}catch(e){}})(renderSheet);
+
+
+/* ---------- 3. La vie dans l'entreprise ---------- */
+function enOffer(id){const o=enB(id);let ks=['vite','gros','prestige'];if(o.spec==='luxe')ks=['vite','prestige','prestige'];
+  return ks.map(k=>({k,cl:pick(EN_CL)})).filter((x,i,a)=>a.findIndex(y=>y.cl===x.cl)===i)}
+function enReward(id,k){const o=enB(id),K=EN_KIND[k];let r=K.r;if(k==='prestige'&&o.spec==='qualite')r*=1.3;if(k==='prestige'&&o.spec==='luxe')r*=1.5;if(k==='gros'&&o.spec==='volume')r*=1.2;return Math.round(r*enG(id))}
+const enWork=(id,k)=>EN_KIND[k].w;
+const enEta=(id,w)=>Math.ceil(w/Math.max(.05,enSpeed(id)));
+function enIncRoll(id,pm){const o=enB(id),st=S.biz[id];if(o.inc||st.lvl<10)return;const E=enInit();if(Object.values(E.b).filter(x=>x&&x.inc).length>=2)return;
+  const low=o.team.find(m=>m.mot<25);if(low&&Math.random()<.35*pm){o.inc={k:'demission',who:o.team.indexOf(low),end:S.day+enMo(3)};return}
+  let p=.022*pm*(o.spec==='qualite'?.6:1)*(enHas(o,'soin')?.5:1);if(Math.random()>=p)return;
+  const L=[['panne',o.rd.done>=2?1:3],['rupture',3],['controle',2]];let t=L.reduce((a,x)=>a+x[1],0)*Math.random(),k='panne';for(const x of L){if((t-=x[1])<0){k=x[0];break}}
+  o.inc={k,end:S.day+enMo(k==='panne'?5:k==='rupture'?3:2)}}
+function enIncEnd(id,o,why){const I=o.inc;o.inc=null;if(!I)return;const b=BIZ_BY[id];
+  if(I.k==='controle'&&why==='late'){const f=Math.min(Math.max(0,S.cash),Math.round(.6*enG(id)));S.cash-=f;dispCash=Math.min(dispCash,S.cash);S.rep=clamp(S.rep-3,0,100);toast(`${b.n} : contrôle raté, amende de ${fmt(f)}.`)}
+  if(I.k==='demission'&&why==='late'){const m=o.team[I.who];if(m){o.team[I.who]=enPerson(1,o.team.map(x=>x.n));if(o.chief===I.who)o.chief=-1;toast(`${b.n} : ${m.n} est ${gx(m,'parti','partie')}. Une recrue ${o.team[I.who].n} ${gx(o.team[I.who],'le','la')} remplace.`)}}}
+function enMonth(pm){enInit();
+  openIds().forEach(id=>{const o=enB(id),b=BIZ_BY[id];
+    if(!o.offers.length||S.day>=o.offT){o.offers=enOffer(id);o.offT=S.day+enMo(6)}
+    if(o.ord&&o.ord.p<o.ord.w){o.ord.p=Math.min(o.ord.w,o.ord.p+enSpeed(id)*pm);
+      if(o.ord.p>=o.ord.w&&!document.hidden)toast(`${b.e} ${b.n} : la commande pour ${o.ord.cl} est prête. Va la livrer.`);
+      else if(S.day>o.ord.dl){S.rep=clamp(S.rep-3,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot-10,0,100)});toast(`${b.n} : commande ratée pour ${o.ord.cl}. Réputation −3.`);o.ord=null}}
+    if(o.rd.i>=0&&S.day>=o.rd.end){const avg=o.team.reduce((a,m)=>a+m.mot,0)/o.team.length;if(avg<25)o.rd.end=S.day+1;else{o.rd.done=Math.min(EN_RD.length,o.rd.done+1);o.rd.i=-1;toast(`${b.e} Atelier : « ${EN_RD[o.rd.done-1].n} » est prêt. ${EN_RD[o.rd.done-1].d}`)}}
+    const ch=o.chief>=0;o.team.forEach((m,i)=>{let d=(m.t==='fidele'?1.5:3)*(ch?.6:1)+(o.inc?3:0)+(o.spec==='luxe'?1:0)+(m.t==='ambition'&&m.sk>=3&&o.chief!==i?2:0);m.mot=clamp(m.mot-d*pm,0,100)});
+    if(o.spec==='qualite')S.biz[id].q.qual=clamp(S.biz[id].q.qual+2*pm,0,100);
+    if(o.spec==='volume'){const q=S.biz[id].q;q.clean=clamp(q.clean-1.5*pm,0,100);q.wait=clamp(q.wait-1*pm,0,100)}
+    if(o.inc&&S.day>=o.inc.end)enIncEnd(id,o,'late');else enIncRoll(id,pm)});
+  enSync()}
+newDay=(f=>function(auto){f.apply(this,arguments);try{if(!S||S.dead||!S.started)return;const pm=1/(S.speed||1);enMonth(pm);enPayCharges(pm);
+  if(EN_UI.id&&document.querySelector('#layer .en-in'))enRender()}catch(e){console.warn('entreprise',e)}})(newDay);
+
+/* Actions */
+function enPay(c){c=Math.round(c);if(!(c>=0))return false;if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return false}spend(c);return true}
+const enTrainCost=(id,m)=>Math.round(enG(id)*.3*m.sk*(m.t==='ambition'?.5:1));
+const enPromoCost=id=>Math.round(enG(id));
+const enPrimeCost=id=>Math.round(enG(id)*.2);
+const enRdCost=(id,i)=>Math.round(enG(id)*EN_RD[i].c);
+const enSpecCost=id=>enB(id).spec?Math.round(enG(id)*2):0;
+function enRdOk(o,i){const R=EN_RD[i];if(!R)return false;if(R.need==='sk3')return o.team.some(m=>m.sk>=3);if(R.need==='chief')return o.chief>=0;return true}
+const enIncCost=(id,k,c)=>Math.round(enG(id)*({panne:[.4,0],rupture:[.3,0],controle:[0,.15],demission:[.5,0]}[k]||[0,0])[c]);
+function enAct(a,d){const id=d.id,b=BIZ_BY[id];if(!b||!enOpen(id))return;const o=enB(id);
+  if(a==='take'){if(o.ord)return;const x=o.offers[+d.i];if(!x)return;const K=EN_KIND[x.k];o.ord={k:x.k,cl:x.cl,w:enWork(id,x.k),p:0,dl:S.day+enMo(K.d),amt:enReward(id,x.k),rep:K.rep,mot:K.mot};o.offers.splice(+d.i,1);sfx('buy');toast(`Commande acceptée : ${x.cl}. À livrer avant ${dateLabel(o.ord.dl)}.`)}
+  else if(a==='deliver'){const r=o.ord;if(!r||r.p<r.w)return;earn(r.amt);S.rep=clamp(S.rep+r.rep,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot+10+(r.mot||0),0,100)});
+    S.counts.contrats=(S.counts.contrats|0)+1;enInit().done=(S.ent.done|0)+1;o.ord=null;addXP(15);sfx('rank');try{uiGain(innerWidth/2,innerHeight/2,'+'+fmt(r.amt))}catch(e){}toast(`${enCap(r.cl)} est ravi${/^une /.test(r.cl)?'e':''}. +${fmt(r.amt)}, réputation +${r.rep}.`)}
+  else if(a==='drop'){if(!o.ord)return;S.rep=clamp(S.rep-2,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot-5,0,100)});toast(`Commande annulée. ${enCap(o.ord.cl)} ne reviendra pas. Réputation −2.`);o.ord=null}
+  else if(a==='train'){const m=o.team[+d.i];if(!m||m.sk>=5||m.tr>S.day)return;if(!enPay(enTrainCost(id,m)))return;m.sk++;m.mot=clamp(m.mot+8,0,100);m.tr=S.day+enMo(3);sfx('good');toast(`${m.n} passe au niveau ${m.sk}.`)}
+  else if(a==='promo'){const i=+d.i,m=o.team[i];if(!m||m.sk<3||o.chief===i)return;if(!enPay(enPromoCost(id)))return;if(o.chief>=0&&o.team[o.chief])o.team[o.chief].mot=clamp(o.team[o.chief].mot-20,0,100);o.chief=i;m.mot=clamp(m.mot+30,0,100);sfx('rank');toast(`${m.n} devient ${gx(m,'chef','cheffe')} d’équipe. L’équipe se démotive moins vite.`)}
+  else if(a==='prime'){if(o.primeT>S.day)return;if(!enPay(enPrimeCost(id)))return;o.team.forEach(m=>{m.mot=clamp(m.mot+20,0,100)});o.primeT=S.day+enMo(4);sfx('good');toast('Prime versée. Ça sourit dans les couloirs.')}
+  else if(a==='rd'){const i=o.rd.done;if(o.rd.i>=0||i>=EN_RD.length||!enRdOk(o,i))return;if(!enPay(enRdCost(id,i)))return;o.rd.i=i;o.rd.end=S.day+enMo(EN_RD[i].m);sfx('buy');toast(`Atelier : « ${EN_RD[i].n} » lancé. Prêt en ${dateLabel(o.rd.end)}.`)}
+  else if(a==='spec'){const k=d.v;if(!EN_SPEC[k]||o.spec===k||S.biz[id].lvl<EN_SPEC_LVL)return;if(!enPay(enSpecCost(id)))return;o.spec=k;if(k==='luxe'){o.offers=enOffer(id)}sfx('rank');toast(`${b.n} mise sur : ${EN_SPEC[k].n.toLowerCase()}.`)}
+  else if(a==='inc'){const I=o.inc;if(!I)return;const c=+d.c,cost=enIncCost(id,I.k,c);
+    if(I.k==='panne'){if(c===0){if(!enPay(cost))return;o.inc=null;toast('Réparé dans l’heure. Ça tourne.')}else if(!I.slow){I.slow=1;I.end=Math.min(I.end,S.day+enMo(2));o.team.forEach(m=>{m.mot=clamp(m.mot-8,0,100)});toast('L’équipe s’y colle. Comptez deux mois.')}}
+    else if(I.k==='rupture'){if(c===0){if(!enPay(cost))return;o.inc=null;toast('Livraison express : les rayons sont pleins.')}else if(!I.slow){I.slow=1;I.end=Math.min(I.end,S.day+enMo(2));toast('Le camion arrive dans deux mois.')}}
+    else if(I.k==='controle'){if(c===0){if(S.energy<8){toast('Trop crevé pour éplucher des papiers.');sfx('no');return}S.energy=clamp(S.energy-8,0,100);const ok=Math.random()<.75+.1*enHas(o,'soin');o.inc=null;
+        if(ok)toast('Tout est en règle. L’inspecteur repart bredouille.');else{const f=Math.min(Math.max(0,S.cash),Math.round(.3*enG(id)));S.cash-=f;dispCash=Math.min(dispCash,S.cash);toast(`Un papier manquait. Amende : ${fmt(f)}.`)}}
+      else{if(!enPay(cost))return;o.inc=null;toast('Le comptable a tout rangé. Contrôle passé sans souci.')}}
+    else if(I.k==='demission'){const m=o.team[I.who];if(c===0){if(!enPay(cost))return;if(m)m.mot=70;o.inc=null;toast(m?`${m.n} reste. Merci patron.`:'C’est réglé.')}else enIncEnd(id,o,'late')}}
+  enSync()}
+
+/* Écran « Entrer dans l'entreprise » */
+const enStars=n=>'<span class="en-sk" aria-label="niveau '+n+' sur 5">'+'●'.repeat(n)+'<i>'+'●'.repeat(5-n)+'</i></span>';
+function enAv(m){try{return typeof psAv==='function'?psAv({name:m.n,g:m.g,age:m.age},{size:44}):''}catch(e){return ''}}
+function enTodo(id){if(!enOpen(id))return 0;const o=enB(id);let n=0;if(o.inc)n++;if(o.ord&&o.ord.p>=o.ord.w)n++;if(!o.ord&&o.offers.length)n++;return n}
+function enMoodWord(v){return v>=75?'motivé':v>=50?'ça va':v>=25?'fatigué':'à bout'}
+function enIncHTML(id,o){const I=o.inc;if(!I)return '';const b=BIZ_BY[id],m=o.team[I.who];
+  const T={panne:['La machine principale est en panne','Ventes −40 % et commandes au ralenti tant que ce n’est pas réparé.',['Appeler un réparateur','L’équipe répare (2 mois)']],
+    rupture:['Rupture de stock','Ventes −30 % : il manque de quoi vendre.',['Commande en urgence','Attendre le camion (2 mois)']],
+    controle:['Contrôle surprise','Un inspecteur passe bientôt. Sans préparation, amende et réputation −3.',['Préparer les papiers toi-même','Payer un comptable']],
+    demission:[`${m?m.n:'Quelqu’un'} veut démissionner`,`${m?gx(m,'Il','Elle'):'Il'} n’en peut plus. Si personne ne fait rien, ${m?gx(m,'il','elle'):'il'} part avant ${dateLabel(I.end)}.`,['L’augmenter','Le laisser partir']]}[I.k];
+  if(!T)return '';const cs=[0,1].map(c=>enIncCost(id,I.k,c));
+  return `<div class="en-alert"><strong>${T[0]}</strong><p>${T[1]}</p><div class="en-2">${T[2].map((l,c)=>{const dis=(cs[c]&&S.cash<cs[c])||(c===1&&I.slow)||(I.k==='controle'&&c===0&&S.energy<8);
+    return `<button class="btn small ${c?'ghost':'go'}" data-a="en_inc" data-id="${id}" data-c="${c}" ${dis?'disabled':''}>${l}${cs[c]?' · '+fmt(cs[c]):I.k==='controle'&&c===0?' · 8 énergie':''}</button>`}).join('')}</div></div>`}
+function enCmdHTML(id,o){const r=o.ord;let h='';
+  if(r){const pct=Math.min(100,Math.round(r.p/r.w*100)),ready=r.p>=r.w;
+    h+=`<div class="en-card ${ready?'ok':''}"><div class="ug-h"><h3>${enCap(r.cl)}</h3><span class="tag">${EN_KIND[r.k].n}</span></div>
+      <div class="obj-bar"><i style="width:${pct}%"></i></div>
+      <div class="kv"><span>${ready?'Prête à livrer':'Fabrication '+pct+' %, fin vers '+(S.day+enEta(id,r.w-r.p)>r.dl?'<b style="color:var(--loss)">'+dateLabel(S.day+enEta(id,r.w-r.p))+' : en retard</b>':dateLabel(S.day+enEta(id,r.w-r.p)))}</span><b class="pos">+${fmt(r.amt)}</b></div>
+      ${ready?`<button class="btn big go" data-a="en_deliver" data-id="${id}">Livrer et encaisser ${fmt(r.amt)}</button>`:`<p class="hint">À livrer avant ${dateLabel(r.dl)}. Pendant la fabrication, la boutique vend 15 % de moins.</p><button class="btn small ghost" style="margin-top:6px" data-a="en_drop" data-id="${id}">Annuler (réputation −2)</button>`}</div>`}
+  h+=`<h3 class="en-h">${r?'Les prochaines demandes':'Des clients attendent'}</h3>`;
+  h+=o.offers.length?o.offers.map((x,i)=>{const K=EN_KIND[x.k],eta=enEta(id,K.w),late=eta>enMo(K.d);
+    return `<div class="en-offer"><div><strong>${enCap(x.cl)}</strong><span class="hint">${K.n} · environ ${eta} mois, délai ${enMo(K.d)} mois${K.rep>1?' · réputation +'+K.rep:''}${K.mot?' · l’équipe adore':''}${late?' · <b style="color:var(--loss)">trop juste pour ton équipe</b>':''}</span></div>
+      <button class="btn small ${r?'ghost':'go'}" data-a="en_take" data-id="${id}" data-i="${i}" ${r?'disabled':''}>+${fmt(enReward(id,x.k))}</button></div>`}).join('')+(r?'<p class="hint">Une commande à la fois : livre celle en cours d’abord.</p>':'')
+    :`<p class="hint">Plus de demandes pour l’instant. Nouvelles demandes vers ${dateLabel(o.offT)}.</p>`;
+  return h}
+function enTeamHTML(id,o){const pc=enPrimeCost(id);
+  return o.team.map((m,i)=>{const tr=EN_TR[m.t]||EN_TR.vente,tc=enTrainCost(id,m),pr=enPromoCost(id),boss=o.chief===i;
+    return `<div class="en-p"><div class="en-av">${enAv(m)}</div><div class="en-pi"><div class="ug-h"><strong>${esc(m.n)}${boss?` <span class="tag">${gx(m,'Chef','Cheffe')}</span>`:''}</strong>${enStars(m.sk)}</div>
+      <span class="hint">${tr.n[m.g==='f'?1:0]} : ${tr.d}</span>
+      <div class="en-mot"><div class="obj-bar"><i style="width:${Math.round(m.mot)}%;background:${m.mot<25?'var(--loss)':m.mot<50?'#E59C3B':'var(--money)'}"></i></div><span class="hint">${enMoodWord(m.mot)}</span></div>
+      <div class="en-2">${m.sk<5?`<button class="btn small" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Former · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}
+      ${boss?'':`<button class="btn small ghost" data-a="en_promo" data-id="${id}" data-i="${i}" ${m.sk<3||S.cash<pr?'disabled':''}>${m.sk<3?'Promouvoir (niveau 3)':'Promouvoir · '+fmt(pr)}</button>`}</div></div></div>`}).join('')
+  +`<div class="en-row"><span class="hint">Une équipe motivée vend plus et fabrique plus vite. Le moral baisse chaque mois.</span><button class="btn small" data-a="en_prime" data-id="${id}" ${o.primeT>S.day||S.cash<pc?'disabled':''}>${o.primeT>S.day?'Prime versée':'Prime d’équipe · '+fmt(pc)}</button></div>`}
+function enLabHTML(id,o){const st=S.biz[id],i=o.rd.done,R=EN_RD[i];let h=`<h3 class="en-h">Atelier</h3>`;
+  h+=`<div class="en-steps">${EN_RD.map((x,k)=>`<span class="${k<i?'done':k===i?'now':''}">${k<i?'✓ ':''}${x.n}</span>`).join('')}</div>`;
+  if(o.rd.i>=0)h+=`<div class="en-card"><strong>${EN_RD[o.rd.i].n}</strong><p class="hint">${EN_RD[o.rd.i].d} Prêt vers ${dateLabel(o.rd.end)}.</p></div>`;
+  else if(R){const ok=enRdOk(o,i),c=enRdCost(id,i);h+=`<div class="en-card"><strong>${R.n}</strong><p class="hint">${R.d} ${R.m} mois de mise au point.${ok?'':R.need==='sk3'?' Il faut quelqu’un de niveau 3 dans l’équipe.':' Il faut un chef d’équipe.'}</p>
+    <button class="btn small go" data-a="en_rd" data-id="${id}" ${ok&&S.cash>=c?'':'disabled'}>Lancer · ${fmt(c)}</button></div>`}
+  else h+=`<p class="hint">Tous les projets sont faits. Ta boutique est à la pointe.</p>`;
+  h+=`<h3 class="en-h">Spécialité</h3>`;
+  if(st.lvl<EN_SPEC_LVL)h+=`<p class="hint">Au niveau ${EN_SPEC_LVL}, tu choisiras ce qui fait ta différence : la qualité, le volume ou le luxe.</p>`;
+  else{const sc=enSpecCost(id);h+=Object.keys(EN_SPEC).map(k=>{const S_=EN_SPEC[k],on=o.spec===k;return `<div class="en-offer ${on?'on':''}"><div><strong>${S_.n}</strong><span class="hint">${S_.d}</span></div>
+    ${on?'<span class="tag">Choisi</span>':`<button class="btn small ${o.spec?'ghost':'go'}" data-a="en_spec" data-id="${id}" data-v="${k}" ${S.cash>=sc?'':'disabled'}>${o.spec?'Changer · '+fmt(sc):'Choisir'}</button>`}</div>`}).join('')}
+  const c=enChargeOf(id),tx=c.g*enTax();
+  h+=`<h3 class="en-h">Charges par mois</h3><div class="kv"><span>Salaires</span><b>−${fmt(c.sal)}</b></div><div class="kv"><span>Entretien</span><b>−${fmt(c.ent)}</b></div><div class="kv"><span>Impôts locaux (${Math.round(enTax()*100)} %)</span><b>−${fmt(tx)}</b></div>
+    <p class="hint">${S.pol&&S.pol.office==='maire'?'Tu es maire : impôts locaux divisés par deux.':'Les maires paient deux fois moins d’impôts locaux.'}</p>`;
+  return h}
+function enHTML(){const id=EN_UI.id,b=BIZ_BY[id];if(!b||!enOpen(id))return `<p>Cette affaire n’est pas ouverte.</p><button class="btn big" data-a="close">Fermer</button>`;
+  const o=enB(id),st=S.biz[id],G=enG(id),c=enChargeOf(id),net=G-(c.sal+c.ent+c.g*enTax()),mult=enMult(id),tab=EN_UI.tab;
+  const nT={cmd:(o.ord&&o.ord.p>=o.ord.w?1:0)+(!o.ord&&o.offers.length?1:0),team:o.inc&&o.inc.k==='demission'?1:0,lab:(o.rd.i<0&&o.rd.done<EN_RD.length&&enRdOk(o,o.rd.done)?1:0)+(!o.spec&&st.lvl>=EN_SPEC_LVL?1:0)};
+  const seg=`<div class="seg en-seg" role="tablist">${[['cmd','Commandes'],['team','Équipe'],['lab','Atelier']].map(([k,l])=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="en_tab" data-id="${id}" data-v="${k}">${l}${nT[k]?'<i class="en-dot"></i>':''}</button>`).join('')}</div>`;
+  return `<div class="en-in"><div class="en-top"><div class="bs-ic">${b.e}</div><div><h2>${b.n}</h2><p class="hint">Niveau ${st.lvl}${o.spec?' · '+EN_SPEC[o.spec].n:''}${st.mgr?' · '+esc(MGR_NAMES[id].split(',')[0])+' à la caisse':''}</p></div><button class="bs-x" data-a="close" aria-label="Fermer">✕</button></div>
+    <div class="en-kpi"><div><span>Ventes / mois</span><b>${fmt(G)}</b></div><div><span>Après charges</span><b>${fmt(net)}</b></div><div><span>Effets en cours</span><b class="${mult>=1?'pos':''}" ${mult<1?'style="color:var(--loss)"':''}>×${fmtM(Math.round(mult*100)/100)}</b></div></div>
+    ${enIncHTML(id,o)}${seg}<div class="en-body">${tab==='team'?enTeamHTML(id,o):tab==='lab'?enLabHTML(id,o):enCmdHTML(id,o)}</div></div>`}
+function enRender(){const sh=document.querySelector('#layer .sheet');if(!sh||!sh.querySelector('.en-in'))return;const bd=sh.querySelector('.en-body'),sc=sh.scrollTop;sh.innerHTML=enHTML();sh.scrollTop=sc}
+function enOpenUI(id,tab){if(!enOpen(id))return;EN_UI.id=id;if(tab)EN_UI.tab=tab;enB(id);if(!enB(id).offers.length){const o=enB(id);o.offers=enOffer(id);o.offT=S.day+enMo(6)}
+  if(modalOpen&&document.querySelector('#layer .en-in')){enRender();return}if(modalOpen)closeModal();modal(enHTML());const sh=document.querySelector('#layer .sheet');if(sh)sh.classList.add('en-sheet')}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a^="en_"]');if(!t||t.disabled)return;const a=t.dataset.a.slice(3),d=t.dataset;
+  try{if(a==='open'){enOpenUI(d.id);return}if(a==='tab'){EN_UI.tab=d.v;enRender();return}if(a==='rush'){wkFinish(+d.i)}else enAct(a,d)}catch(err){console.warn(err)}
+  enRender();try{renderHud();updateLive()}catch(x){}});
+/* Entrées : la fiche de la carte et la liste des boutiques */
+const enBtn=(id,cls)=>{const n=enTodo(id);return `<button class="btn ${cls||'small'} en-go" data-a="en_open" data-id="${id}">Entrer${n?` <i class="en-badge">${n}</i>`:''}</button>`};
+renderSheet=(f=>function(){f();try{if(S.tab!=='ville'||!sel||!BIZ_BY[sel]||!enOpen(sel))return;const el=$('#bsheet');if(!el||el.hidden||el.querySelector('.en-go'))return;
+  const hd=el.querySelector('.bs-head');if(hd)hd.insertAdjacentHTML('afterend',`<div class="bs-sec en-entry">${enBtn(sel,'go')}<span class="hint">${enEntryHint(sel)}</span></div>`)}catch(e){}})(renderSheet);
+function enEntryHint(id){const o=enB(id);if(o.inc)return 'Un problème t’attend à l’intérieur.';if(o.ord&&o.ord.p>=o.ord.w)return 'Une commande est prête à livrer.';if(o.ord)return `Commande en cours pour ${o.ord.cl}.`;return 'Commandes, équipe, atelier.'}
+vAffaires=(f=>function(){let h=f();BIZ.forEach(b=>{if(!enOpen(b.id))return;const k=`<button class="btn small ghost" data-a="locate" data-id="${b.id}">`;h=h.replace(k,enBtn(b.id)+k)});
+  const C=enCharges(),L=enInit().last;let todo=[];openIds().forEach(id=>{const o=enB(id),b=BIZ_BY[id];if(o.inc)todo.push(`${b.e} problème`);if(o.ord&&o.ord.p>=o.ord.w)todo.push(`${b.e} commande prête`)});
+  const top=`<div class="panel en-sum"><div class="ug-h"><h3>Charges du mois</h3><b style="color:var(--loss)">−${fmt(C.tot/(S.speed||1))}</b></div>
+    <div class="kv"><span>Salaires</span><b>${fmt(C.sal/(S.speed||1))}</b></div><div class="kv"><span>Entretien</span><b>${fmt(C.ent/(S.speed||1))}</b></div><div class="kv"><span>Impôts locaux</span><b>${fmt(C.tax/(S.speed||1))}</b></div>
+    ${L&&L.paid<L.due?`<p class="hint" style="color:var(--loss)">Le mois dernier, il manquait ${fmt(L.due-L.paid)} : tes équipes ont perdu le moral.</p>`:''}
+    ${todo.length?`<p class="hint" style="margin-top:6px"><b>À voir :</b> ${todo.join(' · ')}</p>`:''}</div>`;
+  const i=h.indexOf('<div class="sec-head"><h2>Tes boutiques</h2>');return i<0?h+top:h.slice(0,i)+top+h.slice(i)})(vAffaires);
+/* Le détail des effets dans Vie : on n'affiche pas les effets d'équipe (ils sont dans chaque entreprise) */
+vieMoi=(f=>function(){const m=S.mods;S.mods=m.filter(x=>!x.ent);try{return f.apply(this,arguments)}finally{S.mods=m}})(vieMoi);
+/* Horloge des chantiers et mise à jour en direct */
+let EN_T=0,EN_SY=0;
+tick=(f=>function(){const t0=performance.now();f();try{if(!S||!S.started||S.dead)return;const dt=Math.min(3600,Math.max(0,(t0-(EN_T||t0))/1000));EN_T=t0;
+  if(document.hidden||ryPaused())return;const m=wkAdvance(dt);if(m.length){m.forEach(x=>toast(x));sfx('rank');if(S.tab!=='ville'&&!modalOpen&&!PDOWN)renderMain();renderSheet()}
+  if((EN_SY+=dt)>2){EN_SY=0;enSync();document.querySelectorAll('[data-wk]').forEach(el=>{const w=S.works[+el.dataset.wk];if(w)el.style.width=Math.round(100*(1-wkLeft(w)/Math.max(1,w.dur)))+'%'});
+    document.querySelectorAll('[data-wkt]').forEach(el=>{const w=S.works[+el.dataset.wkt];if(w)el.textContent='Encore '+ryDur(wkLeft(w))})}}catch(e){}})(tick);
+setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
+(function(){const st=document.createElement('style');st.textContent=`
+.en-sheet{max-width:520px}.en-in{text-align:left}
+.en-in .en-top{display:flex;gap:12px;align-items:center;margin-bottom:10px}.en-in .en-top h2{font-size:1.25rem;line-height:1.15}.en-in .en-top .bs-x{margin-left:auto}
+.en-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.en-kpi div{background:var(--surface2);border-radius:12px;padding:8px 10px;min-width:0}
+.en-kpi span{display:block;font-size:.74rem;color:var(--muted);line-height:1.2}.en-kpi b{display:block;font-size:1rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.en-seg{margin:4px 0 12px}.en-seg button{position:relative}.en-dot{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--pink)}
+.en-h{font-size:.95rem;margin:14px 0 8px}.en-body>.en-h:first-child{margin-top:0}
+.en-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;background:var(--surface)}.en-card.ok{border-color:var(--money);box-shadow:0 0 0 2px color-mix(in srgb,var(--money) 25%,transparent)}
+.en-card h3{font-size:1rem;margin:0}.en-card .obj-bar{margin:8px 0 6px}.en-card .btn.big{width:100%;margin-top:8px}
+.en-offer{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}.en-offer:first-of-type{border-top:0}
+.en-offer>div{min-width:0}.en-offer strong{display:block}.en-offer .hint{display:block;font-size:.82rem}.en-offer .btn{flex:none;min-width:96px}.en-offer.on strong{color:var(--money)}
+.en-alert{border-radius:14px;padding:12px;margin-bottom:12px;background:color-mix(in srgb,var(--loss) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--loss) 45%,transparent)}
+.en-alert p{font-size:.88rem;margin:4px 0 8px}
+.en-2{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.en-2 .btn{flex:1 1 140px}
+.en-p{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.en-p:first-child{border-top:0}.en-av{flex:none;width:44px;height:44px}.en-av svg{width:44px;height:44px}
+.en-pi{flex:1;min-width:0}.en-pi .hint{display:block;font-size:.82rem}.en-sk{color:var(--money);letter-spacing:1px;font-size:.8rem;white-space:nowrap}.en-sk i{font-style:normal;opacity:.25}
+.en-mot{display:flex;align-items:center;gap:8px;margin-top:4px}.en-mot .obj-bar{flex:1;margin:0}.en-mot .hint{flex:none;width:58px;text-align:right}
+.en-row{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}.en-row .btn{flex:none}
+.en-steps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.en-steps span{font-size:.78rem;padding:3px 9px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.en-steps span.done{color:var(--money);font-weight:700}.en-steps span.now{background:var(--ink);color:var(--surface)}
+.en-entry{display:flex;align-items:center;gap:10px}.en-entry .hint{font-size:.84rem}
+.en-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--pink);color:#1E2B2A;font-style:normal;font-size:.72rem;font-weight:800}
+.wk-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}.wk-row:first-of-type{border-top:0}.wk-row>div{flex:1;min-width:0}.wk-row .obj-bar{margin:6px 0 2px}
+.wk-tag{white-space:nowrap}
+@media (max-width:420px){.en-kpi b{font-size:.9rem}.en-offer .btn{min-width:84px}}`;document.head.appendChild(st)})();
+/* ===== FIN AGENT ENTREPRISE ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
