@@ -102,3 +102,5 @@ Règle : chaque option change le jeu pendant plusieurs semaines et a un inconvé
 - PAS de 3D : on reste en 2D, mais graphismes nettement plus propres, épurés et stylés (« pas jeu de pacotille »), plus de détails et d'animations ; PNJ vraiment vivants, chacun avec ses animations et activités.
 - Personnages : mieux dessinés (têtes trop rondes) → proposer plusieurs designs de personnages à Nils, qui choisit.
 - À faire : sauvegarde en ligne avec comptes (Supabase) ; tournoi de 3 jours avec classement entre joueurs ; jeu plus lisible (grands nombres en mots, une pastille à la fois, retirer le panneau Diagnostic). Boutique/Pass : plus tard.
+- (10/11, pas encore fait) Redessiner ENTIÈREMENT chaque ville d'après sa vraie vue satellite, pour qu'elle ressemble à la vraie ville (pas seulement les abords du plateau : le plateau lui-même, trame des rues, quartiers, monuments à leur place).
+- (10/11, en cours) Intérieur des entreprises : vrai visuel dessiné, on touche le bâtiment et on entre directement (pas de bouton « Entrer »).
