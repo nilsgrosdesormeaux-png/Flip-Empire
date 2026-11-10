@@ -1,5 +1,17 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-10-1548 : Claude de Nils (version 2026-11-10-1548)
+- Bloc AGENT ENTREPRISE : « Entrer » dans chaque boutique (commandes clients, équipe nommée à former, atelier R&D, spécialité au niv. 25, incidents) ; charges du mois (salaires, entretien, impôts locaux, taxe foncière) ; améliorations = chantiers en temps réel (1 min → ~1 h 15, 2-3 équipes) ; hors-ligne 2 h max puis rien.
+- Club ×1,12 par ville, adversaires +1/ville ; immobilier : 3 biens à l'arrivée puis 1 de plus par mois (plus lent ensuite), Tout acheter = seulement ce qui est en vente. Bourse inchangée. Joueur auto : 1re ville 35 min, total 14 villes ~32 h.
+- Rush supprimé (demande de Nils). Les scripts de test bloquent maintenant Supabase (un test avait envoyé un vote « mystère » le 10/11 à 15:47 UTC).
+
+## 2026-11-10-1025 : Claude de Nils (version 2026-11-10-1025)
+- Plus de temps ×2 / ×4 (bloc AGENT VITESSE avant BOOT) : le temps est toujours ×1, bouton masqué, anciennes parties remises à ×1. Rush = revenus ×2 pendant 90 s, recharge 12 min (8 min avec le Pass).
+
+## 2026-11-10-1014 : Claude de Nils (version 2026-11-10-1014)
+- Sondage semaine 46 : gardés « Refonte totale du foot » (3 votes en S45) et « Choix mystère » (1 vote) ; nouveaux : « Krach et entrée en bourse », « Gratte-ciel et grands chantiers ». S45 : Nouvelle ville gagnante (4/8). Les choix sont maintenant par semaine (metaPoll) : prévoir ceux de S47.
+- En cours (agents) : difficulté + vie d'entreprise + hors-ligne 2 h ; objectifs variés + fin du jeu + tutoriel ; villes réalistes + Istanbul, Le Caire, Sydney.
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1217)
 - Sondage relié à Supabase (projet gicxucdtbibnpexzerjv) : vote = une ligne par joueur et par semaine (table public.votes). Si la table n'existe pas ou pas de réseau, le vote reste sur l'appareil (repli).
 - À faire par Nils : exécuter le SQL de la table dans le SQL Editor (voir échange du 5 novembre).
