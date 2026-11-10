@@ -4628,6 +4628,8 @@ function metaInit(){
   fillDefaults(META_DEF(),S.meta);const m=S.meta;
   if(!Array.isArray(m.owned))m.owned=[];if(!Array.isArray(m.fresh))m.fresh=[];if(!m.eq||typeof m.eq!=='object')m.eq=META_DEF().eq;if(!isFinite(m.jetons)||m.jetons<0)m.jetons=0;if(!isFinite(m.jokers))m.jokers=0;
   if(!m.ent||!Array.isArray(m.ent.premium))m.ent={pass:null,premium:[]};
+  if(!m.votes||typeof m.votes!=='object')m.votes={};
+  try{const w=metaWeek();if(m.votes[w]&&!metaPoll(w).opts.includes(m.votes[w]))delete m.votes[w]}catch(e){} /* vote pour un choix retiré du sondage : on peut revoter */
   return m;
 }
 function metaSave(){const m=metaInit(),a={};META_ACC_KEYS.forEach(k=>a[k]=m[k]);metaSet(META_LS.acc,a)}
@@ -4772,6 +4774,8 @@ const META_POLL=[
   {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'Ta famille apparaîtra dans la ville : on la verra marcher, aller à l’école ou au parc. Elle vivra dans une vraie maison, et non plus dans un bureau abstrait.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Une nouvelle ville sera ajoutée à la fin de la carte. Après le vote, tu choisiras entre Istanbul (bazar, Bosphore), Le Caire (pyramides, Nil) et Sydney (opéra, port).',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'mystere',e:'❔',t:'Choix mystère',d:'Une surprise qui sera décidée plus tard. Son contenu n’est pas encore connu.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'bourse_krach',e:'📈',t:'Krach et entrée en bourse',d:'Ton empire pourra entrer en bourse et vendre des actions. Mais un krach peut tout faire chuter d’un coup : à toi de vendre à temps, ou de racheter au plus bas.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'gratte_ciel',e:'🏙️',t:'Gratte-ciel et grands chantiers',d:'Tu pourras bâtir ta tour dans chaque ville, étage par étage. Le chantier coûte cher et dure des mois, mais chaque étage fini se loue.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
 
   {id:'coffre',e:'🎁',t:'Coffre XXL',d:'Le coffre du jour rapporte ×2 toute la semaine.'},
   {id:'jetons',e:'🎟️',t:'Semaine des jetons',d:'Tous les jetons gagnés sont doublés.'},
@@ -4783,7 +4787,7 @@ const META_POLL=[
   {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
 ];
 const META_POLL_BY=Object.fromEntries(META_POLL.map(o=>[o.id,o]));
-function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
+function metaPoll(week){return{week,opts:String(week)<='2026-W45'?['refonte_foot','refonte_famille','nouvelle_ville','mystere']:['refonte_foot','bourse_krach','gratte_ciel','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
 const metaSimVotes=(week,o)=>3+metaHash(week+'|'+o)%12;
 function metaCounts(week){const p=metaPoll(week),all=(metaGet(META_LS.votes)||{})[week]||{},counts={};
   p.opts.forEach(o=>counts[o]=metaSimVotes(week,o));Object.values(all).forEach(o=>{if(o in counts)counts[o]++});
@@ -4798,7 +4802,7 @@ async function metaPollCheck(){
   queueModal(`<div class="reveal-box pop">🗳️</div><h2>Le vote a parlé !</h2><p>La semaine dernière, les joueurs ont choisi :</p><div class="meta-win">${o.e} <b>${o.t}</b><p class="hint">${o.d}</p>${extra?`<div class="big-num">${extra}</div>`:''}</div><p class="hint">Un nouveau sondage t’attend cette semaine.</p><div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="meta_poll">Voter pour la semaine prochaine</button><button class="btn ghost" data-a="close">Plus tard</button></div>`);
 }
 async function metaPollHTML(){
-  const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=m.votes[w]||r.mine,act=META_POLL_BY[metaActiveId()];
+  const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=[m.votes[w],r.mine].find(v=>v&&p.opts.includes(v))||null,act=META_POLL_BY[metaActiveId()];
   const end=7-((new Date(metaNow()).getDay()+6)%7);
   const opts=p.opts.map(o=>{const x=META_POLL_BY[o],pc=r.total?Math.round(r.counts[o]/r.total*100):0,me=o===mine;return `<button class="meta-opt${me?' me':''}" data-a="meta_vote" data-id="${o}"><b>${x.e} ${x.t}${me?' · ton vote':''}</b><span class="hint">${x.d}</span>${mine?`<span class="hint">${pc} % des votes</span><i class="meta-bar" style="width:${pc}%"></i>`:''}</button>`}).join('');
   const nx=metaPoll(metaWeekOff(1));
