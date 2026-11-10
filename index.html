@@ -8986,7 +8986,7 @@ Object.assign(V2B,{lyonLow:Object.assign({},V2B.lyon,{fl:[1,2]}),haussLow:Object
 /* Primitives sur un contexte donné */
 function v2gBox(g,x,y,w,d,h,col,top,z0,o){z0=z0||0;const Dg=iso(x,y+d,z0),Cg=iso(x+w,y+d,z0),Bg=iso(x+w,y,z0),Ag=iso(x,y,z0),D=[Dg[0],Dg[1]-h],C=[Cg[0],Cg[1]-h],B=[Bg[0],Bg[1]-h],A=[Ag[0],Ag[1]-h];
   poly(g,[Dg,Cg,C,D],shade(col,.86));poly(g,[Cg,Bg,B,C],shade(col,.66));poly(g,[A,B,C,D],shade(top||col,1.04));
-  return {fL:(u,z)=>[Dg[0]+(Cg[0]-Dg[0])*u,Dg[1]+(Cg[1]-Dg[1])*u-z],fR:(u,z)=>[Bg[0]+(Cg[0]-Bg[0])*u,Bg[1]+(Cg[1]-Bg[1])*u-z],A,B,C,D}}
+  return {fL:(u,z)=>[Dg[0]+(Cg[0]-Dg[0])*u,Dg[1]+(Cg[1]-Dg[1])*u-z],fR:(u,z)=>[Bg[0]+(Cg[0]-Bg[0])*u,Bg[1]+(Cg[1]-Bg[1])*u-z],A,B,C,D,hex:[Dg,Cg,Bg,B,A,D]}}
 function v2gQ(g,f,u0,u1,z0,z1,col){poly(g,[f(u0,z0),f(u1,z0),f(u1,z1),f(u0,z1)],col)}
 function v2gTree(g,x,y,s,kind,col,z0,hz){const p=iso(x,y,z0||0);g.fillStyle='rgba(0,0,0,.14)';g.beginPath();g.ellipse(p[0]+3*s,p[1]+1,7*s,3*s,0,0,7);g.fill();
   if(kind==='palm'){g.strokeStyle=shade(v2Mix('#8A6A4A',hz.c,hz.f),1);g.lineWidth=2*s;g.beginPath();g.moveTo(p[0],p[1]);g.quadraticCurveTo(p[0]+3*s,p[1]-12*s,p[0]+1.5*s,p[1]-22*s);g.stroke();
@@ -9102,6 +9102,7 @@ function v2RingBuild(cn,sc,thumb){
     if(b.rock){const p=iso(b.x,b.y),s=b.s;poly(g,[[p[0]-8*s,p[1]],[p[0]-5*s,p[1]-7*s],[p[0]+2*s,p[1]-9*s],[p[0]+8*s,p[1]-3*s],[p[0]+6*s,p[1]+1]],shade(v2Mix('#9C4A2C',H.c,H.f),1));continue}
     const col=b.o.glass?v2Mix(b.col,'#A9C6D8',.25):b.col,c=v2Mix(col,H.c,H.f),rc=v2Mix(b.rc,H.c,H.f);
     const r=v2gBox(g,b.x,b.y,b.w,b.d,b.h,c,b.roof==='flat'||b.roof==='mansard'?rc:c,b.z0);
+    if(SP.ink&&H.f<.6){g.strokeStyle=`rgba(40,36,60,${Math.min(.8,SP.ink*.7)*(1-H.f)})`;g.lineWidth=.8;g.beginPath();r.hex.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));g.closePath();g.moveTo(r.C[0],r.C[1]);g.lineTo(r.hex[1][0],r.hex[1][1]);g.stroke()}
     /* fenêtres */
     if(win>0&&b.h>=FH*.8&&H.f<.75){const fl=Math.max(1,Math.round(b.h/FH)),cols=b.w>.6?4:2,gc=v2Mix(v2Mix(b.o.glass?'#6F90A6':'#5E6A74',b.col,.35),H.c,H.f*1.1);
       for(const [f,ft] of [[r.fL,1],[r.fR,0]]){for(let j=0;j<fl;j++){const z0=j*FH+3,z1=z0+FH*.42;if(z1>b.h-2)break;for(let i=0;i<cols;i++){const u0=(i+.3)/cols,u1=(i+.66)/cols,on=lit&&v2Seed(b.x*7|0,j+i*13,b.y*11|0)<.55;
@@ -9147,89 +9148,20 @@ function v2RingExtras(cn,geo,items,K){const {hz}=K;const fn=(x,y,f)=>items.push(
   if(cn==='Shanghai'){for(let i=0;i<6;i++)boat(-4+i*4.5,20+(i%2)*.8,i%2?'#B5443A':'#3A3F47')}
   if(cn==='Londres'){boat(2,19.8,'#C8102E');boat(12,20.6,'#E5E5E5')}
 }
-/* ---------- Paliers de rendu (propositions pour Nils, rien n’est imposé) ----------
-   CITY_STYLE[i] = {p:palier, l:niveau 0..1 dans le palier}. Vide = palier 0 = rendu actuel (le jeu en ligne ne change pas).
-   P1 jouet lisse · P2 maquette (jouet détaillé) · P3 illustration soignée · P4 semi-réaliste.
-   Un découpage complet s’applique avec v2UseDecoupage('D1'|'D2'|'D3'), ou pour essayer : ?style=D1 dans l’adresse. */
-const CITY_STYLE=[];
-const V2_STYLES={
-  0:{haze:.55,shadow:0,win:1},
-  1:{name:'Jouet lisse',haze:.45,shadow:.12,shadowLen:.7,shadowCol:'#3A3A6A',win:0,sat:1.12,warm:1.08,ao:.16,water:'toy'},
-  2:{name:'Maquette',haze:.6,shadow:.2,shadowLen:1,shadowCol:'#2A3550',win:1,sat:1.0,warm:1.0,ao:.2,grain:.05,tilt:.22,vig:.18,water:'glint'},
-  3:{name:'Illustration',haze:.5,shadow:.24,shadowLen:1.1,shadowCol:'#3B3A78',win:1,sat:.96,warm:1.04,ink:.55,paper:.07,sun:.1,flatShadow:1},
-  4:{name:'Semi-réaliste',haze:.85,shadow:.3,shadowLen:1.8,shadowCol:'#1E2638',win:1,sat:.86,warm:.96,ao:.26,grain:.07,vig:.22,sun:.14,clouds:1,water:'glint'}};
-/* Ce qui s’ajoute à l’intérieur d’un palier, ville après ville (l de 0 à 1) */
-function v2SPFor(st){const p=st&&st.p||0,l=st&&st.l||0,B=Object.assign({},V2_STYLES[p]||V2_STYLES[0]);if(!p)return B;B.p=p;B.l=l;
-  B.shadow+=l*.08;if(B.grain)B.grain+=l*.04;if(B.ink)B.ink+=l*.35;if(B.paper)B.paper+=l*.04;if(B.sun)B.sun+=l*.06;if(B.vig)B.vig+=l*.08;if(B.sat)B.sat-=p>=3?l*.05:0;
-  if(p===1){B.ao+=l*.1;B.rim=l>=.34;B.clouds=l>=.67?.5:0}
-  if(p===2){B.clouds=l>=.5?.6:0;B.lit=l>=.25;B.win=1}
-  if(p===3){B.hatch=l>=.5;B.clouds=l>=.75?.5:0}
-  if(p===4){B.shadowLen+=l*.6;B.haze+=l*.1;B.reflect=l>=.34;B.bloom=l>=.67}
-  return B}
-const V2S={force:null,cur:null};
-function v2StyleOf(ci){if(ci==null)ci=Math.min(typeof gfxL==='function'?gfxL():(S.city|0),CITIES.length-1);return V2S.force||CITY_STYLE[ci]||null}
-function v2SP(){return v2SPFor(v2StyleOf())}
-/* Découpages proposés (indices 0 à 16) */
-const V2_DECOUP={
-  D1:[[1,0],[1,.5],[1,1],[2,0],[2,.33],[2,.67],[2,1],[3,0],[3,.25],[3,.5],[3,.75],[3,1],[4,0],[4,.33],[4,.67],[4,1],[4,1]],
-  D2:[[1,0],[1,.25],[1,.5],[1,.75],[1,1],[2,0],[2,.25],[2,.5],[2,.75],[2,1],[4,0],[4,.2],[4,.4],[4,.6],[4,.8],[4,1],[4,1]],
-  D3:[[1,0],[1,.5],[1,1],[3,0],[3,.2],[3,.4],[3,.6],[3,.8],[3,1],[4,0],[4,.15],[4,.3],[4,.45],[4,.6],[4,.75],[4,.9],[4,1]]};
-function v2UseDecoupage(k){const D=V2_DECOUP[k];CITY_STYLE.length=0;if(D)D.forEach(([p,l],i)=>CITY_STYLE[i]={p,l});v2Restyle()}
-/* Couleurs : saturation et chaleur de la ville multipliées par le palier */
-const V2_SAT0=C2.sat.slice(),V2_WARM0=C2.warm.slice();
-function v2Restyle(){const sp=v2SP();C2.sat.forEach((v,i)=>{const s=v2SPFor(v2StyleOf(i));C2.sat[i]=V2_SAT0[i]*(s.sat||1);C2.warm[i]=V2_WARM0[i]*(s.warm||1)});
-  try{c2C=-1;c2SC.clear()}catch(e){}G.bucket=-1;V2R.key='';V2S.ov=null}
-/* Essai sans rien changer pour les autres : ?style=D1 / D2 / D3 / P1..P4 dans l’adresse */
-(()=>{try{const m=/[?&]style=([A-Za-z0-9.]+)/.exec(location.search||'');if(!m)return;const v=m[1].toUpperCase();if(V2_DECOUP[v])v2UseDecoupage(v);else if(/^P[0-4]/.test(v)){V2S.force={p:+v[1],l:+(v.split('.')[1]?'.'+v.split('.')[1]:0)};v2Restyle()}}catch(e){}})();
+/* Réglages du dessin de la géographie (rendu actuel) */
+const V2_SP={haze:.55,shadow:0,win:1};
+function v2StyleOf(){return null}
+function v2SP(){return V2_SP}
 
 /* ---------- Dessin de la géographie autour du plateau ---------- */
 function v2RingDraw(){if(typeof GFX!=='undefined'&&GFX.thumb)return;const cn=v2CN();if(!V2GEO[cn])return;
-  const sc=MW<600?.8:1.15,st=v2StyleOf(),key=cn+'|'+JSON.stringify(st)+'|'+Math.round(NIGHT*8)+'|'+Math.round(DUSK*3)+'|'+sc;
-  if(V2R.key!==key){const t0=performance.now();let r=null;try{r=v2RingBuild(cn,sc)}catch(e){console.warn(e)}V2R.key=key;V2R.img=r;V2R.ms=performance.now()-t0}
+  const sc=MW<600?.8:1.15,key=cn+'|'+Math.round(NIGHT*8)+'|'+Math.round(DUSK*3)+'|'+sc;
+  if(V2R.key!==key){let r=null;try{r=v2RingBuild(cn,sc)}catch(e){console.warn(e)}V2R.key=key;V2R.img=r}
   const r=V2R.img;if(r)ctx.drawImage(r.cv,r.minX,r.minY,r.w,r.h)}
-gfxUnder=(f=>function(){v2RingDraw();v2StyleUnder();f()})(gfxUnder);
-/* La géographie remplace la tranche de terre visible sous le plateau : le plateau devient un morceau de ville */
-/* Données réutilisables (pour la future version 3D) : cases autour du plateau, type et relief */
+gfxUnder=(f=>function(){v2RingDraw();f()})(gfxUnder);
+/* Données réutilisables : cases autour du plateau, type et relief */
 function v2GeoCells(cn){const geo=V2GEO[cn];if(!geo)return[];const R=V2R.R,out=[];for(let x=-R;x<N+R;x++)for(let y=-R;y<N+R;y++){if(x>=0&&x<N&&y>=0&&y<N)continue;const cx=x+.5,cy=y+.5;
   const c=geo.water&&geo.water(cx,cy)?'eau':geo.isle&&geo.isle(cx,cy)?'ile':(geo.park||[]).some(r=>v2In(cx,cy,r))?'parc':geo.desert&&geo.desert(cx,cy)?'desert':geo.field&&geo.field(cx,cy)?'champ':'ville';out.push({x,y,c,z:geo.hill?geo.hill(cx,cy):0})}return out}
-
-/* ---------- Effets des paliers ---------- */
-let V2NOISE=null;function v2Noise(){if(V2NOISE)return V2NOISE;const c=document.createElement('canvas');c.width=c.height=96;const g=c.getContext('2d'),d=g.createImageData(96,96);
-  for(let i=0;i<d.data.length;i+=4){const v=Math.random()*255|0;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}g.putImageData(d,0,0);V2NOISE=c;return c}
-/* Ombres portées des maisons du plateau, et grain du sol, dans l’image du sol */
-buildGround=(f=>function(){f();const sp=v2SP();if(!sp.p||TH_.moon&&!TH_.mars)return;const g=G.cv.getContext('2d');
-  if(sp.shadow>0){g.save();g.setTransform(G.sc,0,0,G.sc,-G.minX*G.sc,-G.minY*G.sc);g.globalAlpha=Math.min(.5,sp.shadow);g.fillStyle=sp.shadowCol||'#2A3550';g.beginPath();const L=sp.shadowLen||1;
-    const add=(x,y,w,d,h)=>{const dx=h/FH*.55*L,dy=h/FH*.18*L,pts=[iso(x,y),iso(x+w,y),iso(x+w+dx,y+dy),iso(x+w+dx,y+d+dy),iso(x+dx,y+d+dy),iso(x,y+d)];g.moveTo(pts[0][0],pts[0][1]);for(let i=1;i<6;i++)g.lineTo(pts[i][0],pts[i][1]);g.closePath()};
-    DECOR.forEach(o=>{if(o.t==='house'||o.t==='apt')add(o.x,o.y,o.w,o.d,(o.f+((S.propUp||{})[o.pid]||0))*FH+6)});
-    BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl)add(b.p.x+.1,b.p.y+.1,b.p.w-.2,b.p.d-.2,FH*(2+Math.min(4,Math.floor(Math.log10(st.lvl+1)*2))))});g.fill();
-    if(sp.ao){g.globalAlpha=sp.ao;g.fillStyle='#1E2430';g.filter='blur(3px)';g.beginPath();DECOR.forEach(o=>{if(o.t==='house'||o.t==='apt'){const p=quadT(o.x-.05,o.y-.05,o.x+o.w+.08,o.y+o.d+.08);g.moveTo(p[0][0],p[0][1]);p.forEach(q=>g.lineTo(q[0],q[1]));g.closePath()}});g.fill();g.filter='none'}
-    g.restore()}
-  if(sp.grain){g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation='source-atop';g.globalAlpha=sp.grain;g.fillStyle=g.createPattern(v2Noise(),'repeat');g.globalCompositeOperation='overlay';g.fillRect(0,0,G.cv.width,G.cv.height);g.restore()}
-  if(sp.hatch){g.save();g.setTransform(1,0,0,1,0,0);g.globalAlpha=.06;g.strokeStyle='#2A2A40';g.lineWidth=1;g.beginPath();for(let x=-G.cv.height;x<G.cv.width;x+=7){g.moveTo(x,0);g.lineTo(x+G.cv.height,G.cv.height)}g.stroke();g.restore()}
-})(buildGround);
-/* Contours d’illustration et liseré clair des toits */
-drawHouse=(f=>function(o){const r=f(o);const sp=V2S.cur;if(!sp||!r||!r.hex)return r;
-  if(sp.ink){ctx.strokeStyle=`rgba(40,36,60,${Math.min(.9,sp.ink)})`;ctx.lineWidth=.9;ctx.lineJoin='round';ctx.beginPath();r.hex.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.stroke();
-    const h=r.hex;ctx.beginPath();ctx.moveTo(h[1][0],h[1][1]);ctx.lineTo(h[1][0],h[1][1]-(h[1][1]-h[4][1]-(h[0][1]-h[5][1])>0?0:0));ctx.stroke()}
-  if(sp.rim){const h=r.hex;ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(h[5][0],h[5][1]);ctx.lineTo(h[4][0],h[4][1]);ctx.lineTo(h[3][0],h[3][1]);ctx.stroke()}return r})(drawHouse);
-/* Sous les bâtiments : ombres de nuages qui passent, reflets sur l’eau */
-function v2StyleUnder(){const sp=V2S.cur=v2SP();if(!sp.p)return;
-  if(sp.water==='glint'||sp.reflect){if(WATER){ctx.fillStyle='rgba(255,255,255,.8)';for(let i=0;i<40;i++){const x=(i*7.31)%N,y=18.1+((i*3.17)%1.85),k=Math.sin(T*2.2+i*1.7);if(k<.75)continue;const p=iso(x,y);ctx.globalAlpha=(k-.75)*3;ctx.fillRect(p[0]-2,p[1],4,1)}ctx.globalAlpha=1}}
-  if(sp.water==='toy'&&WATER){ctx.globalAlpha=.25;ctx.fillStyle='#FFFFFF';for(let x=0;x<N;x++){const p=iso(x+.5,18.08);ctx.beginPath();ctx.ellipse(p[0],p[1],14,3,0,0,7);ctx.fill()}ctx.globalAlpha=1}}
-/* Par-dessus la scène : nuages, lumière, vignette, flou de maquette, papier */
-drawWorld=(f=>function(){f();const sp=V2S.cur||v2SP();if(!sp.p||(typeof GFX!=='undefined'&&GFX.thumb))return;
-  if(sp.clouds){ctx.save();ctx.setTransform(DPR*cam.z,0,0,DPR*cam.z,DPR*(MW/2-cam.x*cam.z),DPR*(MH/2-cam.y*cam.z));ctx.fillStyle='#14203A';for(let i=0;i<4;i++){const t=(T*.012+i*.27)%1.3-.15,x=-700+t*1400+i*90,y=80+i*170-t*200;
-    ctx.globalAlpha=.07*sp.clouds;ctx.beginPath();ctx.ellipse(x,y,260,110,0,0,7);ctx.fill();ctx.beginPath();ctx.ellipse(x+120,y+30,180,80,0,0,7);ctx.fill()}ctx.restore()}
-  const key=MW+'x'+MH+'|'+sp.p+'|'+sp.l+'|'+Math.round(NIGHT*4);
-  if(!V2S.ov||V2S.ovk!==key){V2S.ovk=key;const c=V2S.ov||document.createElement('canvas');c.width=Math.max(1,MW);c.height=Math.max(1,MH);const g=c.getContext('2d');g.clearRect(0,0,MW,MH);
-    if(sp.sun){const s=g.createLinearGradient(0,0,MW,MH);s.addColorStop(0,`rgba(255,214,150,${sp.sun*(1-NIGHT)})`);s.addColorStop(.55,'rgba(255,214,150,0)');s.addColorStop(1,`rgba(40,50,90,${sp.sun*.8})`);g.fillStyle=s;g.fillRect(0,0,MW,MH)}
-    if(sp.tilt){const top=g.createLinearGradient(0,0,0,MH);const c0='rgba(230,240,248,';top.addColorStop(0,c0+sp.tilt*(1-NIGHT*.6)+')');top.addColorStop(.28,c0+'0)');top.addColorStop(.78,c0+'0)');top.addColorStop(1,c0+sp.tilt*.8*(1-NIGHT*.6)+')');g.fillStyle=top;g.fillRect(0,0,MW,MH)}
-    if(sp.vig){const v=g.createRadialGradient(MW/2,MH*.52,Math.min(MW,MH)*.35,MW/2,MH*.52,Math.hypot(MW,MH)*.62);v.addColorStop(0,'rgba(10,14,28,0)');v.addColorStop(1,`rgba(10,14,28,${sp.vig})`);g.fillStyle=v;g.fillRect(0,0,MW,MH)}
-    if(sp.paper){g.globalAlpha=sp.paper;g.fillStyle=g.createPattern(v2Noise(),'repeat');g.fillRect(0,0,MW,MH);g.globalAlpha=1}
-    V2S.ov=c}
-  ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);if(sp.paper)ctx.globalCompositeOperation='source-over';ctx.drawImage(V2S.ov,0,0,MW,MH);
-  if(sp.bloom&&NIGHT>.4){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.08*NIGHT;ctx.drawImage(cv,0,0,cv.width,cv.height,-2,-2,MW+4,MH+4);ctx.globalAlpha=1}ctx.restore()})(drawWorld);
-genCity=(f=>function(ci){f(ci);if(typeof GFX!=='undefined'&&GFX.thumb)return;V2S.cur=null;V2S.ov=null})(genCity);
 /* ---------- Stade à la manière de chaque ville ----------
    Murs du fond et façade basse devant (pour garder la pelouse visible), toit ou anneau propre à la ville. */
 const V2_STADE={
