@@ -9552,19 +9552,20 @@ const IN={open:false,id:null,el:null,cv:null,cx:null,bg:null,sig:'',sigT:0,k:1,o
 const IN_SW=360,IN_SH=262,IN_FLOOR=178,IN_FRONT=232;
 const IN_EMO={'🍪':'food','🥞':'food','🍖':'food','🧀':'food','🥐':'food','☕':'food','🌭':'food','🍕':'food','🍜':'food','🌴':'food','🥬':'food','🍣':'food','🥙':'food','🍩':'food','🧁':'food','🍔':'food','🥖':'food','🫖':'food','🍰':'food','🥟':'food','🍢':'food','🌮':'food','🍝':'food','🍦':'food','🫓':'food','🥘':'food',
   '🚲':'garage','⛵':'garage','🚕':'garage','🚖':'garage','🏎️':'garage','🚤':'garage','🚙':'garage','🛥️':'garage','🚗':'garage','🛵':'garage','🏍️':'garage','🚢':'office',
-  '🏗️':'depot','🍷':'depot','🪨':'depot','⚛️':'lab','📦':'depot',
-  '🧬':'lab','🤖':'lab','🛰️':'lab','🎮':'office','📺':'office','🏦':'office','💹':'office','🎤':'office','✈️':'office','🌍':'lab','🎬':'venue',
+  '🏗️':'depot','🍷':'depot','🪨':'depot','⚛️':'lab','📦':'depot','🌍':'venue',
+  '🧬':'lab','🤖':'lab','🛰️':'lab','🎮':'office','📺':'office','🏦':'office','💹':'office','🎤':'office','✈️':'office','🎬':'venue',
+  '🐟':'food','🥯':'food','🍬':'food','🦐':'food','🥥':'food','🍵':'food','🥔':'food','🌶️':'food','🛴':'garage','🚀':'venue','🛳️':'venue','⛴️':'venue','🛸':'shop','🏪':'shop','📱':'lab','🫧':'lab','🌊':'lab','🌐':'office','💧':'depot',
   '🏨':'venue','🏯':'venue','🏝️':'venue','🏢':'venue','🎡':'venue','🏀':'venue','🎟️':'venue','🐪':'venue'};
 function inType(b){const e=b.e||'',n=((b.n||'')+' '+(b.noun||'')).toLowerCase();let t=IN_EMO[e]||IN_EMO[e.replace(/️/g,'')];
   if(!t){if(/vélo|bateau|taxi|cab|voiture|auto|moto|scooter|rover|yacht|jet-ski|garage/.test(n))t='garage';
     else if(/labo|biotech|robot|satellite|chimie|pharma/.test(n))t='lab';
     else if(/fonds|banque|média|media|label|studio de jeux|start-up|agence|compagnie|bourse|invest/.test(n))t='office';
     else if(/matériau|récup|négoce|entrepôt|dépôt|stock|import|mine|extraction/.test(n))t='depot';
-    else if(/hôtel|ryokan|villa|loft|parc|salle|billet|safari|cinéma|spa|dôme|club/.test(n))t='venue';
+    else if(/hôtel|ryokan|villa|loft|parc|salle|billet|safari|cinéma|\bspa\b|dôme|club/.test(n))t='venue';
     else if(/biscui|crêpe|bouchon|boulang|tea|ramen|hot-dog|food|datte|épice|fromage|pizza|café|restau|chocol|glac|pâtiss|bistro|burger|sushi|kebab|traiteur|kebap|baklava|koshari|falafel|thé/.test(n))t='food';
     else t='shop'}
-  let v='';if(t==='garage')v=/vélo/.test(n)?'bike':/bateau|yacht|jet-ski|barque|felouque/.test(n)?'boat':'car';
-  if(t==='shop')v=/fripe|couture|mode|sneaker|soie|camden|vêtement|tissu|kimono|grand magasin|galeries/.test(n)?'mode':/joail|horlog|or\b|bijou|montre/.test(n)?'bijou':/livre|bouquin|disque|vinyle|carte|jeux|galerie d|art|tapis/.test(n)?'media':'';
+  let v='';if(t==='garage')v=/vélo|trottinette/.test(n)?'bike':/bateau|yacht|jet-ski|barque|felouque|sous-marin/.test(n)?'boat':'car';
+  if(t==='shop')v=/fripe|couture|mode|sneaker|soie|camden|vêtement|tissu|kimono|grand magasin|galeries|costume|tong|maillot|coton|combinaison|centre commercial|surf/.test(n)?'mode':/joail|horlog|l’or|bijou|montre|perl/.test(n)?'bijou':/livre|bouquin|disque|vinyle|carte|jeux|galerie d|tapis|papyrus|savon|coquillage/.test(n)?'media':'';
   return {t,v}}
 const inMix=(a,b,t)=>{const p=h=>{h=String(h||'#888').replace('#','');if(h.length===3)h=h.split('').map(c=>c+c).join('');const n=parseInt(h,16)||0;return[n>>16&255,n>>8&255,n&255]};
   const A=p(a),B=p(b);return '#'+A.map((x,i)=>Math.round(x+(B[i]-x)*t).toString(16).padStart(2,'0')).join('')};
@@ -9662,7 +9663,7 @@ function inDrawBg(c,sc){const P=inPalette(sc),T=sc.T,t=T.t,TH=TH_||{},tier=sc.ti
   inDrawKit(c,sc,P,R);
   /* tableau derrière le comptoir (menu / tarifs) */
   inR(c,228,64,56,40,'#2F3A3D',3);c.fillStyle='#F3F0EA';c.font='700 6px system-ui';c.textAlign='left';
-  const lines=t==='food'?['Formule','Du jour','À emporter']:t==='garage'?['Révision','Pneus','Occasion']:t==='venue'?['Accueil','Chambres','Réserver']:t==='office'||t==='lab'?['Projets','Clients','Planning']:['Nouveautés','Soldes','Retouches'];
+  const lines=t==='food'?['Formule','Du jour','À emporter']:t==='garage'?['Révision','Pneus','Occasion']:t==='venue'?['Accueil','Chambres','Réserver']:t==='office'||t==='lab'?['Projets','Clients','Planning']:t==='depot'?['Arrivages','Stock','Livraisons']:T.v==='bijou'?['Créations','Gravure','Sur mesure']:T.v==='media'?['Arrivages','Pépites','Rachat']:['Nouveautés','Soldes','Retouches'];
   lines.forEach((l,i)=>{c.fillText(l,233,75+i*10);inR(c,268,72+i*10,10,1.5,'#F3F0EA88')});
   /* tableau de l'atelier R&D */
   inR(c,292,62,46,40,'#F6F1E6',3);c.strokeStyle='#B9A98E';c.lineWidth=1;c.strokeRect(292.5,62.5,45,39);
@@ -9777,7 +9778,7 @@ function inCast(sc){const want=inCastFor(sc),old=IN.ppl,out=[];
   want.forEach(w=>{const p=old.find(x=>x.key===w.key&&x.name===w.name);if(p){p.home=w.home;p.role=w.role;p.d=w.d;p.mot=w.mot;p.ti=w.ti;out.push(p)}else out.push(w)});IN.ppl=out}
 function inSpawn(sc){const sat=satOf(sc.b.id),cap=Math.min(9,2+sc.tier)*(.45+.55*sat/100);if(IN.cus.length>=Math.max(1,Math.round(cap)))return;
   const g=Math.random()<.5?'f':'m',age=Math.random()<.12?randInt(8,15):Math.random()<.15?randInt(62,80):randInt(18,58);
-  const d=inDesc('c'+Math.random(),g,age),dr=sc.door,b=sc.browse;
+  const d=inDesc('client'+((Math.random()*16)|0)+'|'+(S.city|0),g,age),dr=sc.door,b=sc.browse;
   IN.cus.push({d,x:dr.x,y:dr.y,tx:dr.x,ty:dr.y+12,st:'in',t:0,al:0,ph:Math.random()*6,br:b.length&&Math.random()<.75?b[(Math.random()*b.length)|0]:null,bag:0,wait:0,mood:0})}
 function inStep(p,dt,sp){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);if(d<.6){p.x=p.tx;p.y=p.ty;p.walk=0;return true}const s=Math.min(d,sp*dt);p.x+=dx/d*s;p.y+=dy/d*s;p.walk=1;return false}
 function inUpdate(sc,dt){const q=sc.st.q||{wait:70},sat=satOf(sc.b.id),T=sc.T.t;
@@ -9870,9 +9871,9 @@ function inFrame(){if(!IN.open)return;const now=performance.now(),dt=Math.min(.1
   if((q.clean|0)<50&&sc.sf.clean<1)tags.push({x:150,y:IN_FRONT-2,t:'Sol sale',bg:'#FFFFFF',fg:'#C2362B',k:'clean'});
   if(((q.wait|0)<45||nq>=4)&&sc.sf.wait<1)tags.push({x:sc.regs[0].x-80,y:200,t:'Trop d’attente',bg:'#FFFFFF',fg:'#C2362B',k:'wait'});
   if((q.qual|0)<45&&sc.sf.qual<1)tags.push({x:150,y:112,t:'Locaux usés',bg:'#FFFFFF',fg:'#C2362B',k:'qual'});
-  if(o.rd.i<0&&o.rd.done<EN_RD.length&&enRdOk(o,o.rd.done))tags.push({x:sc.rd.x,y:58,t:'Nouveau projet',bg:'#FFFFFF',fg:'#1E2B2A',k:'lab'});
-  tags.slice(0,4).forEach(g=>{const yy=g.y+(g.pulse?Math.sin(IN.t*4)*1.2:0);const r=inPill(c,Math.max(36,Math.min(IN_SW-36,g.x)),yy,g.t,g.bg,g.fg,7.5);
-    if(g.bar>=0){inR(c,r.x+4,r.y+r.h-3,(r.w-8),2,'#E3DCCD',1);inR(c,r.x+4,r.y+r.h-3,(r.w-8)*g.bar,2,'#17834A',1)}hot.push({x:r.x-4,y:r.y-4,w:r.w+8,h:r.h+8,k:g.k,z:999})});
+  if(o.rd.i<0&&o.rd.done<EN_RD.length&&enRdOk(o,o.rd.done)&&S.cash>=enRdCost(sc.b.id,o.rd.done))tags.push({x:sc.rd.x,y:58,t:'Nouveau projet',bg:'#FFFFFF',fg:'#1E2B2A',k:'lab'});
+  tags.slice(0,4).forEach(g=>{const yy=g.y+(g.pulse?Math.sin(IN.t*4)*1.2:0);const fs=IN.k<1.7?9:7.5,r=inPill(c,Math.max(44,Math.min(IN_SW-44,g.x)),yy,g.t,g.bg,g.fg,fs);
+    if(g.bar>=0){inR(c,r.x+4,r.y+r.h-3,(r.w-8),2,'#E3DCCD',1);inR(c,r.x+4,r.y+r.h-3,(r.w-8)*g.bar,2,'#17834A',1)}hot.push({x:r.x-6,y:r.y-10,w:r.w+12,h:r.h+20,k:g.k,z:999})});
   /* zones fixes cliquables */
   hot.push({x:286,y:58,w:56,h:48,k:'lab',z:1},{x:bx.x-16,y:bx.y-22,w:32,h:26,k:'cmd',z:2},{x:IN_SW-136,y:150,w:114,h:64,k:'wait',z:1},{x:40,y:IN_FLOOR+4,w:180,h:50,k:'clean',z:0},
     {x:86,y:70,w:100,h:108,k:I&&(I.k==='panne'||I.k==='rupture')?'inc':'qual',z:0});
