@@ -8145,8 +8145,8 @@ let PG_LV0=50,PG_LVA=55,PG_LVB=4,PG_NB=4;
 /* Prix des commerces, améliorations, locaux et gérants, ville par ville (réglé au joueur simulé, cible : ~25 min à Ta ville puis +27 % par ville).
    Courbe lisse en c, un peu moins chère dans les villes « club » (pas de salaire de maire), et un petit réglage fin par ville
    qui compense ses fêtes et ses objectifs propres. Au-delà de Mars, la courbe reste au niveau de Mars (cityDiff fait monter la difficulté). */
-const PG_KA=.053,PG_KB=.0922,PG_KC=.00753,PG_KCLUB=.856,PG_KADJ={3:1.12,5:.92,10:1.23,11:1.11,12:.9};
-function pgK(c){c=c||0;const x=Math.min(c,13);return PG_KA*Math.exp(PG_KB*x-PG_KC*x*x)*(c%2?PG_KCLUB:1)*(PG_KADJ[c]||1)}
+const PG_KA=.053,PG_KB=.0922,PG_KC=.00753,PG_KCLUB=.856,PG_KADJ={'Marseille':1.12,'Londres':.92,'Shanghai':1.23,'Atlantide':1.11,'La Lune':.9}; /* rangé par nom (avant : par numéro de ville) */
+function pgK(c){c=c||0;const x=Math.min(c,13);return PG_KA*Math.exp(PG_KB*x-PG_KC*x*x)*(c%2?PG_KCLUB:1)*(PG_KADJ[(CITIES[c]||{}).n]||1)}
 cityPrices=(f=>function(ci){f(ci);const k=pgK(ci);if(k!==1){BIZ.forEach(b=>{b.cost*=k});UPG.forEach(u=>{u.cost*=k});STAGES.forEach(x=>{x.cost*=k})}BIZ.forEach(b=>{MGR[b.id]=Math.round(b.cost*MGR_K)})})(cityPrices);
 /* Niveau demandé : 50 à Ta ville, puis 55 + 4 par ville */
 const pgLv=c=>c?Math.min(400,PG_LVA+PG_LVB*c):PG_LV0,pgNb=c=>PG_NB||Math.min(8,4+Math.floor(c/3));
@@ -8845,7 +8845,12 @@ function enMonth(pm){enInit();
     if(o.spec==='qualite')S.biz[id].q.qual=clamp(S.biz[id].q.qual+2*pm,0,100);
     if(o.spec==='volume'){const q=S.biz[id].q;q.clean=clamp(q.clean-1.5*pm,0,100);q.wait=clamp(q.wait-1*pm,0,100)}
     if(o.inc&&S.day>=o.inc.end)enIncEnd(id,o,'late');else enIncRoll(id,pm)});
-  enSync()}
+  enSync();enIntro()}
+/* Une seule fois : on présente l'intérieur quand une boutique atteint le niveau 10 (pas pendant le tutoriel) */
+function enIntro(){const f=S.flags||(S.flags={});if(f.enHint||(S.tut&&!S.tut.done))return;const id=openIds().find(x=>S.biz[x].lvl>=10);if(!id)return;f.enHint=1;const b=BIZ_BY[id];
+  queueModal(`<div class="reveal-box pop">${b.e}</div><h2>Pousse la porte</h2><p>Ta boutique tourne toute seule. Mais à l’intérieur, il se passe des choses : des clients passent commande, ton équipe a besoin de toi, l’atelier peut sortir un nouveau produit.</p>
+    <p class="hint" style="margin-top:8px">Touche « Entrer » sur une boutique, dans Affaires ou sur la carte. Deux ou trois décisions par visite suffisent.</p>
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="en_open" data-id="${id}">Entrer dans ${esc(b.n.toLowerCase())}</button><button class="btn ghost" data-a="close">Plus tard</button></div>`)}
 newDay=(f=>function(auto){f.apply(this,arguments);try{if(!S||S.dead||!S.started)return;const pm=1/(S.speed||1);enMonth(pm);enPayCharges(pm);
   if(EN_UI.id&&document.querySelector('#layer .en-in'))enRender()}catch(e){console.warn('entreprise',e)}})(newDay);
 
@@ -8933,7 +8938,7 @@ function enHTML(){const id=EN_UI.id,b=BIZ_BY[id];if(!b||!enOpen(id))return `<p>C
     ${enIncHTML(id,o)}${seg}<div class="en-body">${tab==='team'?enTeamHTML(id,o):tab==='lab'?enLabHTML(id,o):enCmdHTML(id,o)}</div></div>`}
 function enRender(){const sh=document.querySelector('#layer .sheet');if(!sh||!sh.querySelector('.en-in'))return;const bd=sh.querySelector('.en-body'),sc=sh.scrollTop;sh.innerHTML=enHTML();sh.scrollTop=sc}
 function enOpenUI(id,tab){if(!enOpen(id))return;EN_UI.id=id;if(tab)EN_UI.tab=tab;enB(id);if(!enB(id).offers.length){const o=enB(id);o.offers=enOffer(id);o.offT=S.day+enMo(6)}
-  if(modalOpen&&document.querySelector('#layer .en-in')){enRender();return}if(modalOpen)closeModal();modal(enHTML());const sh=document.querySelector('#layer .sheet');if(sh)sh.classList.add('en-sheet')}
+  if(modalOpen&&document.querySelector('#layer .en-in')){enRender();return}modal(enHTML());const sh=document.querySelector('#layer .sheet');if(sh)sh.classList.add('en-sheet')}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-a^="en_"]');if(!t||t.disabled)return;const a=t.dataset.a.slice(3),d=t.dataset;
   try{if(a==='open'){enOpenUI(d.id);return}if(a==='tab'){EN_UI.tab=d.v;enRender();return}if(a==='rush'){wkFinish(+d.i)}else enAct(a,d)}catch(err){console.warn(err)}
   enRender();try{renderHud();updateLive()}catch(x){}});
@@ -8983,6 +8988,13 @@ setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
 .wk-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}.wk-row:first-of-type{border-top:0}.wk-row>div{flex:1;min-width:0}.wk-row .obj-bar{margin:6px 0 2px}
 .wk-tag{white-space:nowrap}
 @media (max-width:420px){.en-kpi b{font-size:.9rem}.en-offer .btn{min-width:84px}}`;document.head.appendChild(st)})();
+/* ---------- 4. Prix par ville (réglés au joueur simulé, qui joue aussi l'intérieur des entreprises) ----------
+   Cible de Nils (novembre) : 1re ville ≈ 35 min, puis ≈ ×1,19 par ville (≈ 56 h pour 17 villes). Le ×1,19 vient surtout de cityDiff (1,35 par ville) :
+   ici, un facteur à peu près plat, plus un petit réglage par ville (rangé par nom, pour que l'ajout de villes au milieu ne décale rien).
+   Une ville sans réglage prend EN_KDEF. */
+const EN_KDEF=1.6,EN_KC={'Ta ville':1.72,'Nantes':1.67,'Lyon':1.43,'Marseille':1.5,'Paris':1.39,'Londres':1.26,'New York':1.23,'Tokyo':1.49,'Dubaï':1.57,'Rio de Janeiro':2.2,'Shanghai':1.65,'Atlantide':2.1,'La Lune':1.69,'Mars':2};
+function enK(c){const n=(CITIES[c|0]||{}).n;return EN_KC[n]||EN_KDEF}
+pgK=(f=>function(c){return f(c)*enK(c)})(pgK);
 /* ===== FIN AGENT ENTREPRISE ===== */
 /* ================= BOOT ================= */
 (function boot(){
