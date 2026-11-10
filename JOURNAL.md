@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-10-1559 : Claude de Nils (version 2026-11-10-1559)
+- Bloc AGENT OBJECTIFS : socle commun + 4 « affaires de la ville » par ville (17 villes, 24 types : histoire signature en 4 épisodes avec un personnage, enquêtes, contre-la-montre, conseil municipal, enchères, négociations…), repérées par nom de ville.
+- Fin du jeu à Mars (« Boucler le voyage ») : écran de bilan, Héritage (2-4 bonus), contrats galactiques, records par ville ; prestige proposé dès Paris.
+- Tutoriel : 6 étapes en bulles sur le vrai bouton, mini-visite à chaque onglet débloqué et à chaque nouveauté (intérieur, chantiers), « Que faire maintenant ? » toujours visible, « ? » par écran.
+- Demande suivante de Nils : redessiner entièrement chaque ville d'après sa vue satellite.
+
 ## 2026-11-10-1554 : Claude de Nils (version 2026-11-10-1554)
 - 17 villes : Istanbul (6), Sydney (9), Le Caire (11) ajoutées avec commerces, bourse, fête, décision, objectifs, monuments ; anciennes sauvegardes migrées. Géographie réelle autour du plateau pour chaque ville (fleuves, côtes, parcs, quartiers, v2GeoCells(nom)) ; stade au style de chaque ville. Dessins choisis par NOM de ville (corrige des décalages depuis Marseille).
 - À vérifier : villes après Istanbul un peu plus longues (indice plus élevé).
