@@ -9230,6 +9230,51 @@ drawWorld=(f=>function(){f();const sp=V2S.cur||v2SP();if(!sp.p||(typeof GFX!=='u
   ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);if(sp.paper)ctx.globalCompositeOperation='source-over';ctx.drawImage(V2S.ov,0,0,MW,MH);
   if(sp.bloom&&NIGHT>.4){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.08*NIGHT;ctx.drawImage(cv,0,0,cv.width,cv.height,-2,-2,MW+4,MH+4);ctx.globalAlpha=1}ctx.restore()})(drawWorld);
 genCity=(f=>function(ci){f(ci);if(typeof GFX!=='undefined'&&GFX.thumb)return;V2S.cur=null;V2S.ov=null})(genCity);
+/* ---------- Stade à la manière de chaque ville ----------
+   Murs du fond et façade basse devant (pour garder la pelouse visible), toit ou anneau propre à la ville. */
+const V2_STADE={
+  'Ta ville':{wall:'#C9C2B4',h:10,front:4,pat:'plain',plaza:'#9FB89A'},
+  'Nantes':{wall:'#E6E2DA',h:14,front:5,pat:'ribs',ring:'wave',rc:'#F2C230'},
+  'Lyon':{wall:'#D8D2C8',h:18,front:6,pat:'ribs',ring:'membrane'},
+  'Marseille':{wall:'#E8E6E0',h:20,front:6,pat:'ribs',ring:'wave',rc:'#F4F6F8'},
+  'Paris':{wall:'#BFC2C4',h:20,front:6,pat:'ribs',ring:'ribsTop',rc:'#C9CCCE'},
+  'Londres':{wall:'#A0522D',h:22,front:8,pat:'arches',rc:'#C8102E',plaza:'#B9AFA2'},
+  'Istanbul':{wall:'#D9A27A',h:18,front:7,pat:'arches',ring:'membrane',plaza:'#DCD2C2'},
+  'New York':{wall:'#BFC6CC',h:22,front:7,pat:'steel',ring:'frieze',rc:'#F4F6F8'},
+  'Tokyo':{wall:'#EEF0F2',h:18,front:5,pat:'louvre',ring:'membrane',rc:'#FFFFFF',plaza:'#D0D4D8'},
+  'Sydney':{wall:'#D9C29A',h:16,front:6,pat:'ribs',ring:'sails',rc:'#F4F2EC'},
+  'Dubaï':{wall:'#EADFC9',h:18,front:6,pat:'louvre',ring:'oval',rc:'#F4F1EA',plaza:'#E9DFC9',palms:1},
+  'Le Caire':{wall:'#CDB590',h:20,front:8,pat:'ribs',ring:'oval',rc:'#E2D6BE',plaza:'#E2D5BC',palms:1},
+  'Rio de Janeiro':{wall:'#F2F2EE',h:22,front:9,pat:'ribs',ring:'oval',rc:'#FFFFFF',plaza:'#EFE6D2',palms:1},
+  'Shanghai':{wall:'#D9DCE0',h:20,front:6,pat:'louvre',ring:'saddle',rc:'#F4F6F8'}};
+function v2StadeFace(r,face,len,h,pat,col){const f=face==='L'?r.fL:r.fR;const n=Math.max(4,Math.round(len*5));
+  if(pat==='arches'){for(let i=0;i<n;i++){const u=(i+.2)/n,u1=(i+.8)/n;q(f,u,u1,2,h-6,shade('#3A2A22',1));const a=f((u+u1)/2,h-6);ctx.fillStyle=shade('#3A2A22',1);ctx.beginPath();ctx.arc(a[0],a[1],Math.abs(f(u1,0)[0]-f(u,0)[0])/2,Math.PI,0);ctx.fill()}q(f,0,1,h-3,h,shade(col,1.1))}
+  else if(pat==='ribs'){for(let i=0;i<=n;i++){const u=i/n;q(f,u-.012,u+.012,0,h,shade(col,1.12))}}
+  else if(pat==='steel'){ctx.strokeStyle=shade('#6E7880',1);ctx.lineWidth=.6;for(let i=0;i<n;i++){const u=i/n,u1=(i+1)/n;line(f(u,0),f(u1,h));line(f(u1,0),f(u,h))}}
+  else if(pat==='louvre'){for(let k=2;k<h;k+=3)q(f,0,1,k,k+1,shade(col,.8))}}
+drawStade=(f=>function(){const sp=V2_STADE[v2CN()],P=STADE;if(!sp||TH_.moon||TH_.sea)return f();
+  const t=.16,W=sp.wall,h=sp.h;
+  if(sp.plaza){poly(ctx,quadT(P.x-.02,P.y+P.d-.02,P.x+P.w,P.y+P.d+.02),shade(sp.plaza,1))}
+  /* murs du fond */
+  const bL=box(P.x-t,P.y,t,P.d,h,W,{top:W});v2StadeFace(bL,'R',P.d,h,sp.pat,W);
+  const bT=box(P.x,P.y-t,P.w,t,h,W,{top:W});v2StadeFace(bT,'L',P.w,h,sp.pat,W);
+  const cx=P.x+P.w/2,cy=P.y+P.d/2,c=iso(cx,cy,0),rx=(P.w+P.d)*TW/4+10,ry=(P.w+P.d)*TH/4+6;
+  const ringPart=(a0,a1,z)=>{ctx.strokeStyle=shade(sp.rc||'#FFFFFF',1);ctx.lineWidth=5;ctx.beginPath();ctx.ellipse(c[0],c[1]-z,rx,ry,0,a0,a1);ctx.stroke();ctx.strokeStyle=shade(sp.rc||'#FFFFFF',.8);ctx.lineWidth=1.5;ctx.beginPath();ctx.ellipse(c[0],c[1]-z+3,rx-2,ry-1,0,a0,a1);ctx.stroke()};
+  if(sp.ring==='oval')ringPart(Math.PI,Math.PI*2,h+8);
+  if(sp.ring==='wave'||sp.ring==='saddle'){ctx.fillStyle=shade(sp.rc||'#F4F6F8',1);ctx.beginPath();const A=iso(P.x-t,P.y+P.d,h),B=iso(P.x-t,P.y-t,h),C=iso(P.x+P.w,P.y-t,h);ctx.moveTo(A[0],A[1]);
+    for(let i=0;i<=10;i++){const k=i/10,p=[A[0]+(B[0]-A[0])*k,A[1]+(B[1]-A[1])*k-6-(sp.ring==='saddle'?Math.sin(k*Math.PI)*10:Math.sin(k*Math.PI*3)*4)];ctx.lineTo(p[0],p[1])}
+    for(let i=0;i<=10;i++){const k=i/10,p=[B[0]+(C[0]-B[0])*k,B[1]+(C[1]-B[1])*k-6-(sp.ring==='saddle'?Math.sin(k*Math.PI)*10:Math.sin(k*Math.PI*3)*4)];ctx.lineTo(p[0],p[1])}ctx.lineTo(C[0],C[1]);ctx.lineTo(B[0],B[1]+4);ctx.closePath();ctx.globalAlpha=.92;ctx.fill();ctx.globalAlpha=1}
+  if(sp.ring==='membrane'||sp.ring==='sails'||sp.ring==='ribsTop'||sp.ring==='frieze'){const B=iso(P.x-t,P.y-t,h),A=iso(P.x-t,P.y+P.d,h),C=iso(P.x+P.w,P.y-t,h);ctx.strokeStyle=shade(sp.rc||'#FFFFFF',1);ctx.lineWidth=sp.ring==='frieze'?2.5:1.6;
+    const n=sp.ring==='sails'?5:8;[[A,B],[B,C]].forEach(([p0,p1])=>{for(let i=0;i<n;i++){const k0=i/n,k1=(i+1)/n,a=[p0[0]+(p1[0]-p0[0])*k0,p0[1]+(p1[1]-p0[1])*k0],b=[p0[0]+(p1[0]-p0[0])*k1,p0[1]+(p1[1]-p0[1])*k1];
+      ctx.beginPath();ctx.moveTo(a[0],a[1]);if(sp.ring==='frieze'){ctx.lineTo(a[0],a[1]-5);ctx.lineTo(b[0],b[1]-5)}else ctx.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-(sp.ring==='sails'?14:8),b[0],b[1]);ctx.stroke()}})}
+  if(sp.palms){[[P.x-.5,P.y+P.d+.4],[P.x+P.w+.3,P.y-.5]].forEach(([x,y])=>tree({x,y,s:.8,c:'#3E8E41',k:'palm'}))}
+  const r=f();
+  /* façade basse devant */
+  const fF=box(P.x-t,P.y+P.d,P.w+t,t,sp.front,W,{top:W});v2StadeFace(fF,'L',P.w,sp.front,sp.pat==='arches'?'ribs':sp.pat,W);
+  const fR=box(P.x+P.w,P.y-t,t,P.d+t*2,sp.front,W,{top:W});v2StadeFace(fR,'R',P.d,sp.front,sp.pat==='arches'?'ribs':sp.pat,W);
+  if(sp.ring==='oval')ringPart(0,Math.PI,h+8);
+  if(sp.rc&&sp.pat==='arches'){q(fF.fL,0,1,sp.front-2,sp.front,shade(sp.rc,1))}
+  return r})(drawStade);
 /* ===== FIN AGENT VILLES2 ===== */
 /* ================= BOOT ================= */
 (function boot(){
