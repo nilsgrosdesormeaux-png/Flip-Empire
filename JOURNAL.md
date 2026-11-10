@@ -1,5 +1,9 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-10-1014 : Claude de Nils (version 2026-11-10-1014)
+- Sondage semaine 46 : gardés « Refonte totale du foot » (3 votes en S45) et « Choix mystère » (1 vote) ; nouveaux : « Krach et entrée en bourse », « Gratte-ciel et grands chantiers ». S45 : Nouvelle ville gagnante (4/8). Les choix sont maintenant par semaine (metaPoll) : prévoir ceux de S47.
+- En cours (agents) : difficulté + vie d'entreprise + hors-ligne 2 h ; objectifs variés + fin du jeu + tutoriel ; villes réalistes + Istanbul, Le Caire, Sydney.
+
 ## 2026-11-05 : Claude de Nils (version 2026-11-05-1217)
 - Sondage relié à Supabase (projet gicxucdtbibnpexzerjv) : vote = une ligne par joueur et par semaine (table public.votes). Si la table n'existe pas ou pas de réseau, le vote reste sur l'appareil (repli).
 - À faire par Nils : exécuter le SQL de la table dans le SQL Editor (voir échange du 5 novembre).
