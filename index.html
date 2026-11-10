@@ -8992,7 +8992,7 @@ setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
    Cible de Nils (novembre) : 1re ville ≈ 35 min, puis ≈ ×1,19 par ville (≈ 56 h pour 17 villes). Le ×1,19 vient surtout de cityDiff (1,35 par ville) :
    ici, un facteur à peu près plat, plus un petit réglage par ville (rangé par nom, pour que l'ajout de villes au milieu ne décale rien).
    Une ville sans réglage prend EN_KDEF. */
-const EN_KDEF=1.6,EN_KC={'Ta ville':1.72,'Nantes':1.67,'Lyon':1.43,'Marseille':1.5,'Paris':1.39,'Londres':1.26,'New York':1.23,'Tokyo':1.49,'Dubaï':1.57,'Rio de Janeiro':2.2,'Shanghai':1.65,'Atlantide':2.1,'La Lune':1.69,'Mars':2};
+const EN_KDEF=1.78,EN_KC={'Ta ville':1.91,'Nantes':1.85,'Lyon':1.81,'Marseille':1.67,'Paris':1.47,'Londres':1.58,'New York':1.54,'Tokyo':1.85,'Dubaï':1.78,'Rio de Janeiro':2.31,'Shanghai':1.69,'Atlantide':1.83,'La Lune':1.73,'Mars':1.81}; /* tient compte du Rush (×2 90 s toutes les 12 min) */
 function enK(c){const n=(CITIES[c|0]||{}).n;return EN_KC[n]||EN_KDEF}
 pgK=(f=>function(c){return f(c)*enK(c)})(pgK);
 /* ===== FIN AGENT ENTREPRISE ===== */
