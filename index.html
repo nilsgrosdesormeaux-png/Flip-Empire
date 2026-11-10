@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-05-1230">
+<meta name="fe-build" content="2026-11-10-1548">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1054,7 +1054,7 @@ const satOf=id=>{const q=S.biz[id].q;return (q.clean+q.wait+q.qual)/3};
 const satMult=id=>.4+1.2*satOf(id)/100;
 const avgSat=()=>{const o=openIds();return o.length?o.reduce((a,id)=>a+satOf(id),0)/o.length:75};
 const trophyMult=()=>(1+.05*S.trophies.length)*(S.trophies.length>=TROPHIES.length?2:1);
-function permMult(){return (.8+S.rep/250)*(1+.1*Math.min(S.stars,20))*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-Math.min(.5,Math.max(0,S.share||0)))*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
+function permMult(){return (.8+S.rep/250)*(1+.05*Math.min(S.stars,20))*trophyMult()*(1+.05*rankIdx())*globalUpg()*STAGES[S.stage].mult*(1-Math.min(.5,Math.max(0,S.share||0)))*(S.energy<20?.8:1)*(S.flags.dimanche?1.15:1)*(S.hero.origin==='etranger'?1.05:1)*(S.sitBonus||1)*projMult()*(S.hero.passions&&S.hero.passions.includes('lecture')?1.03:1)}
 const boosted=()=>Date.now()<S.boostUntil,frenzy=()=>Date.now()<S.frenzyUntil;
 const tempMult=()=>{const ev=dayEvent(S.day);return (boosted()?2:1)*(frenzy()?5:1)*(ev?ev.m:1)};
 const modMult=id=>S.mods.reduce((a,m)=>(S.day<=m.until&&(!m.biz||m.biz===id))?a*m.m:a,1);
@@ -1701,7 +1701,7 @@ MISSIONS.forEach(m=>{const x=MTXT[m.id];if(x){m.t=x[0];m.h=x[1]}});
 {const m=MISSIONS.find(x=>x.id==='m19');m.p=()=>[S.pol.cand||S.pol.office||S.pol.terms?1:0,1]}
 /* Un objectif rempli reste acquis (S.notified survit aux franchises) : la récompense ne se perd plus si l’état change */
 MISSIONS.forEach(m=>{const c=m.c;m.c=()=>(S.notified||[]).includes(m.id)||c()});
-const missionReward=m=>Math.max(m.r,autoIncome()*60);
+const missionReward=m=>Math.max(m.r,autoIncome()*30); /* ENTREPRISE : 30 s de revenus (était 60) */
 const openMissions=()=>MISSIONS.filter(m=>!S.claimed.includes(m.id)).slice(0,3);
 
 /* ================= SOUND ================= */
@@ -1747,7 +1747,7 @@ const today=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+
 const yesterday=()=>{const d=new Date(Date.now()-864e5);return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()};
 function dailyModal(){
   const next=S.lastDaily===yesterday()?S.streak+1:1,pos=((next-1)%7)+1,mult=pos===7?3:1;
-  const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
+  const reward=Math.max(250*next,autoIncome()*60*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
     <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
@@ -2444,7 +2444,7 @@ function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+600
 function catchVip(e){
   const [X,Y]=worldToPage(e.x,e.y,14);const r=Math.random();S.counts.vip++;addXP(5);sfx('vip');e.dead=true;vipEnt=null;vipNext=performance.now()+rand(180000,420000)*(S.flags.vipPlus?.6:1);
   let txt='';
-  if(r<.55){const amt=Math.max(150,inc()*120);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
+  if(r<.55){const amt=Math.max(150,inc()*60);earn(amt);txt='+'+fmt(amt);toast(`Client pressé : il rafle tout, +${fmt(amt)}.`)}
   else if(r<.9){S.frenzyUntil=Date.now()+20000;txt='×5';toast('Frénésie : revenus ×5 pendant 20 secondes.')}
   else{S.rep=clamp(S.rep+3,0,100);txt='📣 +3';toast('Un client VIP parle de toi partout. Réputation +3.')}
   burstAt(X,Y,10,txt);
@@ -2471,7 +2471,7 @@ function franchise(){
   const c=CITIES[S.city];
   S.journal.unshift({day:S.day,who:c.e,name:c.n,title:'Nouvelle franchise',choice:'Ouvrir une franchise',res:`Tu t’installes à ${c.n}${S.partner&&S.partner.stage!=='couple'?' avec ta famille':''}. ${c.t}`,fx:[`⭐ ${S.stars} étoiles`].concat(homeSale>0?[`🏠 Logement revendu +${fmt(homeSale)}`]:[])});
   modal(`<div class="reveal-box pop">${c.e}</div><h2>Bienvenue à ${c.n}</h2><p>${c.t}</p>
-    <p>Tu repars de zéro, mais avec <strong>${S.stars} étoile${S.stars>1?'s':''} de franchise</strong> : +${S.stars*10} % sur tous tes revenus.</p>
+    <p>Tu repars de zéro, mais avec <strong>${S.stars} étoile${S.stars>1?'s':''} de franchise</strong> : +${S.stars*5} % sur tous tes revenus.</p>
     <p class="hint">Nouvelle ville, nouveaux marchés : ${BIZ.map(b=>b.e).join(' ')}. Un nouveau produit à la bourse locale : ${mkt().e} ${mkt().n}. Ta famille, tes trophées et ton histoire te suivent.</p>
     <button class="btn big" style="margin-top:16px" data-a="close">Découvrir la ville</button>`);
 }
@@ -4628,6 +4628,8 @@ function metaInit(){
   fillDefaults(META_DEF(),S.meta);const m=S.meta;
   if(!Array.isArray(m.owned))m.owned=[];if(!Array.isArray(m.fresh))m.fresh=[];if(!m.eq||typeof m.eq!=='object')m.eq=META_DEF().eq;if(!isFinite(m.jetons)||m.jetons<0)m.jetons=0;if(!isFinite(m.jokers))m.jokers=0;
   if(!m.ent||!Array.isArray(m.ent.premium))m.ent={pass:null,premium:[]};
+  if(!m.votes||typeof m.votes!=='object')m.votes={};
+  try{const w=metaWeek();if(m.votes[w]&&!metaPoll(w).opts.includes(m.votes[w]))delete m.votes[w]}catch(e){} /* vote pour un choix retiré du sondage : on peut revoter */
   return m;
 }
 function metaSave(){const m=metaInit(),a={};META_ACC_KEYS.forEach(k=>a[k]=m[k]);metaSet(META_LS.acc,a)}
@@ -4772,18 +4774,20 @@ const META_POLL=[
   {id:'refonte_famille',e:'🏡',t:'Refonte de la famille',d:'Ta famille apparaîtra dans la ville : on la verra marcher, aller à l’école ou au parc. Elle vivra dans une vraie maison, et non plus dans un bureau abstrait.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'nouvelle_ville',e:'🌍',t:'Une nouvelle ville',d:'Une nouvelle ville sera ajoutée à la fin de la carte. Après le vote, tu choisiras entre Istanbul (bazar, Bosphore), Le Caire (pyramides, Nil) et Sydney (opéra, port).',once:()=>'🚧 En construction : bientôt dans le jeu.'},
   {id:'mystere',e:'❔',t:'Choix mystère',d:'Une surprise qui sera décidée plus tard. Son contenu n’est pas encore connu.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'bourse_krach',e:'📈',t:'Krach et entrée en bourse',d:'Ton empire pourra entrer en bourse et vendre des actions. Mais un krach peut tout faire chuter d’un coup : à toi de vendre à temps, ou de racheter au plus bas.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
+  {id:'gratte_ciel',e:'🏙️',t:'Gratte-ciel et grands chantiers',d:'Tu pourras bâtir ta tour dans chaque ville, étage par étage. Le chantier coûte cher et dure des mois, mais chaque étage fini se loue.',once:()=>'🚧 En construction : bientôt dans le jeu.'},
 
   {id:'coffre',e:'🎁',t:'Coffre XXL',d:'Le coffre du jour rapporte ×2 toute la semaine.'},
   {id:'jetons',e:'🎟️',t:'Semaine des jetons',d:'Tous les jetons gagnés sont doublés.'},
   {id:'neon',e:'🌈',t:'Festival néon',d:'Thème Néon et effet Confettis offerts toute la semaine.'},
   {id:'carnaval',e:'🎭',t:'Carnaval en ville',d:'Décoration Carnaval offerte sur la carte toute la semaine.'},
   {id:'prime',e:'🏛️',t:'Prime du maire',d:'Revenus ×1,5 pendant 3 mois de jeu.',once:()=>mod(1.5,3)},
-  {id:'puces',e:'🧺',t:'Grand marché aux puces',d:'Un chèque égal à 30 minutes de revenus.',once:()=>{const v=Math.max(1000,autoIncome()*1800);earn(v);return '+'+fmt(v)}},
+  {id:'puces',e:'🧺',t:'Grand marché aux puces',d:'Un chèque égal à 15 minutes de revenus.',once:()=>{const v=Math.max(1000,autoIncome()*900);earn(v);return '+'+fmt(v)}},
   {id:'mercato',e:'⚽',t:'Mercato express',d:'Ton club gagne +5 de niveau (sinon 15 jetons).',once:()=>{if(S.club&&S.club.own){S.club.str=Math.min(100,(S.club.str||0)+5);return '⚽ +5 de niveau'}metaGain(15);return '🎟️ +15 jetons'}},
   {id:'joker',e:'🃏',t:'Semaine de la série',d:'Un joker de série offert : un jour manqué pardonné.',once:()=>{const m=metaInit();m.jokers=Math.min(metaJokerMax(),m.jokers+1);return '🃏 +1 joker'}}
 ];
 const META_POLL_BY=Object.fromEntries(META_POLL.map(o=>[o.id,o]));
-function metaPoll(week){return{week,opts:['refonte_foot','refonte_famille','nouvelle_ville','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
+function metaPoll(week){return{week,opts:String(week)<='2026-W45'?['refonte_foot','refonte_famille','nouvelle_ville','mystere']:['refonte_foot','bourse_krach','gratte_ciel','mystere']};const out=[];let h=metaHash('poll'+week);let g=0;while(out.length<4&&g++<500){const id=META_POLL[h%META_POLL.length].id;if(!out.includes(id))out.push(id);h=metaHash(week+':'+h)}for(const q of META_POLL){if(out.length>=4)break;if(!out.includes(q.id))out.push(q.id)}return{week,opts:out}}
 const metaSimVotes=(week,o)=>3+metaHash(week+'|'+o)%12;
 function metaCounts(week){const p=metaPoll(week),all=(metaGet(META_LS.votes)||{})[week]||{},counts={};
   p.opts.forEach(o=>counts[o]=metaSimVotes(week,o));Object.values(all).forEach(o=>{if(o in counts)counts[o]++});
@@ -4798,7 +4802,7 @@ async function metaPollCheck(){
   queueModal(`<div class="reveal-box pop">🗳️</div><h2>Le vote a parlé !</h2><p>La semaine dernière, les joueurs ont choisi :</p><div class="meta-win">${o.e} <b>${o.t}</b><p class="hint">${o.d}</p>${extra?`<div class="big-num">${extra}</div>`:''}</div><p class="hint">Un nouveau sondage t’attend cette semaine.</p><div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="meta_poll">Voter pour la semaine prochaine</button><button class="btn ghost" data-a="close">Plus tard</button></div>`);
 }
 async function metaPollHTML(){
-  const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=m.votes[w]||r.mine,act=META_POLL_BY[metaActiveId()];
+  const m=metaInit(),w=metaWeek(),p=metaPoll(w),r=await BACKEND.results(w),mine=[m.votes[w],r.mine].find(v=>v&&p.opts.includes(v))||null,act=META_POLL_BY[metaActiveId()];
   const end=7-((new Date(metaNow()).getDay()+6)%7);
   const opts=p.opts.map(o=>{const x=META_POLL_BY[o],pc=r.total?Math.round(r.counts[o]/r.total*100):0,me=o===mine;return `<button class="meta-opt${me?' me':''}" data-a="meta_vote" data-id="${o}"><b>${x.e} ${x.t}${me?' · ton vote':''}</b><span class="hint">${x.d}</span>${mine?`<span class="hint">${pc} % des votes</span><i class="meta-bar" style="width:${pc}%"></i>`:''}</button>`}).join('');
   const nx=metaPoll(metaWeekOff(1));
@@ -4831,7 +4835,7 @@ function dailyModal(){
   metaInit();const last=metaParseDay(S.lastDaily),gap=last==null?99:metaDayNum(metaNow())-last;let cont=S.lastDaily===yesterday();META_JOKER_USE=0;
   if(!cont&&S.streak>0&&gap>=2&&gap-1<=S.meta.jokers){cont=true;META_JOKER_USE=gap-1}
   const next=cont?S.streak+1:1,pos=((next-1)%7)+1,mult=(pos===7?3:1)*(metaActiveId()==='coffre'?2:1);
-  const reward=Math.max(250*next,autoIncome()*120*Math.min(next,7))*mult;
+  const reward=Math.max(250*next,autoIncome()*60*Math.min(next,7))*mult;
   queueModal(`<div class="reveal-box pop">🎁</div><h2>Coffre du jour</h2>
     <p>Un coffre par jour. Le 7e jour d’affilée, il vaut triple.</p>
     <div class="streak">${[1,2,3,4,5,6,7].map(d=>`<div class="${d<pos?'got':d===pos?'now':''}">${d===7?'🎁':'J'+d}</div>`).join('')}</div>
@@ -4870,7 +4874,7 @@ function metaPassHTML(){
     return `<div class="meta-slot"><span>💾 Emplacement ${n}${n>1?' <span class="tag">👑 Pass</span>':''}<br><span class="hint">${d?'Enregistré le '+new Date(d.at).toLocaleDateString('fr-FR'):'Vide'}</span></span>${lock?'<span class="hint">🔒</span>':`<span class="bs-row"><button class="btn small" data-a="meta_slotsave" data-id="${n}">Enregistrer</button>${d?`<button class="btn small ghost" data-a="meta_slotload" data-id="${n}">Charger</button>`:''}</span>`}</div>`}).join('');
   const ex=META_ITEMS.filter(i=>i.pass);
   return `<div class="meta-pass"><h3>👑 Pass Empire</h3><p class="meta-price">${META_PRICE.pass_month}</p>
-    <ul><li>⏩ Temps ×4 (sans pass : ×2 maximum)</li><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
+    <ul><li>💾 Plus d’emplacements de sauvegarde</li><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
     <div class="sk-pass">${ex.map(i=>`<div class="sk-pv ${i.k==='theme'?'th':i.k==='avatar'?'av':i.k==='club'?'cl':i.k==='deco'?'dc':'fx'}" ${skPvStyle(i)} title="${i.n}">${skPreview(i)}</div>`).join('')}</div>
     ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner · bientôt</button>`}
     <p class="hint" style="margin-top:8px">Que du confort : le Pass ne donne pas d’argent ni de puissance dans la partie.</p></div>
@@ -6198,7 +6202,7 @@ function polMonth(pm){
     if(P.office==='maire'){const html=bilanHTML();P.office=null;queueModal(html);S.journal.unshift({day:S.day,who:'🏛️',name:'Mairie',title:'Fin de mandat',choice:'Tu ne t’es pas représenté',res:'Tu rends les clés de la mairie.',fx:[]})}
     P.nextElec=S.day+DEC_TERM;}
   if(P.cand){if(P.poll)P.camp.known=1;P.camp.hist.push(pollPct());if(P.camp.hist.length>8)P.camp.hist.shift()}
-  if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(15)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
+  if(P.office==='maire'){const T=DEC_TAX[P.tax||0];earn(Math.round(costSec(5)*pm));P.budget+=Math.round(decIncome()*pm);P.appr=clamp(P.appr+T.a+(50-P.appr)*.02,0,100)}
   P.acts={};P.poll=false;
 }
 function buildProject(id){const pr=PROJ_ALL.find(x=>x.id===id),P=S.pol;if(!pr)return;const c=costSec(pr.cost);if(P.office!=='maire'||P.projects.includes(id))return;/* BUG CORRIGÉ : la fête était refaisable à l'infini (×1,5 de revenus à chaque fois). Une fête par an, et pas pendant une fête déjà en cours. */
@@ -6249,7 +6253,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a^="dec_"]
 /* ===== AGENT RYTHME ===== */
 /* Rythme des décisions, pause (bouton + pendant une décision), retour après absence, « Tout régler » chez les clients.
    Champs ajoutés (initialisés ici, les vieilles sauvegardes passent) : S.paused, S.playSec, S.flags.ryDay, S.flags.rySec. */
-const RY={gapM:5,gapS:100,schM:2,schS:40,fatM:24,mem:24,cool:48,offFull:3600,offHalf:3*3600,hidAt:0,pauseAt:0,saveAt:0,
+const RY={gapM:5,gapS:100,schM:2,schS:40,fatM:24,mem:24,cool:48,offFull:7200,offHalf:0,hidAt:0,pauseAt:0,saveAt:0,
   urgent:/^(huissier|rupture|elec_annonce|camp_|debat|majeur)/};
 function ryInit(){if(!S)return;if(typeof S.playSec!=='number'||!isFinite(S.playSec))S.playSec=0;if(typeof S.paused!=='boolean')S.paused=false;
   const f=S.flags||(S.flags={});if(typeof f.ryDay!=='number')f.ryDay=-99;if(typeof f.rySec!=='number')f.rySec=-1e6;if(!Array.isArray(S.evMem))S.evMem=[]}
@@ -6287,20 +6291,24 @@ tick=(f=>function(){
   if(S&&typeof S.playSec==='number')S.playSec+=dt;
 })(tick);
 document.addEventListener('visibilitychange',()=>{try{if(document.hidden&&S.started)save()}catch(e){}});
-/* Absence : les gérants et les loyers tournent, mais le calendrier s'arrête (pas de mois, de match ni de saison simulés).
-   Gains : 1re heure à plein, puis moitié jusqu'à 3 h de plus (2 h 30 de revenus au maximum). */
+/* Absence : les gérants et les loyers tournent 2 h au plus (au-delà, plus rien), le calendrier s'arrête (pas de mois, de match ni de saison simulés).
+   Les charges (salaires, entretien, impôts) sont retenues au même taux qu'en jeu. Les chantiers, eux, avancent pendant toute l'absence. */
 function ryAway(sec,atBoot){
   if(!S.started||S.dead||!(sec>0))return;
-  const eff=Math.min(sec,RY.offFull)+.5*Math.min(Math.max(sec-RY.offFull,0),RY.offHalf);
+  const eff=Math.min(sec,RY.offFull);
   let off=0;BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*eff});
   let rent=dailyRent()*eff/DAY_SEC;off=isFinite(off)?Math.max(0,Math.round(off)):0;rent=isFinite(rent)?Math.max(0,Math.round(rent)):0;
-  const tot=off+rent;if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
+  let chg=0;try{if(typeof enChargeRate==='function')chg=Math.round(off*enChargeRate())}catch(e){chg=0}chg=isFinite(chg)?Math.min(Math.max(0,chg),off):0;
+  const tot=Math.max(0,off+rent-chg);if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
+  let wk='';try{if(typeof wkAway==='function')wk=wkAway(sec)}catch(e){}
   if(sec<120){if(tot>0)toast(`De retour : +${fmt(tot)} pendant ton absence.`);return}
   const capped=sec>RY.offFull;
-  queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tu es ${gx(S.hero,"parti","partie")} ${ryDur(sec)}.</p>
-    <div class="panel ry-away">${off?`<div class="kv"><span>Tes gérants</span><b class="pos">+${fmt(off)}</b></div>`:''}${rent?`<div class="kv"><span>Tes loyers</span><b class="pos">+${fmt(rent)}</b></div>`:''}
+  queueModal(`<div class="reveal-box pop">🤵</div><h2>Pendant ton absence</h2><p>Tu es ${gx(S.hero,"parti","partie")} ${ryDur(sec)}.${capped?' Tes affaires ont tourné les 2 premières heures, puis tout le monde est rentré chez soi.':''}</p>
+    <div class="panel ry-away">${off?`<div class="kv"><span>Tes gérants${capped?' (2 h)':''}</span><b class="pos">+${fmt(off)}</b></div>`:''}${rent?`<div class="kv"><span>Tes loyers${capped?' (2 h)':''}</span><b class="pos">+${fmt(rent)}</b></div>`:''}
+    ${chg?`<div class="kv"><span>Salaires, entretien, impôts</span><b style="color:var(--loss)">−${fmt(chg)}</b></div>`:''}
     ${tot?`<div class="kv"><span><strong>Total</strong></span><b class="pos">+${fmt(tot)}</b></div>`:'<p class="hint">Personne ne travaillait pour toi. Embauche des gérants pour gagner quand tu n’es pas là.</p>'}</div>
-    <p class="hint" style="margin-top:8px">Le calendrier s’est arrêté pendant ce temps : aucun mois ne s’est écoulé, ton club n’a pas joué et aucune décision ne t’a échappé.${capped?' Les gains sont comptés à plein la première heure, puis à moitié, et plafonnés à 4 h d’absence.':''}</p>
+    ${wk}
+    <p class="hint" style="margin-top:8px">${capped?'Au-delà de 2 h, rien ne rentre : reviens plus souvent pour ne rien perdre. ':''}Le calendrier s’est arrêté : aucun mois n’a passé, ton club n’a pas joué, aucune décision ne t’a échappé.</p>
     <button class="btn big" style="margin-top:14px" data-a="close">${tot?'Encaisser':'Reprendre'}</button>`);
 }
 
@@ -8130,15 +8138,15 @@ vEmpire=(f=>function(){return f().replace('<div class="foot">',()=>`<div class="
    2. objectif « Gagne X » = à peu près ce que coûte la conquête de la ville ; première ville plus douce ;
    3. deux objectifs propres à chaque ville ; 4. bourse plus simple ; 5. gérants à 4 × le prix d’ouverture ;
    6. QG renommé « locaux » ; 8. ticket à gratter plus souvent gagnant. */
-const MGR_K=4,START_K=1.5,TRESOR_MAX=50;
+const MGR_K=4,START_K=1.5,TRESOR_MAX=30;
 const pgR2=x=>{if(!(x>0))return 0;const p=Math.pow(10,Math.floor(Math.log10(x))-1);return Math.round(x/p)*p};
 /* Gérants : prix proportionnel à l’ouverture de la boutique */
 let PG_LV0=50,PG_LVA=55,PG_LVB=4,PG_NB=4;
 /* Prix des commerces, améliorations, locaux et gérants, ville par ville (réglé au joueur simulé, cible : ~25 min à Ta ville puis +27 % par ville).
    Courbe lisse en c, un peu moins chère dans les villes « club » (pas de salaire de maire), et un petit réglage fin par ville
    qui compense ses fêtes et ses objectifs propres. Au-delà de Mars, la courbe reste au niveau de Mars (cityDiff fait monter la difficulté). */
-const PG_KA=.053,PG_KB=.0922,PG_KC=.00753,PG_KCLUB=.856,PG_KADJ={3:1.12,5:.92,10:1.23,11:1.11,12:.9};
-function pgK(c){c=c||0;const x=Math.min(c,13);return PG_KA*Math.exp(PG_KB*x-PG_KC*x*x)*(c%2?PG_KCLUB:1)*(PG_KADJ[c]||1)}
+const PG_KA=.053,PG_KB=.0922,PG_KC=.00753,PG_KCLUB=.856,PG_KADJ={'Marseille':1.12,'Londres':.92,'Shanghai':1.23,'Atlantide':1.11,'La Lune':.9}; /* rangé par nom (avant : par numéro de ville) */
+function pgK(c){c=c||0;const x=Math.min(c,13);return PG_KA*Math.exp(PG_KB*x-PG_KC*x*x)*(c%2?PG_KCLUB:1)*(PG_KADJ[(CITIES[c]||{}).n]||1)}
 cityPrices=(f=>function(ci){f(ci);const k=pgK(ci);if(k!==1){BIZ.forEach(b=>{b.cost*=k});UPG.forEach(u=>{u.cost*=k});STAGES.forEach(x=>{x.cost*=k})}BIZ.forEach(b=>{MGR[b.id]=Math.round(b.cost*MGR_K)})})(cityPrices);
 /* Niveau demandé : 50 à Ta ville, puis 55 + 4 par ville */
 const pgLv=c=>c?Math.min(400,PG_LVA+PG_LVB*c):PG_LV0,pgNb=c=>PG_NB||Math.min(8,4+Math.floor(c/3));
@@ -8704,6 +8712,324 @@ drawCarAt=function(x,y,dir,col,kind){
   if(NIGHT>=.35&&typeof gfxGlow==='function'){const len=kind==='bus'||kind==='cbus'?.5:kind==='van'?.36:.33;ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*NIGHT;const g=gfxGlow();
     [-1,1].forEach(sg=>{const p=dir==='x'?iso(x+sg*len,y,3):iso(x,y+sg*len,3);ctx.drawImage(g,p[0]-9,p[1]-6,18,12)});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}};
 /* ===== FIN AGENT PERSOS ===== */
+/* ===== AGENT VITESSE ===== */
+/* Plus de temps ×2 / ×4 (demande de Nils : c'était un raccourci de triche). Le temps passe toujours à ×1.
+   À la place : le Rush (revenus ×2 pendant 90 s), rechargeable toutes les 12 min (8 min avec le Pass) : au joueur de choisir le bon moment. */
+const RUSH_DUR=90000,RUSH_CD=()=>((typeof metaHasPass==='function'&&metaHasPass())?8:12)*60000;
+/* Rush supprimé aussi (demande de Nils) : bouton caché, plus aucun effet. */
+function boost(){}
+(function(){const fix=()=>{try{if(S&&S.speed!==1)S.speed=1;if(S&&S.boostUntil)S.boostUntil=0;if(S&&S.boostReadyAt>Date.now()+RUSH_DUR+RUSH_CD())S.boostReadyAt=Date.now()+RUSH_CD()}catch(e){}};fix();setInterval(fix,500);
+  const st=document.createElement('style');st.textContent='.hud-sp,.speedb,[data-a="speed"],#boost,[data-a="boost"]{display:none!important}';document.head.appendChild(st)})();
+/* ===== FIN AGENT VITESSE ===== */
+/* ===== AGENT ENTREPRISE ===== */
+/* Demandes de Nils (novembre) : l'argent doit être plus rare, et chaque entreprise doit avoir une vie à l'intérieur.
+   1. Charges du mois : salaires, entretien, impôts locaux (prélevés à chaque mois, jamais en dessous de 0 €).
+   2. Chantiers : une amélioration ou des locaux ne sont pas instantanés (durée réelle qui grandit avec la ville et le rang),
+      2 équipes de travaux en parallèle (3 avec les bureaux). Les chantiers avancent aussi quand le jeu est fermé.
+   3. « Entrer dans l'entreprise » : commandes clients, équipe nommée, atelier (projets), incidents, spécialisation.
+   État : S.ent = {c (ville), b:{id:{team,ord,offers,offT,rd,inc,spec,chief,primeT}}, last, done} ; S.works = [{k,id,end,dur}] ; S.wkT (horloge des chantiers, s).
+   Tout est créé à la volée : les anciennes sauvegardes passent. Une franchise repart à zéro (nouvelle ville, nouvelles équipes). */
+const EN_GAIN=.6; /* gains des décisions (money) : ×0,6 */
+money=(f=>function(sec){return f(sec*EN_GAIN)})(money);
+const EN_TR={rapide:{n:['Rapide','Rapide'],d:'fait avancer les commandes plus vite.'},soin:{n:['Soigneux','Soigneuse'],d:'moins d’incidents.'},
+  vente:{n:['Bon vendeur','Bonne vendeuse'],d:'ventes +4 %.'},fidele:{n:['Fidèle','Fidèle'],d:'garde le moral deux fois plus longtemps.'},
+  ambition:{n:['Ambitieux','Ambitieuse'],d:'se forme pour moitié prix, mais veut monter en grade.'}};
+const EN_KIND={vite:{n:'Petite commande',w:4,d:6,r:1.3,rep:1,mot:0},gros:{n:'Grosse commande',w:14,d:16,r:4.6,rep:2,mot:0},prestige:{n:'Client de prestige',w:8,d:10,r:2.2,rep:5,mot:15}};
+const EN_CL=['la mairie','un club de sport','une école du quartier','un hôtel du centre','une start-up','un couple qui se marie','un traiteur','une influenceuse','un festival d’été','une chaîne de magasins','une entreprise du port','un collectionneur','une ambassade','un grand chef','une star de la télé','un comité d’entreprise','une agence de voyages','un musée'];
+const EN_RD=[{n:'Un produit maison',d:'Ventes +10 %.',c:1.5,m:4},{n:'Une machine plus rapide',d:'Commandes 30 % plus vite, deux fois moins de pannes, ventes +5 %.',c:3,m:8,need:'sk3'},{n:'La gamme signature',d:'Ventes +15 %.',c:6,m:12,need:'chief'}];
+const EN_SPEC={qualite:{n:'Qualité',d:'Ventes +8 %, moins d’incidents, clients de prestige mieux payés.'},volume:{n:'Volume',d:'Ventes +18 %, commandes plus rapides. Entretien plus cher, les clients s’usent plus vite.'},
+  luxe:{n:'Luxe',d:'Jusqu’à +45 % si tes clients sont ravis, −20 % s’ils sont déçus. Salaires plus élevés, pas de gros volumes.'}};
+const EN_SPEC_LVL=25;
+let EN_UI={id:null,tab:'cmd'};
+const enMo=n=>Math.max(1,Math.ceil(n*(S.speed||1))); /* délais en mois, à vitesse réelle constante */
+const enCap=s=>s?s[0].toUpperCase()+s.slice(1):s;
+function enInit(){if(!S.ent||typeof S.ent!=='object'||S.ent.c!==(S.city|0))S.ent={c:S.city|0,b:{},last:null,done:0};const E=S.ent;if(!E.b||typeof E.b!=='object')E.b={};return E}
+function enPerson(sk,used){let g,n,k=0;do{g=Math.random()<.5?'f':'m';n=pick(g==='f'?PR_F:PR_M);k++}while(used&&used.includes(n)&&k<20);
+  return{n,g,age:randInt(19,56),t:pick(Object.keys(EN_TR)),sk:sk||randInt(1,2),mot:randInt(58,80),tr:0}}
+function enTeam(){const L=[];for(let i=0;i<3;i++)L.push(enPerson(0,L.map(x=>x.n)));return L}
+function enB(id){const E=enInit();let o=E.b[id];
+  if(!o||typeof o!=='object')o=E.b[id]={team:enTeam(),ord:null,offers:[],offT:0,rd:{done:0,i:-1,end:0},inc:null,spec:null,chief:-1,primeT:0};
+  if(!Array.isArray(o.team)||!o.team.length)o.team=enTeam();o.team.forEach(m=>{m.sk=clamp(m.sk|0||1,1,5);m.mot=clamp(isFinite(m.mot)?m.mot:60,0,100)});
+  if(!Array.isArray(o.offers))o.offers=[];if(!o.rd||typeof o.rd!=='object')o.rd={done:0,i:-1,end:0};o.rd.done=clamp(o.rd.done|0,0,EN_RD.length);
+  if(!(o.chief>=0&&o.chief<o.team.length))o.chief=-1;if(o.spec&&!EN_SPEC[o.spec])o.spec=null;return o}
+const enOpen=id=>!!(S.biz[id]&&S.biz[id].lvl>0);
+function enG(id){const b=BIZ_BY[id];if(!b||!enOpen(id))return 0;const v=steadyRev(b)/b.time*DAY_SEC;return Math.max(isFinite(v)?v:0,b.cost*.05)}
+const enHas=(o,t)=>o.team.filter(m=>m.t===t).length;
+function enPow(o){return o.team.reduce((a,m)=>a+m.sk*(.5+m.mot/200),0)}
+function enSpeed(id){const o=enB(id);let v=(.5+.2*enPow(o))*(1+.15*enHas(o,'rapide'));if(o.spec==='volume')v*=1.3;if(o.rd.done>=2)v*=1.3;
+  if(o.inc&&o.inc.k==='panne')v*=.3;else if(o.inc&&o.inc.k==='rupture')v*=.5;return v}
+function enSpecMult(id,o){if(o.spec==='qualite')return 1.08;if(o.spec==='volume')return 1.18;if(o.spec==='luxe')return clamp(1+.6*(satOf(id)-55)/45,.8,1.45);return 1}
+function enMult(id){if(!enOpen(id))return 1;const o=enB(id);let m=(.9+.025*enPow(o)+.04*enHas(o,'vente')+(o.chief>=0?.05:0));
+  m*=[1,1.1,1.155,1.33][o.rd.done]||1;m*=enSpecMult(id,o);
+  if(o.ord&&o.ord.p<o.ord.w)m*=.85;if(o.inc&&o.inc.k==='panne')m*=.6;else if(o.inc&&o.inc.k==='rupture')m*=.7;return isFinite(m)&&m>0?m:1}
+/* L'effet passe par S.mods (un effet par affaire, marqué ent) : c'est lu par revenue() partout */
+function enSync(){if(!S||!Array.isArray(S.mods))return;S.mods=S.mods.filter(m=>!m.ent);BIZ.forEach(b=>{if(!enOpen(b.id))return;const m=enMult(b.id);if(Math.abs(m-1)>.001)S.mods.push({m,until:1e9,biz:b.id,ent:1})})}
+
+/* ---------- 1. Charges du mois ---------- */
+const enTax=()=>Math.min(.16,.08+.005*(S.city|0))*(S.pol&&S.pol.office==='maire'?.5:1);
+function enChargeOf(id){const st=S.biz[id];if(!st||!st.lvl)return{sal:0,ent:0,g:0};const o=enB(id),G=enG(id)*(st.mgr?1:.5),s=st.staff||{},
+  nst=(s.clean|0)+(s.wait|0)+(s.qual|0),pal=PALIERS.filter(x=>st.lvl>=x).length;
+  return{g:G,sal:G*((st.mgr?.06:0)+.02*o.team.length+.012*nst+(o.chief>=0?.02:0)+(o.spec==='luxe'?.06:0)),ent:G*(.04+.008*pal+(o.spec==='volume'?.05:0))}}
+function enCharges(){let sal=0,ent=0,g=0;openIds().forEach(id=>{const x=enChargeOf(id);sal+=x.sal;ent+=x.ent;g+=x.g});const tax=g*enTax();let imm=0;try{imm=dailyRent()*.12}catch(e){}
+  const r={sal,ent,tax,imm,tot:sal+ent+tax+imm,gross:g};for(const k in r)if(!isFinite(r[k]))r[k]=0;return r}
+/* Part des ventes qui part en charges (sert au retour d'absence) */
+function enChargeRate(){const c=enCharges();return c.gross>0?clamp((c.tot-c.imm)/c.gross,0,.9):0}
+function enPayCharges(pm){const C=enCharges(),due=Math.round(C.tot*pm);if(!(due>0))return;const paid=Math.min(Math.max(0,S.cash),due);S.cash-=paid;dispCash=Math.min(dispCash,S.cash);
+  const E=enInit();E.last={day:S.day,sal:Math.round(C.sal*pm),ent:Math.round(C.ent*pm),tax:Math.round(C.tax*pm),due,paid};
+  if(paid<due){openIds().forEach(id=>enB(id).team.forEach(m=>{m.mot=clamp(m.mot-12,0,100)}));if(S.tab==='ville'||!document.hidden)toast(`Salaires en retard : il manquait ${fmt(due-paid)}. Tes équipes font la tête.`)}}
+
+/* ---------- 2. Chantiers (améliorations et locaux) ---------- */
+const WK_UPG=[60,240,720],WK_G=[120,480,900,1500],WK_ST=[0,60,240,600,1200];
+const wkCityK=()=>Math.pow(1.15,S.city|0);
+function wkInit(){if(!Array.isArray(S.works))S.works=[];if(!isFinite(S.wkT))S.wkT=0;S.works=S.works.filter(w=>w&&(w.k==='upg'||w.k==='stage')&&isFinite(w.end))}
+const wkTeams=()=>2+(S.stage>=2?1:0);
+function wkDur(k,id){let s;if(k==='stage')s=WK_ST[clamp(id|0,0,WK_ST.length-1)]||60;else{const u=UPG.find(x=>x.id===id);if(!u)return 60;
+  s=u.biz?WK_UPG[clamp(+u.id.slice(u.biz.length)||0,0,2)]:WK_G[clamp((+u.id.slice(1)||1)-1,0,3)]}return Math.round(s*wkCityK())}
+const wkOf=(k,id)=>{wkInit();return S.works.find(w=>w.k===k&&String(w.id)===String(id))};
+const wkLeft=w=>Math.max(0,w.end-S.wkT);
+function wkName(w){if(w.k==='stage')return 'Locaux : '+(STAGES[w.id]?STAGES[w.id].name.toLowerCase():'');const u=UPG.find(x=>x.id===w.id);return u?u.n:'Chantier'}
+function wkDone(w){S.works=S.works.filter(x=>x!==w);
+  if(w.k==='upg'){const u=UPG.find(x=>x.id===w.id);if(!u||S.upg.includes(u.id))return;S.upg.push(u.id);if(u.biz&&S.biz[u.biz])S.biz[u.biz].q.qual=clamp(S.biz[u.biz].q.qual+20,0,100);
+    return `${u.n} : terminé. ${u.biz?BIZ_BY[u.biz].n+' ×'+u.x:'Toutes tes affaires ×'+u.x}.`}
+  if(w.k==='stage'&&S.stage===w.id-1){S.stage=w.id;const n=STAGES[w.id];return `Nouveaux locaux : ${n.name.toLowerCase()}. ${n.perk}`}}
+function wkAdvance(dt){wkInit();if(!(dt>0))return [];S.wkT+=dt;const out=[];S.works.slice().forEach(w=>{if(S.wkT>=w.end){const m=wkDone(w);if(m)out.push(m)}});return out}
+function wkAway(sec){const m=wkAdvance(sec);return m.length?`<div class="panel"><h3 style="margin:0 0 4px">Chantiers terminés</h3>${m.map(x=>`<p class="hint">${esc(x)}</p>`).join('')}</div>`:''}
+function wkStart(k,id,cost){wkInit();if(S.works.length>=wkTeams()){toast(`Tes ${wkTeams()} équipes de travaux sont déjà sur un chantier. Attends qu’une se libère, ou fais finir un chantier tout de suite.`);sfx('no');return false}
+  if(S.cash<cost){toast(`Il te manque ${fmt(cost-S.cash)}.`);sfx('no');return false}
+  spend(cost);const dur=wkDur(k,id);S.works.push({k,id,end:S.wkT+dur,dur,cost});sfx('buy');toast(`Chantier lancé : ${wkName(S.works[S.works.length-1])}. Prêt dans ${ryDur(dur)}.`);return true}
+const wkRush=w=>Math.max(1,Math.round((w.cost||0)*.25*wkLeft(w)/Math.max(1,w.dur)));
+function wkFinish(i){wkInit();const w=S.works[i];if(!w)return;const c=wkRush(w);if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return}spend(c);const m=wkDone(w);sfx('rank');if(m)toast(m)}
+buyUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||S.upg.includes(id)||wkOf('upg',id))return;if(u.biz&&!enOpen(u.biz)){toast('Ouvre d’abord cette affaire.');sfx('no');return}
+  if(wkStart('upg',id,u.cost))addXP(10)};
+upgradeStage=function(){const n=STAGES[S.stage+1];if(!n||wkOf('stage',S.stage+1))return;if(wkStart('stage',S.stage+1,n.cost))addXP(40)};
+function wkHTML(){wkInit();const T=wkTeams();
+  return `<div class="panel wk"><div class="ug-h"><h3>Chantiers</h3><span class="tag">${S.works.length}/${T} équipe${T>1?'s':''}</span></div>
+  ${S.works.length?S.works.map((w,i)=>`<div class="wk-row"><div><strong>${esc(wkName(w))}</strong><div class="obj-bar"><i data-wk="${i}" style="width:${Math.round(100*(1-wkLeft(w)/Math.max(1,w.dur)))}%"></i></div><span class="hint" data-wkt="${i}">Encore ${ryDur(wkLeft(w))}</span></div>
+    <button class="btn small ghost" data-a="en_rush" data-i="${i}" ${S.cash>=wkRush(w)?'':'disabled'}>Finir : ${fmt(wkRush(w))}</button></div>`).join('')
+    :'<p class="hint">Aucun chantier. Une amélioration ou de nouveaux locaux se construisent en temps réel, même jeu fermé.</p>'}
+  ${S.stage<2?'<p class="hint" style="margin-top:6px">Une 3e équipe arrive avec les bureaux.</p>':''}</div>`}
+/* Boutons d'amélioration : « En chantier » au lieu d'« Acheter » */
+function wkPatch(h){wkInit();S.works.forEach(w=>{if(w.k!=='upg')return;const re=new RegExp(`<button class="btn small go" data-a="upg" data-id="${w.id}"[^>]*>[^<]*</button>`,'g');
+  h=h.replace(re,`<span class="tag wk-tag">Chantier : ${ryDur(wkLeft(w))}</span>`)});return h}
+vUpg=(f=>function(){return wkHTML()+wkPatch(f())})(vUpg);
+/* Achat rapide : pas plus d'améliorations que d'équipes libres, et jamais celles déjà en chantier */
+shopPlan=(f=>function(only,kinds){wkInit();const u0=S.upg;S.upg=u0.concat(S.works.filter(w=>w.k==='upg').map(w=>w.id));let P;try{P=f.apply(this,arguments)}finally{S.upg=u0}
+  let free=Math.max(0,wkTeams()-S.works.length);const keep=P.items.filter(it=>it.k!=='upg'||free-->0);if(keep.length!==P.items.length){P.tot-=P.items.filter(it=>!keep.includes(it)).reduce((a,it)=>a+it.c,0);P.items=keep;P.n=keep.length}return P})(shopPlan);
+/* Fiche de la carte : améliorations en chantier, locaux en chantier */
+renderSheet=(f=>function(){f();try{const el=$('#bsheet');if(!el||el.hidden)return;wkInit();
+  S.works.forEach(w=>{if(w.k==='upg'){const bt=el.querySelector(`[data-a="upg"][data-id="${w.id}"]`);if(bt)bt.outerHTML=`<span class="tag wk-tag">Chantier : ${ryDur(wkLeft(w))}</span>`}
+    else{const bt=el.querySelector('[data-a="stage"]');if(bt)bt.outerHTML=`<span class="tag wk-tag">Chantier en cours : ${ryDur(wkLeft(w))}</span>`}})}catch(e){}})(renderSheet);
+
+
+/* ---------- 3. La vie dans l'entreprise ---------- */
+function enOffer(id){const o=enB(id);let ks=['vite','gros','prestige'];if(o.spec==='luxe')ks=['vite','prestige','prestige'];
+  return ks.map(k=>({k,cl:pick(EN_CL)})).filter((x,i,a)=>a.findIndex(y=>y.cl===x.cl)===i)}
+function enReward(id,k){const o=enB(id),K=EN_KIND[k];let r=K.r;if(k==='prestige'&&o.spec==='qualite')r*=1.3;if(k==='prestige'&&o.spec==='luxe')r*=1.5;if(k==='gros'&&o.spec==='volume')r*=1.2;return Math.round(r*enG(id))}
+const enWork=(id,k)=>EN_KIND[k].w;
+const enEta=(id,w)=>Math.ceil(w/Math.max(.05,enSpeed(id)));
+function enIncRoll(id,pm){const o=enB(id),st=S.biz[id];if(o.inc||st.lvl<10)return;const E=enInit();if(Object.values(E.b).filter(x=>x&&x.inc).length>=2)return;
+  const low=o.team.find(m=>m.mot<25);if(low&&Math.random()<.35*pm){o.inc={k:'demission',who:o.team.indexOf(low),end:S.day+enMo(3)};return}
+  let p=.022*pm*(o.spec==='qualite'?.6:1)*(enHas(o,'soin')?.5:1);if(Math.random()>=p)return;
+  const L=[['panne',o.rd.done>=2?1:3],['rupture',3],['controle',2]];let t=L.reduce((a,x)=>a+x[1],0)*Math.random(),k='panne';for(const x of L){if((t-=x[1])<0){k=x[0];break}}
+  o.inc={k,end:S.day+enMo(k==='panne'?5:k==='rupture'?3:2)}}
+function enIncEnd(id,o,why){const I=o.inc;o.inc=null;if(!I)return;const b=BIZ_BY[id];
+  if(I.k==='controle'&&why==='late'){const f=Math.min(Math.max(0,S.cash),Math.round(.6*enG(id)));S.cash-=f;dispCash=Math.min(dispCash,S.cash);S.rep=clamp(S.rep-3,0,100);toast(`${b.n} : contrôle raté, amende de ${fmt(f)}.`)}
+  if(I.k==='demission'&&why==='late'){const m=o.team[I.who];if(m){o.team[I.who]=enPerson(1,o.team.map(x=>x.n));if(o.chief===I.who)o.chief=-1;toast(`${b.n} : ${m.n} est ${gx(m,'parti','partie')}. Une recrue ${o.team[I.who].n} ${gx(o.team[I.who],'le','la')} remplace.`)}}}
+function enMonth(pm){enInit();
+  openIds().forEach(id=>{const o=enB(id),b=BIZ_BY[id];
+    if(!o.offers.length||S.day>=o.offT){o.offers=enOffer(id);o.offT=S.day+enMo(6)}
+    if(o.ord&&o.ord.p<o.ord.w){o.ord.p=Math.min(o.ord.w,o.ord.p+enSpeed(id)*pm);
+      if(o.ord.p>=o.ord.w&&!document.hidden)toast(`${b.e} ${b.n} : la commande pour ${o.ord.cl} est prête. Va la livrer.`);
+      else if(S.day>o.ord.dl){S.rep=clamp(S.rep-3,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot-10,0,100)});toast(`${b.n} : commande ratée pour ${o.ord.cl}. Réputation −3.`);o.ord=null}}
+    if(o.rd.i>=0&&S.day>=o.rd.end){const avg=o.team.reduce((a,m)=>a+m.mot,0)/o.team.length;if(avg<25)o.rd.end=S.day+1;else{o.rd.done=Math.min(EN_RD.length,o.rd.done+1);o.rd.i=-1;toast(`${b.e} Atelier : « ${EN_RD[o.rd.done-1].n} » est prêt. ${EN_RD[o.rd.done-1].d}`)}}
+    const ch=o.chief>=0;o.team.forEach((m,i)=>{let d=(m.t==='fidele'?1.5:3)*(ch?.6:1)+(o.inc?3:0)+(o.spec==='luxe'?1:0)+(m.t==='ambition'&&m.sk>=3&&o.chief!==i?2:0);m.mot=clamp(m.mot-d*pm,0,100)});
+    if(o.spec==='qualite')S.biz[id].q.qual=clamp(S.biz[id].q.qual+2*pm,0,100);
+    if(o.spec==='volume'){const q=S.biz[id].q;q.clean=clamp(q.clean-1.5*pm,0,100);q.wait=clamp(q.wait-1*pm,0,100)}
+    if(o.inc&&S.day>=o.inc.end)enIncEnd(id,o,'late');else enIncRoll(id,pm)});
+  enSync();enIntro()}
+/* Une seule fois : on présente l'intérieur quand une boutique atteint le niveau 10 (pas pendant le tutoriel) */
+function enIntro(){const f=S.flags||(S.flags={});if(f.enHint||(S.tut&&!S.tut.done))return;const id=openIds().find(x=>S.biz[x].lvl>=10);if(!id)return;f.enHint=1;const b=BIZ_BY[id];
+  queueModal(`<div class="reveal-box pop">${b.e}</div><h2>Pousse la porte</h2><p>Ta boutique tourne toute seule. Mais à l’intérieur, il se passe des choses : des clients passent commande, ton équipe a besoin de toi, l’atelier peut sortir un nouveau produit.</p>
+    <p class="hint" style="margin-top:8px">Touche « Entrer » sur une boutique, dans Affaires ou sur la carte. Deux ou trois décisions par visite suffisent.</p>
+    <div style="display:grid;gap:8px;margin-top:16px"><button class="btn big go" data-a="en_open" data-id="${id}">Entrer dans ${esc(b.n.toLowerCase())}</button><button class="btn ghost" data-a="close">Plus tard</button></div>`)}
+newDay=(f=>function(auto){f.apply(this,arguments);try{if(!S||S.dead||!S.started)return;const pm=1/(S.speed||1);enMonth(pm);enPayCharges(pm);
+  if(EN_UI.id&&document.querySelector('#layer .en-in'))enRender()}catch(e){console.warn('entreprise',e)}})(newDay);
+
+/* Actions */
+function enPay(c){c=Math.round(c);if(!(c>=0))return false;if(S.cash<c){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return false}spend(c);return true}
+const enTrainCost=(id,m)=>Math.round(enG(id)*.3*m.sk*(m.t==='ambition'?.5:1));
+const enPromoCost=id=>Math.round(enG(id));
+const enPrimeCost=id=>Math.round(enG(id)*.2);
+const enRdCost=(id,i)=>Math.round(enG(id)*EN_RD[i].c);
+const enSpecCost=id=>enB(id).spec?Math.round(enG(id)*2):0;
+function enRdOk(o,i){const R=EN_RD[i];if(!R)return false;if(R.need==='sk3')return o.team.some(m=>m.sk>=3);if(R.need==='chief')return o.chief>=0;return true}
+const enIncCost=(id,k,c)=>Math.round(enG(id)*({panne:[.4,0],rupture:[.3,0],controle:[0,.15],demission:[.5,0]}[k]||[0,0])[c]);
+function enAct(a,d){const id=d.id,b=BIZ_BY[id];if(!b||!enOpen(id))return;const o=enB(id);
+  if(a==='take'){if(o.ord)return;const x=o.offers[+d.i];if(!x)return;const K=EN_KIND[x.k];o.ord={k:x.k,cl:x.cl,w:enWork(id,x.k),p:0,dl:S.day+enMo(K.d),amt:enReward(id,x.k),rep:K.rep,mot:K.mot};o.offers.splice(+d.i,1);sfx('buy');toast(`Commande acceptée : ${x.cl}. À livrer avant ${dateLabel(o.ord.dl)}.`)}
+  else if(a==='deliver'){const r=o.ord;if(!r||r.p<r.w)return;earn(r.amt);S.rep=clamp(S.rep+r.rep,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot+10+(r.mot||0),0,100)});
+    S.counts.contrats=(S.counts.contrats|0)+1;enInit().done=(S.ent.done|0)+1;o.ord=null;addXP(15);sfx('rank');try{uiGain(innerWidth/2,innerHeight/2,'+'+fmt(r.amt))}catch(e){}toast(`${enCap(r.cl)} est ravi${/^une /.test(r.cl)?'e':''}. +${fmt(r.amt)}, réputation +${r.rep}.`)}
+  else if(a==='drop'){if(!o.ord)return;S.rep=clamp(S.rep-2,0,100);o.team.forEach(m=>{m.mot=clamp(m.mot-5,0,100)});toast(`Commande annulée. ${enCap(o.ord.cl)} ne reviendra pas. Réputation −2.`);o.ord=null}
+  else if(a==='train'){const m=o.team[+d.i];if(!m||m.sk>=5||m.tr>S.day)return;if(!enPay(enTrainCost(id,m)))return;m.sk++;m.mot=clamp(m.mot+8,0,100);m.tr=S.day+enMo(3);sfx('good');toast(`${m.n} passe au niveau ${m.sk}.`)}
+  else if(a==='promo'){const i=+d.i,m=o.team[i];if(!m||m.sk<3||o.chief===i)return;if(!enPay(enPromoCost(id)))return;if(o.chief>=0&&o.team[o.chief])o.team[o.chief].mot=clamp(o.team[o.chief].mot-20,0,100);o.chief=i;m.mot=clamp(m.mot+30,0,100);sfx('rank');toast(`${m.n} devient ${gx(m,'chef','cheffe')} d’équipe. L’équipe se démotive moins vite.`)}
+  else if(a==='prime'){if(o.primeT>S.day)return;if(!enPay(enPrimeCost(id)))return;o.team.forEach(m=>{m.mot=clamp(m.mot+20,0,100)});o.primeT=S.day+enMo(4);sfx('good');toast('Prime versée. Ça sourit dans les couloirs.')}
+  else if(a==='rd'){const i=o.rd.done;if(o.rd.i>=0||i>=EN_RD.length||!enRdOk(o,i))return;if(!enPay(enRdCost(id,i)))return;o.rd.i=i;o.rd.end=S.day+enMo(EN_RD[i].m);sfx('buy');toast(`Atelier : « ${EN_RD[i].n} » lancé. Prêt en ${dateLabel(o.rd.end)}.`)}
+  else if(a==='spec'){const k=d.v;if(!EN_SPEC[k]||o.spec===k||S.biz[id].lvl<EN_SPEC_LVL)return;if(!enPay(enSpecCost(id)))return;o.spec=k;if(k==='luxe'){o.offers=enOffer(id)}sfx('rank');toast(`${b.n} mise sur : ${EN_SPEC[k].n.toLowerCase()}.`)}
+  else if(a==='inc'){const I=o.inc;if(!I)return;const c=+d.c,cost=enIncCost(id,I.k,c);
+    if(I.k==='panne'){if(c===0){if(!enPay(cost))return;o.inc=null;toast('Réparé dans l’heure. Ça tourne.')}else if(!I.slow){I.slow=1;I.end=Math.min(I.end,S.day+enMo(2));o.team.forEach(m=>{m.mot=clamp(m.mot-8,0,100)});toast('L’équipe s’y colle. Comptez deux mois.')}}
+    else if(I.k==='rupture'){if(c===0){if(!enPay(cost))return;o.inc=null;toast('Livraison express : les rayons sont pleins.')}else if(!I.slow){I.slow=1;I.end=Math.min(I.end,S.day+enMo(2));toast('Le camion arrive dans deux mois.')}}
+    else if(I.k==='controle'){if(c===0){if(S.energy<8){toast('Trop crevé pour éplucher des papiers.');sfx('no');return}S.energy=clamp(S.energy-8,0,100);const ok=Math.random()<.75+.1*enHas(o,'soin');o.inc=null;
+        if(ok)toast('Tout est en règle. L’inspecteur repart bredouille.');else{const f=Math.min(Math.max(0,S.cash),Math.round(.3*enG(id)));S.cash-=f;dispCash=Math.min(dispCash,S.cash);toast(`Un papier manquait. Amende : ${fmt(f)}.`)}}
+      else{if(!enPay(cost))return;o.inc=null;toast('Le comptable a tout rangé. Contrôle passé sans souci.')}}
+    else if(I.k==='demission'){const m=o.team[I.who];if(c===0){if(!enPay(cost))return;if(m)m.mot=70;o.inc=null;toast(m?`${m.n} reste. Merci patron.`:'C’est réglé.')}else enIncEnd(id,o,'late')}}
+  enSync()}
+
+/* Écran « Entrer dans l'entreprise » */
+const enStars=n=>'<span class="en-sk" aria-label="niveau '+n+' sur 5">'+'●'.repeat(n)+'<i>'+'●'.repeat(5-n)+'</i></span>';
+function enAv(m){try{return typeof psAv==='function'?psAv({name:m.n,g:m.g,age:m.age},{size:44}):''}catch(e){return ''}}
+function enTodo(id){if(!enOpen(id))return 0;const o=enB(id);let n=0;if(o.inc)n++;if(o.ord&&o.ord.p>=o.ord.w)n++;if(!o.ord&&o.offers.length)n++;return n}
+function enMoodWord(v){return v>=75?'motivé':v>=50?'ça va':v>=25?'fatigué':'à bout'}
+function enIncHTML(id,o){const I=o.inc;if(!I)return '';const b=BIZ_BY[id],m=o.team[I.who];
+  const T={panne:['La machine principale est en panne','Ventes −40 % et commandes au ralenti tant que ce n’est pas réparé.',['Appeler un réparateur','L’équipe répare (2 mois)']],
+    rupture:['Rupture de stock','Ventes −30 % : il manque de quoi vendre.',['Commande en urgence','Attendre le camion (2 mois)']],
+    controle:['Contrôle surprise','Un inspecteur passe bientôt. Sans préparation, amende et réputation −3.',['Préparer les papiers toi-même','Payer un comptable']],
+    demission:[`${m?m.n:'Quelqu’un'} veut démissionner`,`${m?gx(m,'Il','Elle'):'Il'} n’en peut plus. Si personne ne fait rien, ${m?gx(m,'il','elle'):'il'} part avant ${dateLabel(I.end)}.`,['L’augmenter','Le laisser partir']]}[I.k];
+  if(!T)return '';const cs=[0,1].map(c=>enIncCost(id,I.k,c));
+  return `<div class="en-alert"><strong>${T[0]}</strong><p>${T[1]}</p><div class="en-2">${T[2].map((l,c)=>{const dis=(cs[c]&&S.cash<cs[c])||(c===1&&I.slow)||(I.k==='controle'&&c===0&&S.energy<8);
+    return `<button class="btn small ${c?'ghost':'go'}" data-a="en_inc" data-id="${id}" data-c="${c}" ${dis?'disabled':''}>${l}${cs[c]?' · '+fmt(cs[c]):I.k==='controle'&&c===0?' · 8 énergie':''}</button>`}).join('')}</div></div>`}
+function enCmdHTML(id,o){const r=o.ord;let h='';
+  if(r){const pct=Math.min(100,Math.round(r.p/r.w*100)),ready=r.p>=r.w;
+    h+=`<div class="en-card ${ready?'ok':''}"><div class="ug-h"><h3>${enCap(r.cl)}</h3><span class="tag">${EN_KIND[r.k].n}</span></div>
+      <div class="obj-bar"><i style="width:${pct}%"></i></div>
+      <div class="kv"><span>${ready?'Prête à livrer':'Fabrication '+pct+' %, fin vers '+(S.day+enEta(id,r.w-r.p)>r.dl?'<b style="color:var(--loss)">'+dateLabel(S.day+enEta(id,r.w-r.p))+' : en retard</b>':dateLabel(S.day+enEta(id,r.w-r.p)))}</span><b class="pos">+${fmt(r.amt)}</b></div>
+      ${ready?`<button class="btn big go" data-a="en_deliver" data-id="${id}">Livrer et encaisser ${fmt(r.amt)}</button>`:`<p class="hint">À livrer avant ${dateLabel(r.dl)}. Pendant la fabrication, la boutique vend 15 % de moins.</p><button class="btn small ghost" style="margin-top:6px" data-a="en_drop" data-id="${id}">Annuler (réputation −2)</button>`}</div>`}
+  h+=`<h3 class="en-h">${r?'Les prochaines demandes':'Des clients attendent'}</h3>`;
+  h+=o.offers.length?o.offers.map((x,i)=>{const K=EN_KIND[x.k],eta=enEta(id,K.w),late=eta>enMo(K.d);
+    return `<div class="en-offer"><div><strong>${enCap(x.cl)} <b class="pos en-amt">+${fmt(enReward(id,x.k))}</b></strong><span class="hint">${K.n} · environ ${eta} mois, délai ${enMo(K.d)} mois${K.rep>1?' · réputation +'+K.rep:''}${K.mot?' · l’équipe adore':''}${late?' · <b style="color:var(--loss)">trop juste pour ton équipe</b>':''}</span></div>
+      <button class="btn small ${r?'ghost':'go'}" data-a="en_take" data-id="${id}" data-i="${i}" ${r?'disabled':''}>Accepter</button></div>`}).join('')+(r?'<p class="hint">Une commande à la fois : livre celle en cours d’abord.</p>':'')
+    :`<p class="hint">Plus de demandes pour l’instant. Nouvelles demandes vers ${dateLabel(o.offT)}.</p>`;
+  return h}
+function enTeamHTML(id,o){const pc=enPrimeCost(id);
+  return o.team.map((m,i)=>{const tr=EN_TR[m.t]||EN_TR.vente,tc=enTrainCost(id,m),pr=enPromoCost(id),boss=o.chief===i;
+    return `<div class="en-p"><div class="en-av">${enAv(m)}</div><div class="en-pi"><div class="ug-h"><strong>${esc(m.n)}${boss?` <span class="tag">${gx(m,'Chef','Cheffe')}</span>`:''}</strong>${enStars(m.sk)}</div>
+      <span class="hint">${tr.n[m.g==='f'?1:0]} : ${tr.d}</span>
+      <div class="en-mot"><div class="obj-bar"><i style="width:${Math.round(m.mot)}%;background:${m.mot<25?'var(--loss)':m.mot<50?'#E59C3B':'var(--money)'}"></i></div><span class="hint">${enMoodWord(m.mot)}</span></div>
+      <div class="en-2">${m.sk<5?`<button class="btn small" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Former · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}
+      ${boss?'':`<button class="btn small ghost" data-a="en_promo" data-id="${id}" data-i="${i}" ${m.sk<3||S.cash<pr?'disabled':''}>${m.sk<3?'Promouvoir (niveau 3)':'Promouvoir · '+fmt(pr)}</button>`}</div></div></div>`}).join('')
+  +`<div class="en-row"><span class="hint">Une équipe motivée vend plus et fabrique plus vite. Le moral baisse chaque mois.</span><button class="btn small" data-a="en_prime" data-id="${id}" ${o.primeT>S.day||S.cash<pc?'disabled':''}>${o.primeT>S.day?'Prime versée':'Prime d’équipe · '+fmt(pc)}</button></div>`}
+function enLabHTML(id,o){const st=S.biz[id],i=o.rd.done,R=EN_RD[i];let h=`<h3 class="en-h">Projets</h3>`;
+  h+=`<div class="en-steps">${EN_RD.map((x,k)=>`<span class="${k<i?'done':k===i?'now':''}">${k<i?'✓ ':''}${x.n}</span>`).join('')}</div>`;
+  if(o.rd.i>=0)h+=`<div class="en-card"><strong>${EN_RD[o.rd.i].n}</strong><p class="hint">${EN_RD[o.rd.i].d} Prêt vers ${dateLabel(o.rd.end)}.</p></div>`;
+  else if(R){const ok=enRdOk(o,i),c=enRdCost(id,i);h+=`<div class="en-card"><strong>${R.n}</strong><p class="hint">${R.d} ${R.m} mois de mise au point.${ok?'':R.need==='sk3'?' Il faut quelqu’un de niveau 3 dans l’équipe.':' Il faut un chef d’équipe.'}</p>
+    <button class="btn small go" data-a="en_rd" data-id="${id}" ${ok&&S.cash>=c?'':'disabled'}>Lancer · ${fmt(c)}</button></div>`}
+  else h+=`<p class="hint">Tous les projets sont faits. Ta boutique est à la pointe.</p>`;
+  h+=`<h3 class="en-h">Spécialité</h3>`;
+  if(st.lvl<EN_SPEC_LVL)h+=`<p class="hint">Au niveau ${EN_SPEC_LVL}, tu choisiras ce qui fait ta différence : la qualité, le volume ou le luxe.</p>`;
+  else{const sc=enSpecCost(id);h+=Object.keys(EN_SPEC).map(k=>{const S_=EN_SPEC[k],on=o.spec===k;return `<div class="en-offer ${on?'on':''}"><div><strong>${S_.n}</strong><span class="hint">${S_.d}</span></div>
+    ${on?'<span class="tag">Choisi</span>':`<button class="btn small ${o.spec?'ghost':'go'}" data-a="en_spec" data-id="${id}" data-v="${k}" ${S.cash>=sc?'':'disabled'}>${o.spec?'Changer · '+fmt(sc):'Choisir'}</button>`}</div>`}).join('')}
+  const c=enChargeOf(id),tx=c.g*enTax();
+  h+=`<h3 class="en-h">Charges par mois</h3><div class="kv"><span>Salaires</span><b>−${fmt(c.sal)}</b></div><div class="kv"><span>Entretien</span><b>−${fmt(c.ent)}</b></div><div class="kv"><span>Impôts locaux (${Math.round(enTax()*100)} %)</span><b>−${fmt(tx)}</b></div>
+    <p class="hint">${S.pol&&S.pol.office==='maire'?'Tu es maire : impôts locaux divisés par deux.':'Les maires paient deux fois moins d’impôts locaux.'}</p>`;
+  return h}
+function enHTML(){const id=EN_UI.id,b=BIZ_BY[id];if(!b||!enOpen(id))return `<p>Cette affaire n’est pas ouverte.</p><button class="btn big" data-a="close">Fermer</button>`;
+  const o=enB(id),st=S.biz[id],G=enG(id),c=enChargeOf(id),net=G-(c.sal+c.ent+c.g*enTax()),mult=enMult(id),tab=EN_UI.tab;
+  const nT={cmd:(o.ord&&o.ord.p>=o.ord.w?1:0)+(!o.ord&&o.offers.length?1:0),team:o.inc&&o.inc.k==='demission'?1:0,lab:(o.rd.i<0&&o.rd.done<EN_RD.length&&enRdOk(o,o.rd.done)?1:0)+(!o.spec&&st.lvl>=EN_SPEC_LVL?1:0)};
+  const seg=`<div class="seg en-seg" role="tablist">${[['cmd','Commandes'],['team','Équipe'],['lab','Atelier']].map(([k,l])=>`<button role="tab" aria-selected="${tab===k}" class="${tab===k?'on':''}" data-a="en_tab" data-id="${id}" data-v="${k}">${l}${nT[k]?'<i class="en-dot"></i>':''}</button>`).join('')}</div>`;
+  return `<div class="en-in"><div class="en-top"><div class="bs-ic">${b.e}</div><div><h2>${b.n}</h2><p class="hint">Niveau ${st.lvl}${o.spec?' · '+EN_SPEC[o.spec].n:''}${st.mgr?' · '+esc(MGR_NAMES[id].split(',')[0])+' à la caisse':''}</p></div><button class="bs-x" data-a="close" aria-label="Fermer">✕</button></div>
+    <div class="en-kpi"><div><span>Ventes / mois</span><b>${fmt(G)}</b></div><div><span>Après charges</span><b>${fmt(net)}</b></div><div><span>Effets en cours</span><b class="${mult>=1?'pos':''}" ${mult<1?'style="color:var(--loss)"':''}>×${fmtM(Math.round(mult*100)/100)}</b></div></div>
+    ${enIncHTML(id,o)}${seg}<div class="en-body">${tab==='team'?enTeamHTML(id,o):tab==='lab'?enLabHTML(id,o):enCmdHTML(id,o)}</div></div>`}
+function enRender(){const sh=document.querySelector('#layer .sheet');if(!sh||!sh.querySelector('.en-in'))return;const bd=sh.querySelector('.en-body'),sc=sh.scrollTop;sh.innerHTML=enHTML();sh.scrollTop=sc}
+function enOpenUI(id,tab){if(!enOpen(id))return;EN_UI.id=id;if(tab)EN_UI.tab=tab;enB(id);if(!enB(id).offers.length){const o=enB(id);o.offers=enOffer(id);o.offT=S.day+enMo(6)}
+  if(modalOpen&&document.querySelector('#layer .en-in')){enRender();return}modal(enHTML());const sh=document.querySelector('#layer .sheet');if(sh)sh.classList.add('en-sheet')}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-a^="en_"]');if(!t||t.disabled)return;const a=t.dataset.a.slice(3),d=t.dataset;
+  try{if(a==='open'){enOpenUI(d.id);return}if(a==='tab'){EN_UI.tab=d.v;enRender();return}if(a==='rush'){wkFinish(+d.i)}else enAct(a,d)}catch(err){console.warn(err)}
+  enRender();try{renderHud();updateLive()}catch(x){}});
+/* Entrées : la fiche de la carte et la liste des boutiques */
+const enBtn=(id,cls)=>{const n=enTodo(id);return `<button class="btn ${cls||'small'} en-go" data-a="en_open" data-id="${id}">Entrer${n?` <i class="en-badge">${n}</i>`:''}</button>`};
+renderSheet=(f=>function(){f();try{if(S.tab!=='ville'||!sel||!BIZ_BY[sel]||!enOpen(sel))return;const el=$('#bsheet');if(!el||el.hidden||el.querySelector('.en-go'))return;
+  const hd=el.querySelector('.bs-head');if(hd)hd.insertAdjacentHTML('afterend',`<div class="bs-sec en-entry">${enBtn(sel,'go')}<span class="hint">${enEntryHint(sel)}</span></div>`)}catch(e){}})(renderSheet);
+function enEntryHint(id){const o=enB(id);if(o.inc)return 'Un problème t’attend à l’intérieur.';if(o.ord&&o.ord.p>=o.ord.w)return 'Une commande est prête à livrer.';if(o.ord)return `Commande en cours pour ${o.ord.cl}.`;return 'Commandes, équipe, atelier.'}
+vAffaires=(f=>function(){let h=f();BIZ.forEach(b=>{if(!enOpen(b.id))return;const k=`<button class="btn small ghost" data-a="locate" data-id="${b.id}">`;h=h.replace(k,enBtn(b.id)+k)});
+  const C=enCharges(),L=enInit().last;let todo=[];openIds().forEach(id=>{const o=enB(id),b=BIZ_BY[id];if(o.inc)todo.push(`${b.e} problème`);if(o.ord&&o.ord.p>=o.ord.w)todo.push(`${b.e} commande prête`)});
+  const top=`<div class="panel en-sum"><div class="ug-h"><h3>Charges du mois</h3><b style="color:var(--loss)">−${fmt(C.tot/(S.speed||1))}</b></div>
+    <div class="kv"><span>Salaires</span><b>${fmt(C.sal/(S.speed||1))}</b></div><div class="kv"><span>Entretien</span><b>${fmt(C.ent/(S.speed||1))}</b></div><div class="kv"><span>Impôts locaux</span><b>${fmt(C.tax/(S.speed||1))}</b></div>${C.imm>0?`<div class="kv"><span>Taxe foncière (tes immeubles)</span><b>${fmt(C.imm/(S.speed||1))}</b></div>`:''}
+    ${L&&L.paid<L.due?`<p class="hint" style="color:var(--loss)">Le mois dernier, il manquait ${fmt(L.due-L.paid)} : tes équipes ont perdu le moral.</p>`:''}
+    ${todo.length?`<p class="hint" style="margin-top:6px"><b>À voir :</b> ${todo.join(' · ')}</p>`:''}</div>`;
+  const i=h.indexOf('<div class="sec-head"><h2>Tes boutiques</h2>');return i<0?h+top:h.slice(0,i)+top+h.slice(i)})(vAffaires);
+/* Le détail des effets dans Vie : on n'affiche pas les effets d'équipe (ils sont dans chaque entreprise) */
+vieMoi=(f=>function(){const m=S.mods;S.mods=m.filter(x=>!x.ent);try{return f.apply(this,arguments)}finally{S.mods=m}})(vieMoi);
+/* Horloge des chantiers et mise à jour en direct */
+let EN_T=0,EN_SY=0;
+tick=(f=>function(){const t0=performance.now();f();try{if(!S||!S.started||S.dead)return;const dt=Math.min(3600,Math.max(0,(t0-(EN_T||t0))/1000));EN_T=t0;
+  if(document.hidden||ryPaused())return;const m=wkAdvance(dt);if(m.length){m.forEach(x=>toast(x));sfx('rank');if(S.tab!=='ville'&&!modalOpen&&!PDOWN)renderMain();renderSheet()}
+  if((EN_SY+=dt)>2){EN_SY=0;enSync();document.querySelectorAll('[data-wk]').forEach(el=>{const w=S.works[+el.dataset.wk];if(w)el.style.width=Math.round(100*(1-wkLeft(w)/Math.max(1,w.dur)))+'%'});
+    document.querySelectorAll('[data-wkt]').forEach(el=>{const w=S.works[+el.dataset.wkt];if(w)el.textContent='Encore '+ryDur(wkLeft(w))})}}catch(e){}})(tick);
+setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
+(function(){const st=document.createElement('style');st.textContent=`
+.en-sheet{max-width:520px}.en-in{text-align:left}
+.en-in .en-top{display:flex;gap:12px;align-items:center;margin-bottom:10px}.en-in .en-top h2{font-size:1.25rem;line-height:1.15}.en-in .en-top .bs-x{margin-left:auto}
+.en-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.en-kpi div{background:var(--surface2);border-radius:12px;padding:8px 10px;min-width:0}
+.en-kpi span{display:block;font-size:.74rem;color:var(--muted);line-height:1.2}.en-kpi b{display:block;font-size:1rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.en-seg{margin:4px 0 12px}.en-seg button{position:relative}.en-dot{position:absolute;top:6px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--pink)}
+.en-h{font-size:.95rem;margin:14px 0 8px}.en-body>.en-h:first-child{margin-top:0}
+.en-card{border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;background:var(--surface)}.en-card.ok{border-color:var(--money);box-shadow:0 0 0 2px color-mix(in srgb,var(--money) 25%,transparent)}
+.en-card h3{font-size:1rem;margin:0}.en-card .obj-bar{margin:8px 0 6px}.en-card .btn.big{width:100%;margin-top:8px}
+.en-offer{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line)}.en-offer:first-of-type{border-top:0}
+.en-offer>div{min-width:0}.en-offer strong{display:block}.en-offer .hint{display:block;font-size:.82rem}.en-offer .btn{flex:none;min-width:96px}.en-offer.on strong{color:var(--money)}
+.en-alert{border-radius:14px;padding:12px;margin-bottom:12px;background:color-mix(in srgb,var(--loss) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--loss) 45%,transparent)}
+.en-alert p{font-size:.88rem;margin:4px 0 8px}
+.en-2{display:flex;gap:6px;margin-top:8px}.en-2 .btn{flex:1 1 0;min-width:0}.en-p .en-2 .btn{font-size:.84rem;padding-left:8px;padding-right:8px}.en-amt{font-size:.9rem;white-space:nowrap}
+.en-p{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.en-p:first-child{border-top:0}.en-av{flex:none;width:44px;height:44px}.en-av svg{width:44px;height:44px}
+.en-pi{flex:1;min-width:0}.en-pi .hint{display:block;font-size:.82rem}.en-sk{color:var(--money);letter-spacing:1px;font-size:.8rem;white-space:nowrap}.en-sk i{font-style:normal;opacity:.25}
+.en-mot{display:flex;align-items:center;gap:8px;margin-top:4px}.en-mot .obj-bar{flex:1;margin:0}.en-mot .hint{flex:none;width:58px;text-align:right}
+.en-row{display:flex;gap:10px;align-items:center;justify-content:space-between;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}.en-row .btn{flex:none}
+.en-steps{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}.en-steps span{font-size:.78rem;padding:3px 9px;border-radius:999px;background:var(--surface2);color:var(--muted)}
+.en-steps span.done{color:var(--money);font-weight:700}.en-steps span.now{background:var(--ink);color:var(--surface)}
+.en-entry{display:flex;align-items:center;gap:10px}.en-entry .hint{font-size:.84rem}
+.en-badge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:9px;background:var(--pink);color:#1E2B2A;font-style:normal;font-size:.72rem;font-weight:800}
+.wk-row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}.wk-row:first-of-type{border-top:0}.wk-row>div{flex:1;min-width:0}.wk-row .obj-bar{margin:6px 0 2px}
+.wk-tag{white-space:nowrap}
+@media (max-width:420px){.en-kpi b{font-size:.9rem}.en-offer .btn{min-width:84px}}`;document.head.appendChild(st)})();
+/* ---------- 4. Prix par ville (réglés au joueur simulé, qui joue aussi l'intérieur des entreprises) ----------
+   Cible de Nils (novembre) : 1re ville ≈ 35 min, puis ≈ ×1,19 par ville (≈ 56 h pour 17 villes). Le ×1,19 vient surtout de cityDiff (1,35 par ville) :
+   ici, un facteur à peu près plat, plus un petit réglage par ville (rangé par nom, pour que l'ajout de villes au milieu ne décale rien).
+   Une ville sans réglage prend EN_KDEF. */
+const EN_KDEF=1.78,EN_KC={'Ta ville':1.91,'Nantes':1.85,'Lyon':1.81,'Marseille':1.67,'Paris':1.47,'Londres':1.58,'New York':1.54,'Tokyo':1.85,'Dubaï':1.78,'Rio de Janeiro':2.31,'Shanghai':1.69,'Atlantide':1.83,'La Lune':1.73,'Mars':1.81}; /* tient compte du Rush (×2 90 s toutes les 12 min) */
+function enK(c){const n=(CITIES[c|0]||{}).n;return EN_KC[n]||EN_KDEF}
+pgK=(f=>function(c){return f(c)*enK(c)})(pgK);
+/* ---------- 5. Club : plus dur à chaque ville (demande de Nils) ----------
+   Joueurs, salaires, staff et stade coûtent ×1,12 par ville de plus que les recettes ; les adversaires gagnent +1 de niveau par ville. */
+const FT_K=()=>Math.pow(1.12,S.city|0),FT_OPP=()=>(S.city|0);
+ecoM=function(){return CITY_MULT(S.city||0)*FT_K()};
+ecoGate=(f=>function(){const g=f.apply(this,arguments),k=FT_K();['tix','buv','shop','spons','tv','tot'].forEach(x=>{if(isFinite(g[x]))g[x]=Math.round(g[x]/k)});return g})(ecoGate);
+ecoSponsOffers=(f=>function(){f.apply(this,arguments);const C=S.club,k=FT_K();(C.sOff||[]).forEach(o=>{o.amt=Math.round(o.amt/k)})})(ecoSponsOffers);
+genTable=(f=>function(div){const t=f.apply(this,arguments),d=FT_OPP();t.forEach(x=>{if(!x.me)x.str+=d});return t})(genTable);
+
+/* ---------- 6. Immobilier : les biens arrivent sur le marché un par un ----------
+   En arrivant : 3 biens à vendre. Ensuite, un nouveau bien chaque mois (tous les 2 mois dès la 5e ville, 3 dès la 9e…), 4 au plus en vitrine.
+   « Tout acheter » n'achète que ce qui est en vente. État : S.immo.sale (liste), S.immo.saleT (mois du prochain). */
+const IM_SALE_MAX=4,imGap=()=>1+Math.floor((S.city|0)/4);
+function imAddSale(){const I=immoS(),L=I.sale,free=propsList().filter(o=>!S.props[o.pid]&&!L.includes(o.pid));if(!free.length)return false;
+  free.sort((a,b)=>propBase(a)-propBase(b));const pool=free.slice(0,Math.max(3,Math.ceil(free.length/2)));L.push(pick(pool).pid);return true}
+function imSale(){const I=immoS();if(!Array.isArray(I.sale)){I.sale=[];I.saleT=S.day+imGap();for(let k=0;k<3;k++)imAddSale()}
+  const ids=new Set(propsList().map(o=>o.pid));I.sale=I.sale.filter(pid=>ids.has(pid)&&!S.props[pid]);return I.sale}
+const imListed=pid=>imSale().includes(pid);
+function imSaleMonth(){const I=immoS(),L=imSale();if(S.day<(I.saleT||0))return;I.saleT=S.day+imGap();if(L.length<IM_SALE_MAX&&imAddSale()){const o=imOf(I.sale[I.sale.length-1]);if(o)immoLog(`Nouveau sur le marché : ${immoName(o)}.`)}}
+const imNoSale=()=>{toast(`Pas à vendre pour l’instant. Un nouveau bien arrive sur le marché ${imGap()>1?'tous les '+imGap()+' mois':'chaque mois'}.`);sfx('no')};
+buyProp=(f=>function(pid){if(!S.props[pid]&&!imListed(pid)){imNoSale();return}const r=f.apply(this,arguments);imSale();return r})(buyProp);
+immoBuyLoan=(f=>function(pid){if(!S.props[pid]&&!imListed(pid)){imNoSale();return}const r=f.apply(this,arguments);imSale();return r})(immoBuyLoan);
+immoBuyPlan=function(){const free=propsList().filter(o=>!S.props[o.pid]&&imListed(o.pid)).sort((a,b)=>propBase(a)-propBase(b)),list=[];let n=ownedCount(),tot=0;
+  for(const o of free){const p=Math.round(propBase(o)*Math.pow(1.1,n)*immoIdx());if(tot+p>S.cash)break;list.push(o);tot+=p;n++}return{list,tot}};
+buyBlock=function(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);if(!l.length)return;if(l.every(o=>imListed(o.pid))){l.forEach(o=>buyProp(o.pid));return}
+  toast('Les biens d’un îlot se vendent un par un, quand ils arrivent sur le marché.');sfx('no')};
+vImmo=(f=>function(){let h=f();const a=h.indexOf('<div class="sec-head"><h2>À vendre</h2>');const L=imSale().map(imOf).filter(Boolean).sort((x,y)=>propBase(x)-propBase(y)),I=immoS();
+  const sec=`<div class="sec-head"><h2>En vente maintenant</h2><p>${L.length} bien${L.length>1?'s':''}</p></div><div class="panel">${L.length?`<ul class="ug">${L.map(immoBuyRow).join('')}</ul>`:'<p class="hint">Rien en vente ce mois-ci.</p>'}
+    <p class="hint" style="margin-top:6px">Les biens arrivent sur le marché un par un : le prochain vers ${dateLabel(Math.max(S.day+1,I.saleT||0))}${L.length>=IM_SALE_MAX?', quand tu auras acheté un de ceux-ci':''}. Crédit sur 5 ans, 30 % d’apport.</p></div>`;
+  if(a<0)return h;let b=h.indexOf('<div class="sec-head">',a+10);if(b<0)b=h.length;return h.slice(0,a)+sec+h.slice(b)})(vImmo);
+renderSheet=(f=>function(){f();try{if(S.tab!=='ville'||!isProp(sel)||S.props[sel]||imListed(sel))return;const el=$('#bsheet');if(!el||el.hidden)return;
+  const bs=el.querySelectorAll('[data-a="buyprop"],[data-a="imloan"]');if(!bs.length)return;const host=bs[0].parentElement;bs.forEach(x=>x.remove());
+  host.insertAdjacentHTML('afterbegin',`<p class="hint">Pas à vendre pour l’instant. Les biens arrivent sur le marché un par un (onglet Immo).</p>`)}catch(e){}})(renderSheet);
+newDay=(f=>function(){f.apply(this,arguments);try{if(S&&S.started&&!S.dead)imSaleMonth()}catch(e){}})(newDay);
+/* ===== FIN AGENT ENTREPRISE ===== */
 /* ===== AGENT OBJECTIFS ===== */
 /* 1. Conquête : un socle commun (ouvrir les 8 affaires, les niveaux, l’objectif de gains) + 4 « affaires de la ville »,
       propres à chaque ville et repérées par son nom (OB_CITY). Chaque affaire est un petit jeu à part (OBK : commande, festival,
@@ -8852,18 +9178,18 @@ const OBK={
       s.pat=(s.pat|0)-1;s.msg=`${T.who} : « ${s.fl-k<.1?'On y est presque.':'Vous plaisantez ?'} »`;
       if(s.pat<=0){s.wait=S.day+1;s.pat=3;s.fl=Math.min(.95,s.fl+.04);s.msg=`${T.who} te raccompagne à la porte. Reviens le mois prochain, ce sera un peu plus cher.`;sfx('bad')}}},
   council:{tag:'Mairie',
-    need:T=>T.need||3,
+    nv:T=>T.need||3,
     have:(T,s)=>(s.ok||[]).length+(S.pol&&S.pol.office?1:0),
-    p:(T,s)=>[Math.min(OBK.council.have(T,s),OBK.council.need(T))+(s.win?1:0),OBK.council.need(T)+1],
-    hint:(T,s)=>`${OBK.council.have(T,s)} voix sur ${OBK.council.need(T)}`,
+    p:(T,s)=>[Math.min(OBK.council.have(T,s),OBK.council.nv(T))+(s.win?1:0),OBK.council.nv(T)+1],
+    hint:(T,s)=>`${OBK.council.have(T,s)} voix sur ${OBK.council.nv(T)}`,
     can:(T,s)=>!s.win,
     req(m){const [k,v]=m[2];return k==='cash'?fmt(obC(v)):k==='rep'?`réputation ${v}`:k==='sat'?`${v} % de clients contents`:k==='meet'?`énergie −${v}`:`${v} affaires ouvertes`},
-    body(T,s){const ok=s.ok||[],h=OBK.council.have(T,s),n=OBK.council.need(T);
+    body(T,s){const ok=s.ok||[],h=OBK.council.have(T,s),n=OBK.council.nv(T);
       return `<p>Il faut ${n} voix au conseil pour faire passer ${T.law}.${S.pol&&S.pol.office?' Ta voix de maire compte déjà.':''}</p>
       <div class="ob-sus">${T.mem.map((m,i)=>`<div class="ob-su ${ok.includes(i)?'got':''}"><b>${m[0]}</b><span>${m[1]}</span>${ok.includes(i)?'<em>Pour</em>':obB(T,'m:'+i,`Convaincre<small>${OBK.council.req(m)}</small>`,{cls:'small',dis:(s.cd||{})[i]>S.day})}</div>`).join('')}</div>
       <div class="kv"><span>Voix acquises</span><b>${h} / ${n}</b></div>${obB(T,'vote','Passer au vote',{cls:'big go',dis:h<n})}`},
     act(T,s,v){s.ok=s.ok||[];s.cd=s.cd||{};
-      if(v==='vote'){if(OBK.council.have(T,s)<OBK.council.need(T))return;s.win=1;s.msg=`Vote acquis. ${T.end||'La loi passe.'}`;return}
+      if(v==='vote'){if(OBK.council.have(T,s)<OBK.council.nv(T))return;s.win=1;s.msg=`Vote acquis. ${T.end||'La loi passe.'}`;return}
       const i=+v.split(':')[1],m=T.mem[i];if(!m||s.ok.includes(i)||s.cd[i]>S.day)return;const [k,x]=m[2];
       if(k==='cash'){if(!obPay(obC(x)))return}
       else if(k==='rep'){if(S.rep<x){s.msg=`${m[0]} : « Reviens avec une meilleure réputation (${x}). »`;return}}
@@ -9116,10 +9442,103 @@ const OB_GEN={tag:'',t:[
   {id:'b',k:'ally',n:'Un allié en ville',d:'Une figure du quartier peut t’ouvrir des portes.',who:'Sam',role:'figure du quartier',gift:'Un cadeau bien choisi'},
   {id:'c',k:'rush',n:'Le mois record',d:'Bats ton propre record de ventes.',m:2,x:1.3},
   {id:'d',k:'festival',n:'La grande fête',d:'La ville te confie sa fête annuelle.',o:OB_FEST(['La scène','Musiciens du coin','Groupe connu','Grande vedette'],['À manger','Stands simples','Cuisine du pays','Grand banquet'],['Le final','Lampions','Parade','Feu d’artifice'])}]};
+/* Histoire « signature » de chaque ville : un personnage, quatre épisodes d’un mois chacun, deux choix par épisode.
+   Elle remplace une des quatre affaires (champ r). Format d’un épisode : [question, [choix A, effet, suite], [choix B, effet, suite]]. */
+const OBS_C=.003,OBS_G=.003;
+const OB_SAGA={
+  'Ta ville':{r:'c',who:'M. Albert',n:'La mercerie de M. Albert',d:'M. Albert, 82 ans, ferme sa mercerie. La suite dépend de toi.',s:[
+    ['M. Albert te propose son stock : des milliers de boutons et de rubans des années 60.',['Tout racheter',{c:OBS_C,rep:3},'Des cartons pleins. Tes clients adorent les boutons rétro.'],['Lui trouver un repreneur',{nrg:8,rep:5},'Trois soirées au téléphone. Une jeune couturière reprend la boutique.']],
+    ['Un promoteur veut raser la rue pour un parking. Le quartier fait tourner une pétition.',['Signer et faire signer',{rep:6},'Huit cents signatures. La mairie recule.'],['Rester en dehors',{g:OBS_G},'Le promoteur te glisse une enveloppe. Mme Rossi a tout vu.']],
+    ['M. Albert tombe malade. Il n’a personne pour l’aider.',['Passer le voir chaque semaine',{nrg:10,rep:4},'Il te raconte le quartier en 1960. Tu ne t’ennuies jamais.'],['Payer une aide à domicile',{c:OBS_C,rep:3},'Il appelle l’aide « ma petite fée ».']],
+    ['Guéri, il veut te transmettre quelque chose : son vieux carnet de clients.',['L’accepter',{rep:5},'Quarante ans de clients fidèles. Certains passent te voir dès la semaine suivante.'],['Lui dire de le garder',{rep:3},'Il sourit. « Tu feras ton propre carnet. »']]]},
+  'Nantes':{r:'d',who:'Jules',n:'Jules, le machiniste',d:'Jules construit des animaux mécaniques dans un hangar de l’île. Il lui manque tout, sauf des idées.',s:[
+    ['Jules te montre un héron en bois et en cuivre. Il lui faut des pièces.',['Lui fournir les pièces',{c:OBS_C},'Le héron bat des ailes pour la première fois.'],['L’aider à démonter de vieux vélos',{nrg:8},'Une nuit de démontage. Le héron a ses pattes.']],
+    ['Le hangar fuit. La pluie menace la machine.',['Payer une bâche géante',{c:OBS_C,rep:2},'Le héron reste au sec.'],['Organiser une corvée avec le quartier',{nrg:10,rep:5},'Vingt voisins, une échelle, et le toit tient.']],
+    ['Un parc d’attractions veut racheter le héron.',['Pousser Jules à vendre',{g:OBS_G*2},'Il vend. Il te reverse une commission, sans un mot.'],['Le convaincre de garder sa machine',{rep:5},'« Tu as raison. Il est à Nantes. »']],
+    ['Le jour de la grande parade, le héron doit défiler.',['Monter dessus avec Jules',{rep:6},'Toute la ville lève la tête vers vous.'],['Le regarder depuis le quai',{rep:3},'Jules te fait un signe de la main, là-haut.']]]},
+  'Lyon':{r:'c',who:'la Mère Jeannette',n:'Le bouchon de la Mère Jeannette',d:'Le plus vieux bouchon de la ville va fermer. La Mère Jeannette, 76 ans, ne veut pas lâcher.',s:[
+    ['Elle refuse ton aide : « Je n’ai besoin de personne. »',['Revenir déjeuner chaque jour',{nrg:8,rep:3},'Au bout d’une semaine, elle te garde une table.'],['Lui envoyer des clients',{c:OBS_C},'La salle se remplit. Elle fait semblant de ne pas comprendre pourquoi.']],
+    ['Son cuisinier part à la retraite.',['Lui trouver un jeune cuisinier',{c:OBS_C,rep:3},'Le petit apprend vite. Elle crie beaucoup, il sourit.'],['Mettre toi-même le tablier',{nrg:12,rep:5},'Tu rates trois quenelles et réussis la quatrième.']],
+    ['Un guide gastronomique veut l’inscrire. Elle a peur de changer.',['L’encourager',{rep:5},'Elle accepte. Une étoile de plus dans la vitrine.'],['Respecter son choix',{rep:3},'Elle reste comme elle est. Les habitués t’en remercient.']],
+    ['Elle te propose de reprendre le nom du bouchon pour tes boutiques.',['Accepter, avec respect',{g:OBS_G,rep:4},'« Chez Jeannette », en lettres peintes à la main.'],['Lui laisser son nom',{rep:4},'Elle te serre dans ses bras. Une première.']]]},
+  'Marseille':{r:'c',who:'Toni Mattei',n:'La parole de Toni Mattei',d:'Toni décide qui vend quoi sur le Vieux-Port. Il ne parle pas aux inconnus.',s:[
+    ['Toni te fait attendre deux heures au café avant de te recevoir.',['Attendre sans broncher',{nrg:8,rep:3},'Il note ta patience. « Assieds-toi. »'],['Revenir le lendemain avec des fougasses',{c:OBS_C,rep:2},'Il en mange trois. Bon signe.']],
+    ['Il te demande de réparer la barque de son père.',['Payer un charpentier',{c:OBS_C},'La barque brille au soleil.'],['Poncer toi-même tout un week-end',{nrg:12,rep:5},'Tes mains en gardent la trace. Lui aussi s’en souvient.']],
+    ['Un concurrent te propose de doubler Toni.',['Refuser et prévenir Toni',{rep:6},'Toni ne dit rien. Le lendemain, le concurrent a disparu du port.'],['Écouter l’offre',{g:OBS_G},'Toni l’apprend. Il ne t’en veut pas, mais il s’en souviendra.']],
+    ['Toni t’invite à la fête de sa fille.',['Y aller avec un cadeau',{c:OBS_C,rep:4},'Tu danses jusqu’à trois heures. Tu fais partie du port.'],['Y aller les mains vides, mais tôt',{nrg:8,rep:4},'Tu aides à porter les tables. Toni te présente comme « un ami ».']]]},
+  'Paris':{r:'d',who:'Ama',n:'Ama et la Fashion Week',d:'Ama a dessiné pour les plus grands. Elle veut sa propre marque, avec toi.',s:[
+    ['Ama a besoin d’un atelier. Paris coûte une fortune.',['Louer un atelier au Marais',{c:OBS_C},'Une verrière, deux machines, du café. Elle s’y installe le soir même.'],['Lui prêter l’arrière-boutique',{nrg:6,rep:2},'Étroit, mais elle adore le bruit de la rue.']],
+    ['Une star veut porter sa robe, mais exige l’exclusivité.',['Accepter',{rep:6},'Couverture du magazine la semaine suivante.'],['Refuser, rester libres',{g:OBS_G},'Moins de bruit, plus de commandes.']],
+    ['La veille du défilé, un mannequin se blesse.',['Trouver une remplaçante',{c:OBS_C,rep:2},'Elle arrive à minuit. La robe lui va comme un gant.'],['Ama défile elle-même',{rep:6},'La salle se lève. Personne ne l’attendait là.']],
+    ['Après le défilé, une grande maison veut racheter la marque.',['Laisser Ama décider',{rep:5},'Elle refuse. « On a commencé à deux. »'],['Négocier un gros chèque',{g:OBS_G*2},'Elle signe. Elle te reverse ta part avec un mot gentil.']]]},
+  'Londres':{r:'d',who:'Harriet',n:'Harriet, cheffe de rang',d:'Harriet sert le thé dans le plus vieil hôtel de la City depuis trente ans. Elle sait tout sur tout le monde.',s:[
+    ['Harriet te regarde de haut : « Les nouveaux riches ne durent pas. »',['Revenir chaque jour à 17 h',{nrg:8,rep:3},'Au dixième jour, elle te sert sans que tu commandes.'],['Laisser un gros pourboire',{c:OBS_C},'Elle le rend. « On ne m’achète pas. »']],
+    ['Elle te glisse qu’un lord vend son hôtel particulier.',['Faire une offre discrète',{c:OBS_C,rep:2},'Le lord te reçoit. Harriet a parlé pour toi.'],['Lui demander d’abord son avis',{rep:4},'« Enfin quelqu’un qui écoute. »']],
+    ['L’hôtel veut remplacer Harriet par une machine à commandes.',['Défendre Harriet devant la direction',{rep:6},'Elle garde sa place. La machine finit au sous-sol.'],['L’embaucher chez toi',{c:OBS_C,rep:3},'Elle accepte, à ses conditions.']],
+    ['Pour ses trente ans de service, la City organise une fête.',['Faire un discours',{rep:5},'Tu bafouilles. Elle rit pour la première fois.'],['Offrir le thé à tous',{c:OBS_C,rep:3},'Mille tasses, et pas une ébréchée.']]]},
+  'New York':{r:'d',who:'Frankie Russo',n:'Frankie Russo, roi de Midtown',d:'Frankie tient tous les food trucks du quartier. Il n’aime pas les nouveaux. Surtout les Français.',s:[
+    ['Frankie gare son camion devant ta boutique. Tous les jours.',['Lui acheter un hot-dog',{c:OBS_C*.3,rep:2},'« Pas mal pour un Français. »'],['Aller le voir en face',{nrg:8,rep:3},'Il t’écoute. Il ne bouge pas, mais il t’écoute.']],
+    ['Son camion tombe en panne en plein hiver.',['Payer le dépanneur',{c:OBS_C},'Il ne dit pas merci. Il te tend un café.'],['Le pousser avec lui jusqu’au garage',{nrg:12,rep:5},'Six blocs sous la neige. Il rit tout le long.']],
+    ['La mairie veut interdire les camions de Midtown.',['Témoigner pour lui',{rep:6},'Les camions restent. Frankie t’appelle « kid ».'],['Proposer un emplacement privé',{c:OBS_C,rep:3},'Il s’installe dans ta cour. Ça sent l’oignon frit.']],
+    ['Frankie veut prendre sa retraite. Ses camions cherchent un patron.',['Lui proposer un partenariat',{g:OBS_G,rep:3},'Le camion porte vos deux noms.'],['Lui conseiller son neveu',{rep:5},'Le neveu reprend. Frankie passe encore tous les matins.']]]},
+  'Tokyo':{r:'c',who:'Mme Tanaka',n:'Le salon de thé de Mme Tanaka',d:'Mme Tanaka tient un salon de thé minuscule entre deux tours de verre. On veut la faire partir.',s:[
+    ['Elle t’offre un thé et ne dit rien pendant dix minutes.',['Attendre en silence',{nrg:6,rep:4},'Puis elle parle. Longtemps.'],['Lui poser des questions',{rep:2},'Elle répond poliment. Un peu trop poliment.']],
+    ['Le promoteur des tours lui offre beaucoup d’argent.',['L’aider à lire le contrat',{nrg:8,rep:4},'Il y a un piège page 12. Elle refuse.'],['Lui payer un avocat',{c:OBS_C},'L’avocat trouve le piège en cinq minutes.']],
+    ['Les tours bouchent la lumière. Ses plantes meurent.',['Installer des lampes',{c:OBS_C},'Les bonsaïs reprennent des couleurs.'],['Lancer une pétition des employés des tours',{nrg:10,rep:5},'Trois cents signatures. Le promoteur installe un miroir.']],
+    ['Elle veut que quelqu’un apprenne la cérémonie du thé.',['Apprendre toi-même',{nrg:12,rep:6},'Trois mois de gestes lents. Tu n’as jamais été aussi calme.'],['Trouver une élève',{c:OBS_C,rep:3},'Une étudiante revient chaque soir. Le salon vivra.']]]},
+  'Dubaï':{r:'d',who:'Rashid',n:'Rashid et ses faucons',d:'Rashid dresse des faucons dans le désert. Il veut les faire voler au-dessus de la ville.',s:[
+    ['Rashid t’emmène au désert à l’aube.',['Y aller sans hésiter',{nrg:10,rep:3},'Le faucon se pose sur ton gant. Tu n’oublieras pas.'],['Lui envoyer un 4×4 neuf',{c:OBS_C},'Il te remercie d’un message vocal de trois minutes.']],
+    ['Un faucon s’est échappé au-dessus des tours.',['Louer un hélicoptère',{c:OBS_C},'Retrouvé sur le toit d’un hôtel, l’air vexé.'],['Monter avec Rashid sur les toits',{nrg:12,rep:5},'Quarante étages à pied. Le faucon revient au sifflet.']],
+    ['Un hôtel veut acheter le spectacle de Rashid.',['Lui conseiller de vendre',{g:OBS_G*2},'Il vend. Il t’offre une plume en souvenir.'],['L’aider à rester libre',{rep:5},'« Les faucons n’ont pas de patron. Moi non plus. »']],
+    ['Le premier vol au-dessus de la ville.',['Inviter toute la ville',{c:OBS_C,rep:5},'Cent mille têtes levées vers le ciel.'],['Le garder pour les enfants des écoles',{rep:6},'Les enfants dessinent des faucons pendant des semaines.']]]},
+  'Rio de Janeiro':{r:'d',who:'Mestre Tião',n:'Le dernier carnaval de Mestre Tião',d:'Mestre Tião, roi du forró, veut faire un dernier carnaval. Il n’a plus un real.',s:[
+    ['Tião te fait danser avant de parler affaires.',['Danser, même mal',{nrg:8,rep:4},'Tout le monde rit. Lui le premier. Tu es adopté.'],['Offrir la tournée',{c:OBS_C,rep:2},'Il lève son verre à « l’ami français ».']],
+    ['Il lui faut un char. Le sien a brûlé l’an dernier.',['Payer le bois et la peinture',{c:OBS_C},'Le char prend forme dans la rue.'],['Rassembler les voisins pour le construire',{nrg:12,rep:5},'Trois semaines de soirées. Le char est magnifique.']],
+    ['La veille, il pleut à verse sur le char.',['Louer un hangar',{c:OBS_C},'Le char reste au sec. Les costumes aussi.'],['Bâcher le char toute la nuit',{nrg:10,rep:4},'Trempé, mais le char est sauvé.']],
+    ['Le jour du défilé, Tião veut que tu montes avec lui.',['Monter sur le char',{rep:6},'Le Sambodrome chante son nom. Puis le tien.'],['Le laisser briller seul',{rep:4},'Il pleure de joie. Il te cherche des yeux dans la foule.']]]},
+  'Shanghai':{r:'c',who:'Xiao Lin',n:'Xiao Lin, l’étudiante qui code',d:'Xiao Lin a écrit une appli pour les petits commerçants du quartier. Personne ne la prend au sérieux.',s:[
+    ['Elle te montre son appli sur un vieux téléphone fendu.',['Lui offrir un ordinateur',{c:OBS_C},'Elle code toute la nuit. Une nouvelle version au matin.'],['Tester l’appli dans ta boutique',{nrg:6,rep:3},'Tes clients adorent. Elle prend des notes.']],
+    ['Une grosse entreprise veut lui racheter le code.',['La pousser à refuser',{rep:4},'Elle refuse. « Je veux finir ce que j’ai commencé. »'],['L’aider à négocier',{g:OBS_G},'Elle vend une partie. Elle garde le reste.']],
+    ['Son appli plante le jour des soldes.',['Payer des serveurs',{c:OBS_C,rep:2},'Ça repart en dix minutes.'],['Rester avec elle toute la nuit',{nrg:12,rep:5},'Elle trouve le bug à 4 h. Vous mangez des raviolis en silence.']],
+    ['Son appli fait le tour de la ville. Elle veut un associé.',['Devenir son associé',{g:OBS_G,rep:3},'Vos deux noms sur la première page.'],['La laisser voler seule',{rep:5},'Elle t’envoie une carte : « Merci de m’avoir crue. »']]]},
+  'Atlantide':{r:'d',who:'Nérée',n:'Nérée, gardien des baleines',d:'Nérée parle aux baleines. Elles ont changé de route et passent maintenant au-dessus de tes boutiques.',s:[
+    ['Leur chant fait vibrer les vitres. Les clients ont peur.',['Renforcer les vitres',{c:OBS_C},'Les vitres tiennent. Le chant devient une curiosité.'],['Organiser des écoutes avec Nérée',{rep:5},'Les gens viennent écouter. Tu vends des coussins.']],
+    ['Un baleineau s’est pris dans un câble.',['Plonger avec Nérée',{nrg:12,rep:6},'Vous le libérez. Sa mère te frôle en repartant.'],['Payer des plongeurs',{c:OBS_C,rep:3},'Libéré en dix minutes.']],
+    ['Nérée veut un sanctuaire, loin des boutiques.',['Céder un de tes terrains',{c:OBS_C,rep:5},'Les baleines s’y installent. Le quartier respire.'],['Proposer de déplacer les routes',{nrg:10,rep:3},'Des mois de discussions. Ça finit par marcher.']],
+    ['Les baleines reviennent chaque soir. On veut en faire une fête.',['Fête gratuite',{rep:6},'Toute la ville chante avec elles.'],['Places payantes',{g:OBS_G},'Complet chaque soir. Les baleines ne demandent rien.']]]},
+  'La Lune':{r:'d',who:'Pip',n:'Pip, le robot de maintenance',d:'Pip, un vieux robot de la première base, doit partir à la casse. Il sait réparer tout ce qui existe ici.',s:[
+    ['Pip te suit partout en bipant doucement.',['Lui donner un nom sur ton badge',{rep:3},'Il bipe deux fois. Ça veut dire merci.'],['Lui offrir une batterie neuve',{c:OBS_C},'Il fait trois tours sur lui-même.']],
+    ['Une fuite d’air dans ta boutique. Pip est le seul à la trouver.',['Le laisser faire',{nrg:6,rep:3},'Il la bouche avec un bout de ruban adhésif. Ça tient.'],['Appeler l’équipe officielle',{c:OBS_C},'Ils arrivent après Pip, qui a déjà tout réparé.']],
+    ['La colonie vote pour mettre Pip à la casse.',['Plaider pour lui',{rep:6},'Pip est sauvé, à une voix près.'],['Le racheter toi-même',{c:OBS_C*2},'Il devient ton employé. Le meilleur.']],
+    ['Pip pourrait former les nouveaux robots.',['L’installer comme instructeur',{rep:5},'Douze robots qui bipent comme lui.'],['Le laisser se reposer',{rep:4},'Il regarde la Terre se lever. Il bipe très doucement.']]]},
+  'Mars':{r:'c',who:'Ada',n:'Ada, la première née sur Mars',d:'Ada a 12 ans. C’est la première enfant née sur Mars. Elle n’a jamais vu de pluie.',s:[
+    ['Ada te demande à quoi ressemble la mer.',['Lui raconter Marseille',{nrg:6,rep:3},'Elle dessine des vagues pendant une semaine.'],['Lui offrir un aquarium',{c:OBS_C},'Deux poissons rouges. Les premiers de Mars.']],
+    ['Elle veut construire une serre à l’école.',['Financer la serre',{c:OBS_C,rep:3},'Les premières tomates poussent en trois mois.'],['L’aider à la bâtir',{nrg:12,rep:5},'Ta première vraie construction de tes mains.']],
+    ['Une tempête coupe l’école du reste de la colonie.',['Y aller en rover',{nrg:12,rep:6},'Tu ramènes les élèves un par un.'],['Payer un convoi de secours',{c:OBS_C,rep:3},'Tout le monde rentre sain et sauf.']],
+    ['Ada fait un discours pour les dix ans de la colonie.',['Écrire le discours avec elle',{nrg:8,rep:5},'Elle termine par ton nom. Tu ne t’y attendais pas.'],['La laisser l’écrire seule',{rep:6},'« Un jour, il pleuvra ici. » Toute la colonie applaudit.']]]},
+  'Istanbul':{r:'d',who:'Elif',n:'Elif, batelière du Bosphore',d:'Elif fait traverser les gens entre l’Europe et l’Asie sur une barque de son grand-père.',s:[
+    ['Sa barque prend l’eau.',['Payer un calfatage',{c:OBS_C},'Elle flotte comme au premier jour.'],['Écoper avec elle tout un matin',{nrg:10,rep:4},'Vous arrivez en Asie trempés et hilares.']],
+    ['Un ferry moderne lui vole ses clients.',['Lui faire de la publicité',{c:OBS_C,rep:2},'Les touristes font la queue pour « la barque d’Elif ».'],['Lui proposer de livrer tes colis',{g:OBS_G},'Elle fait trois traversées de plus par jour.']],
+    ['Une tempête la surprend au milieu du détroit.',['Envoyer un bateau de secours',{c:OBS_C,rep:4},'Elle rentre à bon port, furieuse d’avoir été aidée.'],['Attendre sur le quai avec une couverture',{nrg:8,rep:5},'Elle accoste à minuit. Elle te sourit.']],
+    ['Elle veut apprendre le métier à son fils.',['Offrir une deuxième barque',{c:OBS_C,rep:4},'Deux barques, côte à côte, sur le Bosphore.'],['Être le premier passager du fils',{rep:5},'Il rame de travers. Tu arrives quand même.']]]},
+  'Le Caire':{r:'d',who:'la professeure Nour',n:'La carte de la professeure Nour',d:'La professeure Nour cherche un tombeau perdu depuis trente ans. Personne ne la croit.',s:[
+    ['Elle te montre une carte dessinée à la main.',['Financer une première fouille',{c:OBS_C},'Un mur apparaît sous le sable.'],['Lire ses carnets avec elle',{nrg:8,rep:3},'Tu remarques un détail qu’elle avait manqué.']],
+    ['Les autorités suspendent son permis.',['Plaider sa cause',{rep:5},'Le permis revient, avec des excuses.'],['Payer un avocat',{c:OBS_C},'Le permis revient en une semaine.']],
+    ['Un collectionneur veut acheter tout ce qu’elle trouvera.',['Refuser pour elle',{rep:6},'Tout ira au musée. Elle te serre la main longtemps.'],['L’écouter',{g:OBS_G},'Elle refuse quand même. Tu as touché une avance.']],
+    ['Le dernier jour, une porte apparaît.',['L’ouvrir avec elle',{nrg:10,rep:6},'Derrière : une salle peinte, intacte.'],['La laisser l’ouvrir seule',{rep:5},'Elle pleure. Trente ans d’attente.']]]},
+  'Sydney':{r:'c',who:'Kylie',n:'Kylie et la vague de Bondi',d:'Kylie, reine du surf à Bondi, veut organiser une compétition pour les gamins du quartier.',s:[
+    ['Kylie te met sur une planche. Tu tombes dix fois.',['Retenter le lendemain',{nrg:10,rep:4},'La onzième fois, tu tiens trois secondes.'],['Offrir des planches aux gamins',{c:OBS_C,rep:2},'Trente planches neuves sur le sable.']],
+    ['Un requin est aperçu. La plage ferme.',['Payer des filets de protection',{c:OBS_C},'La plage rouvre la semaine suivante.'],['Organiser une fête sur le sable en attendant',{nrg:8,rep:4},'Personne ne se baigne. Tout le monde danse.']],
+    ['Une marque veut mettre son logo sur tout.',['Accepter le sponsor',{g:OBS_G},'Ça paie les médailles. Kylie fait la grimace.'],['Garder la compétition libre',{rep:5},'Des banderoles peintes à la main.']],
+    ['Le jour de la compétition, la houle est énorme.',['Maintenir la course',{rep:6},'Une gamine de 11 ans gagne. Bondi hurle de joie.'],['Reporter d’un jour',{rep:4},'Le lendemain, des vagues parfaites.']]]}
+};
+Object.keys(OB_SAGA).forEach(n=>{const C=OB_CITY[n],G=OB_SAGA[n];if(!C)return;const i=C.t.findIndex(T=>T.id===G.r);if(i<0)return;
+  C.t[i]={id:G.r,k:'story',saga:1,who:G.who,n:G.n,d:G.d,steps:G.s.map(([q,a,b])=>({q,ch:[a,b]}))};C.t.unshift(C.t.splice(i,1)[0])});
 const obCity=()=>OB_CITY[(CITIES[S.city||0]||{}).n]||OB_GEN;
+const obGiftT=()=>obCity().t.find(T=>!T.saga)||obCity().t[0];
 /* ---------- État, progrès, réussite ---------- */
 function obSt(){const c=S.city||0;if(!S.ob||typeof S.ob!=='object'||S.ob.c!==c||!S.ob.t||typeof S.ob.t!=='object'){S.ob={c,t:{}};
-    if(S.leg&&Array.isArray(S.leg.b)&&S.leg.b.includes('ob')){const T=obCity().t[0];if(T)S.ob.t[T.id]={ok:1,gift:1}}}return S.ob}
+    if(S.leg&&Array.isArray(S.leg.b)&&S.leg.b.includes('ob')){const T=obGiftT();if(T)S.ob.t[T.id]={ok:1,gift:1}}}return S.ob}
 function obState(T){const O=obSt();let s=O.t[T.id];if(!s||typeof s!=='object'){s=O.t[T.id]={};const K=OBK[T.k];if(K&&K.init)K.init(T,s)}return s}
 const obTasks=()=>obCity().t.filter(T=>OBK[T.k]);
 function obAll(){const L=obTasks().slice(),g=galTask();if(g)L.push(g);return L}
@@ -9154,9 +9573,9 @@ conqGoals=function(){const c=S.city||0,cn=obCN(),lv=pgLv(c),nb=pgNb(c);
 
 /* ---------- Écran des affaires de la ville ---------- */
 function obCard(T){const s=obState(T),K=OBK[T.k],[a,b]=obP(T),ok=!!s.ok,nd=obNeed(T);let h='';try{h=K.hint(T,s)}catch(e){}
-  return `<button class="ob-card ${ok?'ok':''}" data-a="ob_open" data-id="${T.id}" aria-label="${esc(T.n)}${ok?', réussi':''}"><span class="ob-tag">${K.tag}</span><b class="ob-t">${T.n}</b><span class="ob-d">${ok?'Réussi.':nd||h}</span>${ok?'':obBar(a,b)}</button>`}
+  return `<button class="ob-card ${ok?'ok':''}" data-a="ob_open" data-id="${T.id}" aria-label="${esc(T.n)}${ok?', réussi':''}"><span class="ob-tag">${T.saga?'Histoire · '+esc(T.who):K.tag}</span><b class="ob-t">${T.n}</b><span class="ob-d">${ok?'Réussi.':nd||h}</span>${ok?'':obBar(a,b)}</button>`}
 function obModalHTML(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';if(!s.ok&&!nd)try{body=K.body(T,s)}catch(e){body='';if(typeof reportErr==='function')reportErr(e,'objectifs')}
-  return `<div class="ob-m" id="obm" data-id="${T.id}"><p class="ob-kick">${K.tag} · ${T.gal?'Contrat galactique':esc(obCN())}</p><h2>${T.n}</h2><p class="ob-lead">${T.d}</p>
+  return `<div class="ob-m" id="obm" data-id="${T.id}"><p class="ob-kick">${K.tag}${T.saga?' avec '+esc(T.who):''} · ${T.gal?'Contrat galactique':esc(obCN())}</p><h2>${T.n}</h2><p class="ob-lead">${T.d}</p>
     <p class="ob-msg" role="status" aria-live="polite"${s.msg?'':' hidden'}>${s.msg||''}</p>
     ${s.ok?`<p class="ob-win">Réussi.${s.gift?' Ton carnet d’adresses a fait le travail.':''}</p>`:nd?`<p class="ob-need">${nd}</p>`:body}
     <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button></div>`}
@@ -9171,6 +9590,7 @@ vObjectifs=(f=>function(){let h=f();
   h=h.replace(/<p class="hint" style="margin:0 0 8px">[^<]*<\/p>/,''); /* l’accroche de ville est maintenant au-dessus des affaires */
   const sec=obSection(),i=h.search(/<div class="panel"><div class="kv"><span>Trésor de l’empire|<div class="route">/);h=i>=0?h.slice(0,i)+sec+h.slice(i):h+sec;
   if((S.city|0)>=CITIES.length-1)h=h.replace('Dernière étape du voyage.',()=>finObjHTML());
+  else{const ph=prestHTML();if(ph){const j=h.indexOf('<div class="route">');h=j>=0?h.slice(0,j)+ph+h.slice(j):h+ph}}
   return h})(vObjectifs);
 badges=(f=>function(){f.apply(this,arguments);try{if((S.city|0)>=CITIES.length-1&&!S.fin&&conqDone()>=7){const e=$('#b-objectifs');if(e){e.hidden=false;e.classList.remove('dot');e.textContent='!'}}}catch(e){}})(badges);
 
@@ -9196,12 +9616,16 @@ function legSet(o){try{localStorage.setItem(LEG_KEY,JSON.stringify(o))}catch(e){
 function legBest(n,ms){if(!n||!(ms>60000))return;const L=legGet();if(!(L.best[n]>0)||ms<L.best[n]){L.best[n]=ms;legSet(L)}}
 const LEG_B=[
   ['cash','Bas de laine','Tu démarres avec de quoi ouvrir ta deuxième boutique.'],
-  ['star','Nom connu','Deux étoiles de franchise d’office : +20 % sur tous tes revenus.'],
+  ['star','Nom connu','Deux étoiles de franchise d’office : +20 % sur tous tes revenus, et tous les onglets ouverts.'],
   ['mgr','Vieil associé','Un gérant t’attend déjà dans ta première boutique.'],
   ['rep','Bonne presse','Réputation +20 et énergie au maximum au départ.'],
   ['ob','Carnet d’adresses','Dans chaque ville, une des quatre affaires est déjà réglée.'],
   ['unl','Déjà rodé','Tous les onglets ouverts d’office, sans tutoriel.']];
-const legSlots=()=>Math.min(4,2+Math.floor(legGet().pts/3));
+const PRESTIGE_AT=4; /* « prestige » possible dès la 5e ville (Paris), avant la fin du voyage */
+const legSlots=()=>{const p=Math.floor(legGet().pts/3);if(S.fin)return Math.min(4,2+p);return Math.min(3,1+Math.floor(Math.max(0,(S.city|0)-PRESTIGE_AT)/4)+p)};
+const legCan=()=>!!S.fin||(S.city|0)>=PRESTIGE_AT;
+function prestHTML(){if(S.fin||!legCan()||!S.started)return '';const k=legSlots();
+  return `<div class="panel ob-prest"><h3 style="margin:0 0 4px">Prestige (si tu veux)</h3><p class="hint">Tu peux tout recommencer maintenant avec ${k} bonus permanent${k>1?'s':''}. Plus tu vas loin, plus tu en gagnes. En bouclant le voyage : 2 bonus et un titre.</p><button class="btn small" style="margin-top:8px" data-a="fin_leg">Voir les bonus</button></div>`}
 /* Applique les bonus choisis au début de la nouvelle vie */
 function legApply(){if(!S.started||S.dead)return;const L=legGet();
   if(L.pend&&!S.leg&&(S.city|0)===0&&(+S.playMs||0)<600000&&!S.fin){S.leg={b:(L.pend.b||[]).filter(k=>LEG_B.some(x=>x[0]===k)),ap:0,run:L.runs.length+1};L.pend=null;legSet(L)}
@@ -9211,7 +9635,7 @@ function legApply(){if(!S.started||S.dead)return;const L=legGet();
   if(b.includes('mgr'))S.biz[BIZ[0].id].mgr=true;
   if(b.includes('rep')){S.rep=clamp(S.rep+20,0,100);S.energy=100}
   if(b.includes('unl')){S.unl={all:1};S.tut={step:9,done:true};S.tours={_all:1};try{ongBuildTabs();unlDOM()}catch(e){}}
-  if(b.includes('ob')){const O=obSt(),T=obCity().t[0];if(T&&!(O.t[T.id]&&O.t[T.id].ok))O.t[T.id]={ok:1,gift:1}}
+  if(b.includes('ob')){const O=obSt(),T=obGiftT();if(T&&!(O.t[T.id]&&O.t[T.id].ok))O.t[T.id]={ok:1,gift:1}}
   S.leg.ap=1;dispCash=S.cash;save();
   if(b.length)setTimeout(()=>toast(`Héritage : ${b.map(k=>(LEG_B.find(x=>x[0]===k)||[,''])[1]).join(', ')}.`),1500)}
 setInterval(()=>{try{legApply()}catch(e){}},700);
@@ -9271,7 +9695,7 @@ function finEnd(){if(S.fin||(S.city|0)<CITIES.length-1||conqDone()<7)return;cons
   sfx('rank');save();finShow();render()}
 function finLegHTML(sel){const L=legGet(),k=legSlots();sel=sel||[];
   return `<div id="legm"><p class="ob-kick">Héritage</p><h2>Une nouvelle vie, pas tout à fait de zéro</h2>
-    <p>Tu recommences dans ta première ville. Choisis ${k} bonus qui te suivront.</p>
+    <p>${S.fin?'Tu recommences dans ta première ville.':`Prestige : tu quittes ${esc(obCN())} pour repartir de ta première ville.`} Choisis ${k} bonus qui te suivront.</p>
     <p class="hint">Points d’héritage : ${L.pts}. Tous les 3 points, un bonus de plus (jusqu’à 4). Les contrats galactiques en rapportent.</p>
     <div class="ob-team">${LEG_B.map(([id,n,d])=>{const on=sel.includes(id);return `<button class="ob-cand ${on?'on':''}" aria-pressed="${on}" data-a="fin_pick" data-v="${id}" ${!on&&sel.length>=k?'disabled':''}><b>${n}</b><span>${d}</span></button>`}).join('')}</div>
     <p class="hint">Tout le reste repart de zéro : argent, villes, famille, trophées. Tes records et tes points restent.</p>
@@ -9290,12 +9714,12 @@ function finClick(a,b){
   if(a==='fin_show'){finShow();return}
   if(a==='fin_close'){const d=document.getElementById('finScr');if(d)d.remove();return}
   if(a==='fin_def'){const d=document.getElementById('finScr');if(d)d.remove();modal(finDefHTML());return}
-  if(a==='fin_leg'){const d=document.getElementById('finScr');if(d)d.remove();LEG_SEL=[];modal(finLegHTML(LEG_SEL));return}
+  if(a==='fin_leg'){if(!legCan())return;const d=document.getElementById('finScr');if(d)d.remove();LEG_SEL=[];modal(finLegHTML(LEG_SEL));return}
   if(a==='fin_pick'){const v=b.dataset.v,i=LEG_SEL.indexOf(v);if(i>=0)LEG_SEL.splice(i,1);else if(LEG_SEL.length<legSlots())LEG_SEL.push(v);modal(finLegHTML(LEG_SEL));const x=document.querySelector(`#legm [data-v="${v}"]`);if(x)try{x.focus()}catch(e){}return}
   if(a==='fin_start'){if(!LEG_SEL.length)return;modal(`<h2>Recommencer une nouvelle vie ?</h2><p>Argent, villes, famille et trophées repartent de zéro. Tu gardes : ${LEG_SEL.map(k=>(LEG_B.find(x=>x[0]===k)||[,''])[1]).join(', ')}, tes records et tes points d’héritage.</p>
     <div style="display:grid;gap:8px;margin-top:18px"><button class="btn big go" data-a="fin_go">Oui, recommencer</button><button class="btn ghost" data-a="fin_leg2">Revenir aux bonus</button></div>`);return}
   if(a==='fin_leg2'){modal(finLegHTML(LEG_SEL));return}
-  if(a==='fin_go'){const L=legGet();L.pend={b:LEG_SEL.slice(),at:Date.now()};legSet(L);save();
+  if(a==='fin_go'){if(!legCan())return;const L=legGet();L.pend={b:LEG_SEL.slice(),at:Date.now()};if(!S.fin)L.prest=(L.prest|0)+1;legSet(L);save();
     const bt=document.createElement('button');bt.dataset.a='reset2';bt.hidden=true;document.body.appendChild(bt);bt.click();bt.remove();return}
 }
 /* Garder ces champs d’une ville à l’autre ; noter le temps passé dans la ville quittée */
@@ -9305,6 +9729,7 @@ franchise=(f=>function(){const c0=S.city,cn=(CITIES[c0]||{}).n,keep={};['fin','l
 vEmpire=(f=>function(){const h=f();const L=legGet();let x='';
   if(S.fin||L.runs.length)x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Ton titre</h3><p><b>${esc(S.fin?S.fin.title:(L.runs[L.runs.length-1]||{}).title||'')}</b></p><p class="hint">${L.runs.length} voyage${L.runs.length>1?'s':''} bouclé${L.runs.length>1?'s':''}, ${L.pts} point${L.pts>1?'s':''} d’héritage.</p>${S.fin?'<div class="fin-btns"><button class="btn small" data-a="fin_show">Revoir le bilan</button><button class="btn small" data-a="fin_def">Défis de fin</button></div>':''}</div>`;
   if(Object.keys(S.cityTimes||{}).length||Object.keys(L.best).length)x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Tes temps par ville</h3><p class="hint">Temps de jeu réel passé dans chaque ville, jusqu’au départ.</p>${finRec()}</div>`;
+  x+=prestHTML().replace('class="panel ob-prest"','class="panel ob-prest" style="margin-top:10px"');
   x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Aide</h3><p class="hint">Revoir la visite guidée de chaque écran.</p><button class="btn small" data-a="co_reset">Revoir les visites</button></div>`;
   return h.replace('<div class="foot">',()=>x+'<div class="foot">')})(vEmpire);
 /* ---------- Tutoriel guidé : une bulle qui pointe le vrai bouton ---------- */
@@ -9331,17 +9756,23 @@ tutDef=function(){const b0=BIZ[0],b1=BIZ[1],L0=()=>S.biz[b0.id].lvl,G=Math.max(3
     tgt:()=>S.cash<b1.cost?null:sel===b1.id?coEl('#sh-buy'):coMap('lot',b1.id)},
   {t:'Engage un gérant',d:'Il encaisse à ta place, même quand le jeu est fermé.',tab:'',ok:()=>BIZ.some(b=>S.biz[b.id].mgr),p:()=>[Math.min(S.cash,MGR[b0.id]),MGR[b0.id],1],
     dd:()=>S.cash<MGR[b0.id]?`Il coûte ${fmt(MGR[b0.id])}. Continue d’encaisser.`:S.tab==='gestion'?'Touche « Gérant » sous ta boutique.':'Va dans l’onglet Affaires.',
-    tgt:()=>S.cash<MGR[b0.id]?null:S.tab==='gestion'?coEl('#g-mgr-'+b0.id):coEl('.tab[data-t="gestion"]')}]};
+    tgt:()=>S.cash<MGR[b0.id]?null:S.tab==='gestion'?coEl('#g-mgr-'+b0.id):coEl('.tab[data-t="gestion"]')},
+  {t:'Entre dans ta boutique',d:'À l’intérieur : les commandes des clients, ton équipe, l’atelier.',tab:'',ok:()=>!!(S.flags&&S.flags.enIn),
+    dd:()=>S.tab==='gestion'?'Touche « Entrer » sous ta boutique.':sel===b0.id?'Touche « Entrer » dans la fiche.':'Touche ta boutique sur la carte, puis « Entrer ».',
+    tgt:()=>S.tab==='gestion'?coEl('#main .en-go'):S.tab!=='ville'?coEl('.tab[data-t="ville"]'):sel===b0.id?coEl('#bsheet .en-go'):coMap('biz',b0.id)}]};
 tutHTML=()=>'';
 tutPaint=function(){const m=$('#tutoMain');if(m)m.remove();document.body.classList.toggle('co-tut',tutOn())};
 tutCheck=function(){if(!S.started||!S.tut||S.tut.done||S.dead)return;const D=tutDef();let moved=false,k=0;
   while(k++<D.length&&(S.tut.step|0)<D.length&&D[S.tut.step|0].ok()){S.tut.step=(S.tut.step|0)+1;moved=true}
   if((S.tut.step|0)>=D.length){S.tut.done=true;save();tutPaint();sfx('rank');
-    CO.mode='show';CO.show={k:'Premiers pas terminés',t:'À toi de jouer',d:'De nouveaux onglets arrivent au fil de ta partie. Si tu ne sais plus quoi faire, touche « Que faire ? ».',tgt:()=>coEl('.co-pill'),btn:'Compris'};CO.until=Date.now()+20000;return}
+    if(document.querySelector('#layer .en-in')){coTour('en',true);CO.modal=1;CO.after='ville';return}
+    setTimeout(()=>{if(!CO.mode){if(S.tab!=='ville'){S.tab='ville';sel=null;render()}coTour('ville',true)}},300);return}
   if(moved){sfx('good');save();CO.panned=''}tutPaint()};
 /* Mini-visites des onglets (2-3 bulles) */
 const TOURS={
-  ville:[['#qtrack','Ton objectif','La prochaine petite mission. Touche-la pour voir la suite.'],['#boost','Rush ×2','Double tes ventes un moment, puis se recharge.'],['.tabs','Les onglets','Tout le jeu est là. D’autres arrivent au fil de ta partie.'],['.co-pill','Que faire ?','Si tu bloques, touche ici : on te dit quoi faire ensuite.']],
+  ville:[['#qtrack','Ton objectif','La prochaine petite mission. Touche-la pour voir la suite.'],['.tabs','Les onglets','Tout le jeu est là. D’autres arrivent au fil de ta partie, avec une courte visite.'],['.co-pill','Que faire maintenant ?','Toujours là. Si tu bloques, touche ici : on te dit quoi faire ensuite.']],
+  en:[['#layer .en-kpi','Les chiffres','Ce que la boutique vend chaque mois, et ce qu’il reste après les charges.'],['#layer .en-seg','Trois volets','Les commandes des clients, ton équipe, l’atelier pour de nouveaux produits.'],['#layer .en-body','À toi de jouer','Deux ou trois décisions par visite suffisent. Reviens quand une pastille s’allume.']],
+  wk:[['#main .wk','Tes chantiers','Une amélioration se construit en temps réel, même jeu fermé.'],['#main .wk .tag','Tes équipes','Deux chantiers à la fois. Une troisième équipe arrive avec les bureaux.']],
   gestion:[['#main .seg','Quatre écrans','Boutiques, clients, améliorations et bourse.'],['#main [id^="g-buy-"]','Agrandir','Le même bouton que sur la carte, sans chercher le bâtiment.'],['#main [id^="g-mgr-"]:not([disabled]), #main [id^="g-mgr-"]','Gérant','Il encaisse à ta place, même quand le jeu est fermé.']],
   marche:[['#main .pg-mk','L’objectif de bourse','Seuls les bénéfices de tes ventes comptent.'],['#main .pg-big','Acheter, vendre','Achète quand ça baisse, revends quand ça remonte.']],
   objectifs:[['#main .obj-main','En ce moment','Une petite mission à la fois, avec sa récompense.'],['#main .panel.conq','La conquête','Coche tout pour partir vers la ville suivante.'],['#main .ob-tasks','Les affaires de la ville','Chaque ville a ses propres défis. Touche une carte pour la jouer.']],
@@ -9354,7 +9785,7 @@ const coTabKey=()=>S.tab==='marche'?'marche':S.tab;
 function coTour(key,auto){const L=(TOURS[key]||[]).filter(([s])=>coEl(s)||document.querySelector(s));if(!L.length){if(!auto)toast('Pas d’aide pour cet écran.');return}
   S.tours=S.tours&&typeof S.tours==='object'?S.tours:{};S.tours[key]=1;CO.mode='tour';CO.steps=L;CO.i=0;CO.key='';CO.back=document.activeElement;coScroll()}
 function coScroll(){const s=CO.steps[CO.i];if(!s)return;const e=document.querySelector(s[0]);if(e&&!e.closest('#hud')&&!e.closest('.tabs')&&e.scrollIntoView){const r=e.getBoundingClientRect();if(r.top<120||r.bottom>innerHeight-120)try{e.scrollIntoView({block:'center',behavior:'instant'})}catch(x){e.scrollIntoView()}}}
-function coEnd(){const was=CO.mode;CO.mode='';CO.show=null;CO.key='';if(was&&CO.back&&CO.back.focus&&document.contains(CO.back))try{CO.back.focus({preventScroll:true})}catch(e){}CO.back=null}
+function coEnd(){const was=CO.mode;CO.mode='';CO.modal=0;if(was==='tour'&&CO.after){const k=CO.after;CO.after='';setTimeout(()=>{if(CO.mode)return;if(k==='ville'&&S.tab!=='ville'){S.tab='ville';sel=null;render()}coTour(k,true)},400)}CO.show=null;CO.key='';if(was&&CO.back&&CO.back.focus&&document.contains(CO.back))try{CO.back.focus({preventScroll:true})}catch(e){}CO.back=null}
 /* « Que faire maintenant ? » : la prochaine action utile, dans l’ordre */
 function coNext(){
   if(!S.started||S.dead)return {t:'Une vie s’achève',d:'Choisis qui reprend l’empire.'};
@@ -9382,21 +9813,22 @@ function coGo(n){if(!n)return coEnd();if(n.tab&&S.tab!==n.tab&&!tabLocked(n.tab)
 function coScrollTo(){if(!CO.show)return;const r=CO.show.tgt&&CO.show.tgt();if(r&&r.el&&!r.el.closest('#hud,.tabs')){if(r.y<110||r.y+r.h>innerHeight-110)try{r.el.scrollIntoView({block:'center'})}catch(e){}}}
 /* Calque des bulles */
 function coDOM(){let d=document.getElementById('coach');if(d)return d;d=document.createElement('div');d.id='coach';d.hidden=true;
-  d.innerHTML='<div class="co-ring"></div><div class="co-bub" role="dialog" aria-modal="false" aria-labelledby="co-t" aria-describedby="co-d"><div class="co-in"></div><i class="co-arr"></i></div>';document.body.appendChild(d);return d}
+  d.innerHTML='<div class="co-ring"></div><div class="co-bub" role="dialog" aria-modal="false" aria-labelledby="co-t" aria-describedby="co-d"><div class="co-in" aria-live="polite"></div><i class="co-arr"></i></div>';document.body.appendChild(d);return d}
 function coSpec(){
   if(CO.mode==='tour'){const s=CO.steps[CO.i];if(!s)return null;const n=CO.steps.length;
     return {k:`Visite · ${CO.i+1}/${n}`,t:s[1],d:s[2],tgt:()=>coEl(s[0]),dim:1,foot:`<button class="co-skip" data-a="co_end">Passer</button><button class="btn small go" data-a="co_nx">${CO.i+1<n?'Suivant':'Terminé'}</button>`,focus:1}}
   if(CO.mode==='ask'){const s=CO.show;return {k:s.k,t:s.t,d:s.d,tgt:s.tgt,foot:`<button class="co-skip" data-a="co_help">Aide de cet écran</button><button class="btn small ghost" data-a="co_end">Fermer</button>${s.nx&&(s.nx.tgt||s.nx.tab)?'<button class="btn small go" data-a="co_go">Montre-moi</button>':''}`,focus:1}}
-  if(CO.mode==='show'){const s=CO.show;if(!s)return null;return {k:s.k,t:s.t,d:s.d,tgt:s.tgt,foot:`<button class="btn small go" data-a="co_end">${s.btn||'Compris'}</button>`,focus:!!s.focus}}
+  if(CO.mode==='show'){const s=CO.show;if(!s)return null;return {k:s.k,t:s.t,d:s.d,tgt:s.tgt,foot:`<button class="co-skip" data-a="co_end">Passer</button><button class="btn small go" data-a="co_end">${s.btn||'Compris'}</button>`,focus:!!s.focus}}
   if(tutOn()){const D=tutDef(),i=Math.min(S.tut.step|0,D.length-1),st=D[i];let d=(st.dd&&st.dd())||st.d,tgt=st.tgt;
     if(st.tab&&S.tab!==st.tab){d='Reviens sur la carte : touche « Ville » en bas.';tgt=()=>coEl('.tab[data-t="ville"]')}
     const p=st.p?st.p():null;
     return {k:`Premiers pas · ${i+1}/${D.length}`,t:st.t,d,tgt,tut:1,prog:p,foot:`<button class="co-skip" data-a="tut_skip">Passer le tutoriel</button>`}}
   return null}
 function coFrame(){requestAnimationFrame(coFrame);try{coPaint()}catch(e){}}
-function coPaint(){const d=coDOM();
+function coPaint(){const d=coDOM();if(S.started&&!document.querySelector('#hud .co-hud'))coHud();
   if(CO.mode==='show'&&CO.until&&Date.now()>CO.until)coEnd();
-  const sp=(modalOpen||document.getElementById('finScr')||!S.started)?null:coSpec();
+  const inM=CO.mode==='tour'&&CO.modal&&!!document.querySelector('#layer .en-in');if(CO.mode==='tour'&&CO.modal&&!inM)coEnd();d.classList.toggle('over',inM);
+  const sp=((modalOpen&&!inM)||document.getElementById('finScr')||!S.started)?null:coSpec();
   if(!sp){if(!d.hidden){d.hidden=true;CO.key=''}return}
   const bub=d.querySelector('.co-bub'),ring=d.querySelector('.co-ring'),inn=d.querySelector('.co-in');
   const pr=sp.prog?`<div class="co-bar"><i style="width:${Math.round(100*clamp(sp.prog[0]/Math.max(1e-9,sp.prog[1]),0,1))}%"></i></div><span class="co-n">${sp.prog[2]?fmt(sp.prog[0])+' / '+fmt(sp.prog[1]):sp.prog[0]+' / '+sp.prog[1]}</span>`:'';
@@ -9416,8 +9848,8 @@ function coPaint(){const d=coDOM();
     bub.style.left=((W-bw)/2)+'px';bub.style.top=Math.max(8,tb-bh-12)+'px';bub.querySelector('.co-arr').hidden=true}
 }
 /* Boutons d’aide dans le bandeau : « Que faire ? » et « ? » */
-function coHud(){const r=document.querySelector('#hud .meta');if(!r||r.querySelector('.co-hud'))return;
-  r.insertAdjacentHTML('beforeend','<span class="co-hud"><button class="co-pill" data-a="co_next" aria-label="Que faire maintenant ?">Que faire ?</button><button class="co-q" data-a="co_help" aria-label="Aide de cet écran">?</button></span>')}
+function coHud(){const r=document.querySelector('#hud .hud-r')||document.querySelector('#hud .meta');if(!r||r.querySelector('.co-hud'))return;
+  r.insertAdjacentHTML('afterbegin','<span class="co-hud"><button class="co-pill" data-a="co_next">Que faire maintenant ?</button><button class="co-q" data-a="co_help" aria-label="Aide de cet écran">?</button></span>')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');
   if(CO.mode==='show'&&CO.show&&CO.show.tgt&&!(b&&b.closest('#coach'))){try{const r=CO.show.tgt();if(r){const x=e.clientX,y=e.clientY;if(x>=r.x-8&&x<=r.x+r.w+8&&y>=r.y-8&&y<=r.y+r.h+8)setTimeout(coEnd,0)}}catch(x){}}
   if(!b||b.disabled)return;const a=b.dataset.a;if(a.indexOf('co_')!==0)return;e.stopImmediatePropagation();e.preventDefault();
@@ -9429,12 +9861,17 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');
   else if(a==='co_reset'){S.tours={};save();toast('Les visites reviendront à l’ouverture de chaque écran.')}
 },true);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(CO.mode==='tour'||CO.mode==='ask'||CO.mode==='show')&&!modalOpen){coEnd();e.preventDefault()}});
+/* Nouveautés (pour tout le monde, anciennes parties comprises) : intérieur des boutiques, chantiers */
+function coTrig(){if(!S.started||S.dead)return;const T=S.tours&&typeof S.tours==='object'?S.tours:(S.tours={});
+  if(document.querySelector('#layer .en-in')){S.flags=S.flags||{};S.flags.enIn=1;if(!T.en&&!CO.mode&&!tutOn()){coTour('en',true);CO.modal=1}return}
+  if(!T.wk&&!CO.mode&&!modalOpen&&!tutOn()&&Array.isArray(S.works)&&S.works.length){if(S.tab==='gestion'&&S.gTab==='upg'&&document.querySelector('#main .wk'))coTour('wk',true);
+    else{T.wk=1;CO.mode='show';CO.key='';CO.show={k:'Nouveau',t:'Ton premier chantier',d:'Il avance en temps réel, même jeu fermé. Suis-le dans Affaires, puis Améliorer.',tgt:()=>coEl('.tab[data-t="gestion"]'),btn:'Compris'};CO.until=Date.now()+15000}}}
 /* Première ouverture d’un onglet : petite visite (nouvelles parties seulement) */
 renderMain=(f=>function(){f.apply(this,arguments);try{const k=coTabKey();
   if(S.started&&!tutOn()&&!CO.mode&&S.tours&&typeof S.tours==='object'&&!S.tours._all&&!S.tours[k]&&TOURS[k]&&k!=='ville')setTimeout(()=>{if(!modalOpen&&!CO.mode&&coTabKey()===k&&!S.tours[k])coTour(k,true)},450)}catch(e){}})(renderMain);
 /* Nouvel onglet débloqué : une bulle pointe vers lui */
 unlCheck=(f=>function(){const before=S.unl?Object.keys(S.unl).length:0;f.apply(this,arguments);try{if(!S.unl||S.unl.all||Object.keys(S.unl).length<=before)return;
-  const u=UNL.filter(x=>S.unl[x.t]).pop();if(!u||CO.mode)return;CO.mode='show';CO.key='';CO.show={k:'Nouvel onglet',t:u.n,d:`Touche « ${u.n} » en bas : une courte visite t’attend.`,tgt:()=>coEl(`.tab[data-t="${u.t}"]`),btn:'Plus tard'};CO.until=Date.now()+20000}catch(e){}})(unlCheck);
+  const u=UNL.filter(x=>S.unl[x.t]).pop();if(!u||CO.mode||tutOn())return;CO.mode='show';CO.key='';CO.show={k:'Nouvel onglet',t:u.n,d:`Touche « ${u.n} » en bas : une courte visite t’attend.`,tgt:()=>coEl(`.tab[data-t="${u.t}"]`),btn:'Compris'};CO.until=Date.now()+20000}catch(e){}})(unlCheck);
 newGame=(f=>function(){const g=f.apply(this,arguments);g.tours={};g.playMs=0;g.cityMs=0;return g})(newGame);
 repair=(f=>function(o){const r=f(o);if(r&&typeof r==='object'&&r.started&&(r.tours===undefined||r.tours===null))r.tours={_all:1};return r})(repair);
 (function obBoot(){
@@ -9508,6 +9945,7 @@ repair=(f=>function(o){const r=f(o);if(r&&typeof r==='object'&&r.started&&(r.tou
 /* Bulles guidées */
 #coach{position:fixed;inset:0;z-index:45;pointer-events:none}
 #coach[hidden]{display:none}
+#coach.over{z-index:56}
 .co-ring{position:fixed;border:3px solid #FF5FA2;border-radius:12px;pointer-events:none;transition:left .15s,top .15s,width .15s,height .15s;animation:coPulse 1.6s ease-out infinite}
 .co-ring.round{border-radius:50%}
 #coach.dim .co-ring{box-shadow:0 0 0 9999px rgba(12,18,24,.42)}
@@ -9520,13 +9958,14 @@ repair=(f=>function(o){const r=f(o);if(r&&typeof r==='object'&&r.started&&(r.tou
 .co-bar{height:7px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}.co-bar i{display:block;height:100%;background:var(--money,#17834A)}
 .co-n{display:block;font-size:.74rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
 .co-f{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
-.co-f .btn{min-height:40px}
-.co-skip{background:none;border:0;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;min-height:40px;padding:0 4px;margin-right:auto;cursor:pointer}
+.co-f .btn{min-height:44px}
+.co-skip{background:none;border:0;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;min-height:44px;padding:0 6px;margin-right:auto;cursor:pointer}
 .co-arr{position:absolute;width:16px;height:16px;background:var(--surface);border:2px solid var(--ink);transform:rotate(45deg)}
 .co-arr.up{top:-9px;border-right:0;border-bottom:0}.co-arr.down{bottom:-9px;border-left:0;border-top:0}
 .co-arr[hidden]{display:none}
 body.co-tut #qtrack{visibility:hidden}
-.co-hud{margin-left:auto;display:inline-flex;gap:6px;align-items:center}
+.co-hud{display:inline-flex;gap:6px;align-items:center}
+.co-pill{line-height:1.1;max-width:132px;white-space:normal!important;text-align:center;min-height:44px!important;border-radius:14px!important}
 .co-pill{font:inherit;font-size:.78rem;font-weight:800;white-space:nowrap;min-height:32px;padding:0 10px;border-radius:16px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;position:relative}
 .co-pill::before{content:"";position:absolute;inset:-6px 0}
 .co-q{font:inherit;font-weight:800;width:32px;height:32px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;position:relative}
@@ -9535,6 +9974,7 @@ body.co-tut #qtrack{visibility:hidden}
 @media (max-width:400px){#hud .meta{gap:6px}.co-pill{padding:0 8px;font-size:.74rem}.co-q{width:30px;height:30px}}`;
   document.head.appendChild(st);
   coDOM();requestAnimationFrame(coFrame);
+  setInterval(()=>{try{coTrig()}catch(e){}},400);
   setInterval(()=>{try{coHud();obCheck();if(S.started&&!S.dead){obSt();obDerbySet()}}catch(e){if(typeof reportErr==='function')reportErr(e,'objectifs')}},500);
   coHud();
 })();

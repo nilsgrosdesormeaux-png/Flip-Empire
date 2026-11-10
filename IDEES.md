@@ -92,3 +92,13 @@ Règle : chaque option change le jeu pendant plusieurs semaines et a un inconvé
 2. Famille qui se déplace et maison (vie).
 3. Options de sondage sur le club et la ville.
 4. Les trois nouvelles villes, puis le choix mystère.
+
+## Décisions de Nils du 10 novembre (après le bilan du Patron)
+- Rush supprimé (fait). Temps ×2/×4 supprimé (fait). Hors-ligne : 2 h au total puis rien (fait).
+- Difficulté fixe par ville (pas liée à ce qu'on gagne) : on arrive avec une somme donnée, ouvrir et passer d'une entreprise à l'autre est de plus en plus dur, façon hôtel de ville de Clash of Clans ; foot et immobilier plus durs à chaque ville ; bourse inchangée.
+- Intérieur des entreprises : oui (fait, 1re version) ; y voir aussi les améliorations de service, nettoyage, etc.
+- Objectifs différents par ville, tutoriel complet + petit tutoriel à chaque nouveauté : en cours.
+- Istanbul, Le Caire, Sydney : à livrer vite (en cours).
+- PAS de 3D : on reste en 2D, mais graphismes nettement plus propres, épurés et stylés (« pas jeu de pacotille »), plus de détails et d'animations ; PNJ vraiment vivants, chacun avec ses animations et activités.
+- Personnages : mieux dessinés (têtes trop rondes) → proposer plusieurs designs de personnages à Nils, qui choisit.
+- À faire : sauvegarde en ligne avec comptes (Supabase) ; tournoi de 3 jours avec classement entre joueurs ; jeu plus lisible (grands nombres en mots, une pastille à la fois, retirer le panneau Diagnostic). Boutique/Pass : plus tard.
