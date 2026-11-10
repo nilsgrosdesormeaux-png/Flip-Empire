@@ -8769,10 +8769,10 @@ const enTax=()=>Math.min(.16,.08+.005*(S.city|0))*(S.pol&&S.pol.office==='maire'
 function enChargeOf(id){const st=S.biz[id];if(!st||!st.lvl)return{sal:0,ent:0,g:0};const o=enB(id),G=enG(id)*(st.mgr?1:.5),s=st.staff||{},
   nst=(s.clean|0)+(s.wait|0)+(s.qual|0),pal=PALIERS.filter(x=>st.lvl>=x).length;
   return{g:G,sal:G*((st.mgr?.06:0)+.02*o.team.length+.012*nst+(o.chief>=0?.02:0)+(o.spec==='luxe'?.06:0)),ent:G*(.04+.008*pal+(o.spec==='volume'?.05:0))}}
-function enCharges(){let sal=0,ent=0,g=0;openIds().forEach(id=>{const x=enChargeOf(id);sal+=x.sal;ent+=x.ent;g+=x.g});const tax=g*enTax();
-  const r={sal,ent,tax,tot:sal+ent+tax,gross:g};for(const k in r)if(!isFinite(r[k]))r[k]=0;return r}
+function enCharges(){let sal=0,ent=0,g=0;openIds().forEach(id=>{const x=enChargeOf(id);sal+=x.sal;ent+=x.ent;g+=x.g});const tax=g*enTax();let imm=0;try{imm=dailyRent()*.12}catch(e){}
+  const r={sal,ent,tax,imm,tot:sal+ent+tax+imm,gross:g};for(const k in r)if(!isFinite(r[k]))r[k]=0;return r}
 /* Part des ventes qui part en charges (sert au retour d'absence) */
-function enChargeRate(){const c=enCharges();return c.gross>0?clamp(c.tot/c.gross,0,.9):0}
+function enChargeRate(){const c=enCharges();return c.gross>0?clamp((c.tot-c.imm)/c.gross,0,.9):0}
 function enPayCharges(pm){const C=enCharges(),due=Math.round(C.tot*pm);if(!(due>0))return;const paid=Math.min(Math.max(0,S.cash),due);S.cash-=paid;dispCash=Math.min(dispCash,S.cash);
   const E=enInit();E.last={day:S.day,sal:Math.round(C.sal*pm),ent:Math.round(C.ent*pm),tax:Math.round(C.tax*pm),due,paid};
   if(paid<due){openIds().forEach(id=>enB(id).team.forEach(m=>{m.mot=clamp(m.mot-12,0,100)}));if(S.tab==='ville'||!document.hidden)toast(`Salaires en retard : il manquait ${fmt(due-paid)}. Tes équipes font la tête.`)}}
@@ -8950,7 +8950,7 @@ function enEntryHint(id){const o=enB(id);if(o.inc)return 'Un problème t’atten
 vAffaires=(f=>function(){let h=f();BIZ.forEach(b=>{if(!enOpen(b.id))return;const k=`<button class="btn small ghost" data-a="locate" data-id="${b.id}">`;h=h.replace(k,enBtn(b.id)+k)});
   const C=enCharges(),L=enInit().last;let todo=[];openIds().forEach(id=>{const o=enB(id),b=BIZ_BY[id];if(o.inc)todo.push(`${b.e} problème`);if(o.ord&&o.ord.p>=o.ord.w)todo.push(`${b.e} commande prête`)});
   const top=`<div class="panel en-sum"><div class="ug-h"><h3>Charges du mois</h3><b style="color:var(--loss)">−${fmt(C.tot/(S.speed||1))}</b></div>
-    <div class="kv"><span>Salaires</span><b>${fmt(C.sal/(S.speed||1))}</b></div><div class="kv"><span>Entretien</span><b>${fmt(C.ent/(S.speed||1))}</b></div><div class="kv"><span>Impôts locaux</span><b>${fmt(C.tax/(S.speed||1))}</b></div>
+    <div class="kv"><span>Salaires</span><b>${fmt(C.sal/(S.speed||1))}</b></div><div class="kv"><span>Entretien</span><b>${fmt(C.ent/(S.speed||1))}</b></div><div class="kv"><span>Impôts locaux</span><b>${fmt(C.tax/(S.speed||1))}</b></div>${C.imm>0?`<div class="kv"><span>Taxe foncière (tes immeubles)</span><b>${fmt(C.imm/(S.speed||1))}</b></div>`:''}
     ${L&&L.paid<L.due?`<p class="hint" style="color:var(--loss)">Le mois dernier, il manquait ${fmt(L.due-L.paid)} : tes équipes ont perdu le moral.</p>`:''}
     ${todo.length?`<p class="hint" style="margin-top:6px"><b>À voir :</b> ${todo.join(' · ')}</p>`:''}</div>`;
   const i=h.indexOf('<div class="sec-head"><h2>Tes boutiques</h2>');return i<0?h+top:h.slice(0,i)+top+h.slice(i)})(vAffaires);
@@ -8995,6 +8995,39 @@ setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
 const EN_KDEF=1.78,EN_KC={'Ta ville':1.91,'Nantes':1.85,'Lyon':1.81,'Marseille':1.67,'Paris':1.47,'Londres':1.58,'New York':1.54,'Tokyo':1.85,'Dubaï':1.78,'Rio de Janeiro':2.31,'Shanghai':1.69,'Atlantide':1.83,'La Lune':1.73,'Mars':1.81}; /* tient compte du Rush (×2 90 s toutes les 12 min) */
 function enK(c){const n=(CITIES[c|0]||{}).n;return EN_KC[n]||EN_KDEF}
 pgK=(f=>function(c){return f(c)*enK(c)})(pgK);
+/* ---------- 5. Club : plus dur à chaque ville (demande de Nils) ----------
+   Joueurs, salaires, staff et stade coûtent ×1,12 par ville de plus que les recettes ; les adversaires gagnent +1 de niveau par ville. */
+const FT_K=()=>Math.pow(1.12,S.city|0),FT_OPP=()=>(S.city|0);
+ecoM=function(){return CITY_MULT(S.city||0)*FT_K()};
+ecoGate=(f=>function(){const g=f.apply(this,arguments),k=FT_K();['tix','buv','shop','spons','tv','tot'].forEach(x=>{if(isFinite(g[x]))g[x]=Math.round(g[x]/k)});return g})(ecoGate);
+ecoSponsOffers=(f=>function(){f.apply(this,arguments);const C=S.club,k=FT_K();(C.sOff||[]).forEach(o=>{o.amt=Math.round(o.amt/k)})})(ecoSponsOffers);
+genTable=(f=>function(div){const t=f.apply(this,arguments),d=FT_OPP();t.forEach(x=>{if(!x.me)x.str+=d});return t})(genTable);
+
+/* ---------- 6. Immobilier : les biens arrivent sur le marché un par un ----------
+   En arrivant : 3 biens à vendre. Ensuite, un nouveau bien chaque mois (tous les 2 mois dès la 5e ville, 3 dès la 9e…), 4 au plus en vitrine.
+   « Tout acheter » n'achète que ce qui est en vente. État : S.immo.sale (liste), S.immo.saleT (mois du prochain). */
+const IM_SALE_MAX=4,imGap=()=>1+Math.floor((S.city|0)/4);
+function imAddSale(){const I=immoS(),L=I.sale,free=propsList().filter(o=>!S.props[o.pid]&&!L.includes(o.pid));if(!free.length)return false;
+  free.sort((a,b)=>propBase(a)-propBase(b));const pool=free.slice(0,Math.max(3,Math.ceil(free.length/2)));L.push(pick(pool).pid);return true}
+function imSale(){const I=immoS();if(!Array.isArray(I.sale)){I.sale=[];I.saleT=S.day+imGap();for(let k=0;k<3;k++)imAddSale()}
+  const ids=new Set(propsList().map(o=>o.pid));I.sale=I.sale.filter(pid=>ids.has(pid)&&!S.props[pid]);return I.sale}
+const imListed=pid=>imSale().includes(pid);
+function imSaleMonth(){const I=immoS(),L=imSale();if(S.day<(I.saleT||0))return;I.saleT=S.day+imGap();if(L.length<IM_SALE_MAX&&imAddSale()){const o=imOf(I.sale[I.sale.length-1]);if(o)immoLog(`Nouveau sur le marché : ${immoName(o)}.`)}}
+const imNoSale=()=>{toast(`Pas à vendre pour l’instant. Un nouveau bien arrive sur le marché ${imGap()>1?'tous les '+imGap()+' mois':'chaque mois'}.`);sfx('no')};
+buyProp=(f=>function(pid){if(!S.props[pid]&&!imListed(pid)){imNoSale();return}const r=f.apply(this,arguments);imSale();return r})(buyProp);
+immoBuyLoan=(f=>function(pid){if(!S.props[pid]&&!imListed(pid)){imNoSale();return}const r=f.apply(this,arguments);imSale();return r})(immoBuyLoan);
+immoBuyPlan=function(){const free=propsList().filter(o=>!S.props[o.pid]&&imListed(o.pid)).sort((a,b)=>propBase(a)-propBase(b)),list=[];let n=ownedCount(),tot=0;
+  for(const o of free){const p=Math.round(propBase(o)*Math.pow(1.1,n)*immoIdx());if(tot+p>S.cash)break;list.push(o);tot+=p;n++}return{list,tot}};
+buyBlock=function(id){const l=(blocks()[id]||[]).filter(o=>!S.props[o.pid]);if(!l.length)return;if(l.every(o=>imListed(o.pid))){l.forEach(o=>buyProp(o.pid));return}
+  toast('Les biens d’un îlot se vendent un par un, quand ils arrivent sur le marché.');sfx('no')};
+vImmo=(f=>function(){let h=f();const a=h.indexOf('<div class="sec-head"><h2>À vendre</h2>');const L=imSale().map(imOf).filter(Boolean).sort((x,y)=>propBase(x)-propBase(y)),I=immoS();
+  const sec=`<div class="sec-head"><h2>En vente maintenant</h2><p>${L.length} bien${L.length>1?'s':''}</p></div><div class="panel">${L.length?`<ul class="ug">${L.map(immoBuyRow).join('')}</ul>`:'<p class="hint">Rien en vente ce mois-ci.</p>'}
+    <p class="hint" style="margin-top:6px">Les biens arrivent sur le marché un par un : le prochain vers ${dateLabel(Math.max(S.day+1,I.saleT||0))}${L.length>=IM_SALE_MAX?', quand tu auras acheté un de ceux-ci':''}. Crédit sur 5 ans, 30 % d’apport.</p></div>`;
+  if(a<0)return h;let b=h.indexOf('<div class="sec-head">',a+10);if(b<0)b=h.length;return h.slice(0,a)+sec+h.slice(b)})(vImmo);
+renderSheet=(f=>function(){f();try{if(S.tab!=='ville'||!isProp(sel)||S.props[sel]||imListed(sel))return;const el=$('#bsheet');if(!el||el.hidden)return;
+  const bs=el.querySelectorAll('[data-a="buyprop"],[data-a="imloan"]');if(!bs.length)return;const host=bs[0].parentElement;bs.forEach(x=>x.remove());
+  host.insertAdjacentHTML('afterbegin',`<p class="hint">Pas à vendre pour l’instant. Les biens arrivent sur le marché un par un (onglet Immo).</p>`)}catch(e){}})(renderSheet);
+newDay=(f=>function(){f.apply(this,arguments);try{if(S&&S.started&&!S.dead)imSaleMonth()}catch(e){}})(newDay);
 /* ===== FIN AGENT ENTREPRISE ===== */
 /* ================= BOOT ================= */
 (function boot(){
