@@ -8704,6 +8704,841 @@ drawCarAt=function(x,y,dir,col,kind){
   if(NIGHT>=.35&&typeof gfxGlow==='function'){const len=kind==='bus'||kind==='cbus'?.5:kind==='van'?.36:.33;ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*NIGHT;const g=gfxGlow();
     [-1,1].forEach(sg=>{const p=dir==='x'?iso(x+sg*len,y,3):iso(x,y+sg*len,3);ctx.drawImage(g,p[0]-9,p[1]-6,18,12)});ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over'}};
 /* ===== FIN AGENT PERSOS ===== */
+/* ===== AGENT OBJECTIFS ===== */
+/* 1. Conquête : un socle commun (ouvrir les 8 affaires, les niveaux, l’objectif de gains) + 4 « affaires de la ville »,
+      propres à chaque ville et repérées par son nom (OB_CITY). Chaque affaire est un petit jeu à part (OBK : commande, festival,
+      enquête, derby, négociation, conseil municipal, chantier…). État de la ville en cours : S.ob = {c, t:{id:état}}.
+   2. Fin du jeu (dernière ville) : écran de fin + bilan, héritage (bonus choisis pour la partie suivante), contrats galactiques,
+      records de temps par ville, titre. Mémoire hors partie : localStorage « flipEmpire_legacy ».
+   3. Tutoriel guidé : bulle qui pointe le vrai bouton, une étape à la fois ; mini-visite de chaque onglet ; « ? » et « Que faire ? ».
+   Anciennes sauvegardes : tous ces champs sont optionnels et créés à la volée. */
+const obU=()=>Math.max(1000,+cityGoal2()||1000);
+const obC=f=>Math.max(10,pgR2(f*obU()));
+const obCN=()=>S.city?CITIES[S.city].n:'ta ville';
+const obBizOpen=i=>!!(BIZ[i]&&S.biz[BIZ[i].id]&&S.biz[BIZ[i].id].lvl>0);
+function obPay(c){if(!(S.cash>=c)){toast(`Il te manque ${fmt(c-S.cash)}.`);sfx('no');return false}spend(c);return true}
+function obNrg(n){if(!(S.energy>=n)){toast(`Pas assez d’énergie (il en faut ${n}). Un peu de repos, et ça repart.`);sfx('no');return false}S.energy=clamp(S.energy-n,0,100);return true}
+const obRep=n=>{S.rep=clamp(S.rep+n,0,100)};
+const obMo=n=>n<=0?'ce mois-ci':n===1?'1 mois':n+' mois';
+const obLeft=end=>obMo(Math.max(0,(end|0)-S.day));
+const obShuf=a=>{const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]]}return r};
+/* Coût lisible d’un effet {c:coût, g:gain, nrg, rep} */
+function obFxTxt(fx){const t=[];if(fx.c)t.push(fmt(obC(fx.c)));if(fx.nrg)t.push(`énergie −${fx.nrg}`);return t.join(', ')}
+function obFxOk(fx){return !(fx.c&&S.cash<obC(fx.c))&&!(fx.nrg&&S.energy<fx.nrg)}
+function obFx(fx){if(fx.c&&!(S.cash>=obC(fx.c))){toast(`Il te manque ${fmt(obC(fx.c)-S.cash)}.`);sfx('no');return false}
+  if(fx.nrg&&!(S.energy>=fx.nrg)){toast('Pas assez d’énergie.');sfx('no');return false}
+  if(fx.c)spend(obC(fx.c));if(fx.nrg)S.energy=clamp(S.energy-fx.nrg,0,100);if(fx.g)earn(obC(fx.g));if(fx.rep)obRep(fx.rep);return true}
+const obB=(T,v,label,o={})=>`<button class="btn ${o.cls||''}" data-a="ob" data-id="${T.id}" data-v="${v}" ${o.dis?'disabled':''}${o.pressed!=null?` aria-pressed="${!!o.pressed}"`:''}>${label}</button>`;
+const obBar=(a,b)=>`<div class="obj-bar"><i style="width:${Math.min(100,Math.max(0,a/Math.max(1e-9,b)*100))}%"></i></div>`;
+
+/* ---------- Les types d’affaires ---------- */
+const OB_SAY=['Tu prends le temps, ça me plaît.','Mon cousin cherchait justement quelqu’un comme toi.','Pas mal. Pas mal du tout.','On se reverra, c’est certain.','Tu connais le quartier mieux que je pensais.','Reviens quand tu veux.'];
+const OB_TEAM=[[3,1,0,.006],[0,3,1,.006],[1,0,3,.006],[2,2,1,.01],[1,1,1,.003],[3,2,2,.016]],OB_TEAMNEED=[4,3,3];
+const OB_ARGS={chiffres:'Montrer les chiffres',vision:'Raconter la vision',equipe:'Présenter l’équipe'};
+const OB_SAILS=[['spi','Grand spi',{calme:2,fort:0,rafales:0}],['red','Voile réduite',{calme:0,fort:2,rafales:1}],['pru','Réglage prudent',{calme:1,fort:1,rafales:2}]];
+const OB_WIND={calme:'vent faible',fort:'vent fort',rafales:'rafales'};
+const OBK={
+  order:{tag:'Commande',
+    bs:T=>Array.isArray(T.b)?T.b:[T.b],
+    need(T){const m=OBK.order.bs(T).find(i=>!obBizOpen(i));return m!=null?`Ouvre d’abord ${BIZ[m].n}.`:''},
+    p(T,s){if(!s.n)return [0,1];let a=0,b=0;s.n.forEach((n,i)=>{b+=n;a+=Math.min(n,s.u[i]||0)});return [a,b]},
+    hint:(T,s)=>s.on?`Il reste ${obLeft(s.end)}`:'À accepter',
+    can:(T,s)=>!s.on&&!OBK.order.need(T),
+    body(T,s){const bs=OBK.order.bs(T);
+      if(!s.on)return `<p>Délai : <b>${obMo(T.m)}</b>. ${bs.length>1?'Il faut produire dans '+bs.length+' affaires à la fois.':'Chaque vente de '+BIZ[bs[0]].n+' compte.'}</p><p class="hint">Un gérant dans ${bs.length>1?'chacune':'la boutique'} aide beaucoup : il encaisse sans s’arrêter.</p>${s.fails?`<p class="hint">Tentative ratée : ${s.fails}. Le client te laisse une autre chance.</p>`:''}${obB(T,'go','Accepter la commande',{cls:'big go'})}`;
+      return `<p>Il reste <b>${obLeft(s.end)}</b>.</p>${bs.map((i,k)=>`<div class="kv"><span>${BIZ[i].e} ${BIZ[i].n}</span><b>${Math.min(s.u[k]||0,s.n[k])} / ${s.n[k]} ventes</b></div>${obBar(s.u[k]||0,s.n[k])}`).join('')}<p class="hint" style="margin-top:8px">Encaisse à la main pour aller plus vite.</p>`},
+    act(T,s,v){if(v!=='go'||s.on||OBK.order.need(T))return;const bs=OBK.order.bs(T);s.on=1;s.end=S.day+T.m;
+      s.n=bs.map(i=>Math.max(1,Math.round(T.m*DAY_SEC/BIZ[i].time*.45)));s.u=bs.map(()=>0);s.msg='Commande acceptée. Le compteur tourne.'},
+    month(T,s){if(s.on&&S.day>=s.end){const [a,b]=OBK.order.p(T,s);if(a<b){s.on=0;s.n=null;s.fails=(s.fails|0)+1;s.msg='Délai dépassé. Le client attendra une nouvelle tentative.';toast(`Commande ratée : ${T.n}. Tu peux la retenter.`);sfx('bad')}}}},
+  ally:{tag:'Partenaire',
+    acts:T=>[['cafe',`Prendre un café`,{nrg:6},[12,20]],['aide','Rendre un service',{c:.003},[18,26]],['cadeau',T.gift,{c:.009},[30,40]]],
+    p:(T,s)=>[Math.min(100,s.v|0),100],
+    hint:(T,s)=>`Confiance ${Math.min(100,s.v|0)} / 100`,
+    can:(T,s)=>OBK.ally.acts(T).some(([k,,fx])=>!((s.cd||{})[k]>S.day)&&obFxOk(fx)),
+    body(T,s){return `<p>${T.who}, ${T.role}.</p><div class="kv"><span>Confiance</span><b>${Math.min(100,s.v|0)} / 100</b></div>${obBar(s.v|0,100)}
+      <div class="ob-acts">${OBK.ally.acts(T).map(([k,l,fx])=>{const w=(s.cd||{})[k]>S.day;return obB(T,'a:'+k,`${l}<small>${w?'Déjà fait ce mois-ci':obFxTxt(fx)}</small>`,{dis:w||!obFxOk(fx)})}).join('')}</div>
+      <p class="hint">Chaque geste une fois par mois. Ta réputation compte aussi.</p>${T.perk?`<p class="hint">Si ça marche : ${T.perk}</p>`:''}`},
+    act(T,s,v){const k=v.split(':')[1],a=OBK.ally.acts(T).find(x=>x[0]===k);if(!a)return;s.cd=s.cd||{};if(s.cd[k]>S.day)return;if(!obFx(a[2]))return;
+      s.cd[k]=S.day+1;const g=randInt(a[3][0],a[3][1])+Math.round((S.rep-50)/10);s.v=Math.min(100,(s.v|0)+Math.max(5,g));s.msg=`${T.who} : « ${pick(T.say||OB_SAY)} » (+${Math.max(5,g)})`}},
+  rush:{tag:'Contre la montre',
+    p:(T,s)=>s.on?[Math.max(0,S.lifetime-s.l0),s.goal]:[0,1],
+    hint:(T,s)=>s.on?`Il reste ${obLeft(s.end)}`:'Pas encore lancé',
+    can:(T,s)=>!s.on,
+    body(T,s){if(!s.on)return `<p>Tu as <b>${obMo(T.m)}</b>. L’objectif est fixé au départ : environ ${Math.round(((T.x||1.3)-1)*100)} % de plus que ton rythme actuel.</p><p class="hint">Avant de lancer : ouvre, agrandis, engage. Pendant : encaisse à la main et lance le Rush.</p>${s.fails?`<p class="hint">Essais ratés : ${s.fails}.</p>`:''}${obB(T,'go','Lancer le chrono',{cls:'big go'})}`;
+      const [a,b]=OBK.rush.p(T,s);return `<p>Il reste <b>${obLeft(s.end)}</b>.</p><div class="kv"><span>Gagné depuis le départ</span><b>${fmt(a)} / ${fmt(b)}</b></div>${obBar(a,b)}`},
+    act(T,s,v){if(v!=='go'||s.on)return;const r=Math.max(inc(),autoIncome());s.goal=Math.max(obC(.002),pgR2(r*DAY_SEC*T.m*(T.x||1.3)));s.l0=S.lifetime;s.end=S.day+T.m;s.on=1;s.msg='C’est parti.'},
+    month(T,s){if(s.on&&S.day>=s.end){const [a,b]=OBK.rush.p(T,s);if(a<b){s.on=0;s.fails=(s.fails|0)+1;s.msg=`Raté de ${fmt(b-a)}. Prépare-toi mieux et relance.`;toast(`${T.n} : raté de peu. Tu peux relancer.`);sfx('bad')}}}},
+  story:{tag:'Histoire',
+    p:(T,s)=>[s.s|0,T.steps.length],
+    hint:(T,s)=>(s.s|0)>=T.steps.length?'Terminée':S.day<(s.next|0)?`Suite dans ${obLeft(s.next)}`:`Épisode ${(s.s|0)+1} sur ${T.steps.length}`,
+    can:(T,s)=>(s.s|0)<T.steps.length&&S.day>=(s.next|0),
+    body(T,s){const i=s.s|0,log=(s.log||[]).map((l,k)=>`<p class="ob-log"><b>${k+1}.</b> ${l}</p>`).join('');
+      if(i>=T.steps.length)return log;
+      if(S.day<(s.next|0))return log+`<p class="hint">La suite arrive dans ${obLeft(s.next)}.</p>`;
+      const st=T.steps[i];return log+`<p class="ob-q">${st.q}</p><div class="ob-acts">${st.ch.map((c,k)=>obB(T,'c:'+k,`${c[0]}${obFxTxt(c[1])?`<small>${obFxTxt(c[1])}</small>`:''}`,{dis:!obFxOk(c[1])})).join('')}</div>`},
+    act(T,s,v){const i=s.s|0,st=T.steps[i];if(!st||S.day<(s.next|0))return;const c=st.ch[+v.split(':')[1]];if(!c||!obFx(c[1]))return;
+      s.log=(s.log||[]).concat(c[2]);s.s=i+1;s.next=S.day+1;s.msg=c[2]}},
+  festival:{tag:'Événement',
+    base(T,s){const sel=s.sel||[0,0,0];return T.o.reduce((t,[,L],k)=>t+L[sel[k]||0][2],0)+(avgSat()-60)/2+(S.rep-50)/3},
+    cost:(T,s)=>{const sel=s.sel||[0,0,0];return T.o.reduce((t,[,L],k)=>t+obC(L[sel[k]||0][1]),0)},
+    p:(T,s)=>s.win?[2,2]:[s.on?1:0,2],
+    hint:(T,s)=>s.on?'Le jour J approche':'À préparer',
+    can:(T,s)=>!s.on&&S.cash>=OBK.festival.cost(T,s),
+    body(T,s){const sel=s.sel||[0,0,0],g=T.goal||60;
+      if(s.on)return `<p>Tout est prêt. Le jour J tombe à la fin du mois.</p><p class="hint">Des clients contents et une bonne réputation font venir du monde.</p>`;
+      const b=OBK.festival.base(T,s),ch=clamp((b-g+8)/16,0,1),lab=ch>=.85?'très bonnes':ch>=.55?'bonnes':ch>=.25?'moyennes':'faibles';
+      return T.o.map(([n,L],k)=>`<h3 class="ob-h">${n}</h3><div class="ob-opts">${L.map((o,i)=>obB(T,`o:${k}:${i}`,`${o[0]}<small>${fmt(obC(o[1]))}</small>`,{cls:sel[k]===i?'on':'',pressed:sel[k]===i})).join('')}</div>`).join('')+
+      `<div class="kv" style="margin-top:10px"><span>Chances de succès</span><b>${lab}</b></div>${obBar(ch,1)}<div class="kv"><span>Budget total</span><b>${fmt(OBK.festival.cost(T,s))}</b></div>
+      ${obB(T,'go','Lancer l’organisation',{cls:'big go',dis:S.cash<OBK.festival.cost(T,s)})}`},
+    act(T,s,v){if(s.on)return;const p=v.split(':');if(p[0]==='o'){s.sel=s.sel||[0,0,0];s.sel[+p[1]]=+p[2];return}
+      if(v==='go'){if(!obPay(OBK.festival.cost(T,s)))return;s.on=1;s.end=S.day+1;s.msg='Les affiches sont collées. Rendez-vous à la fin du mois.'}},
+    month(T,s){if(!s.on||S.day<s.end)return;const sc=OBK.festival.base(T,s)+randInt(-8,8);s.on=0;
+      if(sc>=(T.goal||60)){s.win=1;s.msg=pick(['La foule déborde jusque dans les rues voisines.','Les gens en parlent encore le lendemain.','Une soirée que la ville n’oubliera pas.'])}
+      else{s.msg=pick(['Il a plu toute la soirée. Peu de monde.','Le public est resté tiède. Il faudra viser plus haut.','La moitié des stands sont restés vides.'])+' Tu peux réessayer.';toast(`${T.n} : pas assez de monde. Tu peux réessayer.`);sfx('bad')}}},
+  enquete:{tag:'Enquête',
+    init(T,s){s.cul=randInt(0,T.sus.length-1);s.el=[];s.pl=[]},
+    p:(T,s)=>s.win?[T.sus.length,T.sus.length]:[(s.el||[]).length,T.sus.length],
+    hint:(T,s)=>`${(s.el||[]).length} suspect${(s.el||[]).length>1?'s':''} écarté${(s.el||[]).length>1?'s':''}`,
+    can:(T,s)=>S.day>=(s.cd|0)&&(s.pl||[]).length<T.pl.length&&S.energy>=8,
+    body(T,s){const el=s.el||[],pl=s.pl||[],wait=S.day<(s.cd|0);
+      return `<h3 class="ob-h">Les suspects</h3><div class="ob-sus">${T.sus.map(([n,d],i)=>`<div class="ob-su ${el.includes(i)?'out':''}"><b>${n}</b><span>${d}</span>${el.includes(i)?'<em>Écarté</em>':obB(T,'acc:'+i,'Accuser',{cls:'small pinkb',dis:S.day<(s.wait|0)})}</div>`).join('')}</div>
+      <h3 class="ob-h">Où chercher ${wait?`<span class="hint">(prochaine fouille dans ${obLeft(s.cd)})</span>`:''}</h3><div class="ob-acts">${T.pl.map((p,i)=>obB(T,'pl:'+i,`${p}<small>${pl.includes(i)?'Déjà fouillé':'énergie −8'}</small>`,{dis:pl.includes(i)||wait||S.energy<8})).join('')}</div>
+      <p class="hint">Une fouille par mois. Accuser à tort coûte de la réputation.</p>`},
+    act(T,s,v){const [k,x]=v.split(':'),i=+x;s.el=s.el||[];s.pl=s.pl||[];
+      if(k==='pl'){if(S.day<(s.cd|0)||s.pl.includes(i)||!obNrg(8))return;s.pl.push(i);s.cd=S.day+1;
+        const inn=T.sus.map((_,j)=>j).filter(j=>j!==s.cul&&!s.el.includes(j)),left=T.pl.length-s.pl.length;
+        if(inn.length&&(Math.random()<.7||left<inn.length)){const j=pick(inn);s.el.push(j);s.msg=`${T.pl[i]} : ${T.sus[j][0]} a un alibi solide. Écarté.`}
+        else s.msg=`${T.pl[i]} : rien d’utile. Juste une odeur de café froid.`}
+      if(k==='acc'){if(S.day<(s.wait|0)||s.el.includes(i))return;
+        if(i===s.cul){s.win=1;s.msg=`C’était bien ${T.sus[i][0]}. ${T.end||'L’affaire est close.'}`}
+        else{obRep(-5);s.el.push(i);s.wait=S.day+1;s.msg=`${T.sus[i][0]} n’y était pour rien. Ta réputation en prend un coup. Attends le mois prochain pour accuser à nouveau.`;sfx('bad')}}}},
+  derby:{tag:'Match',
+    need:()=>S.club&&S.club.own?'':'Rachète d’abord le club de la ville (onglet Club).',
+    opp:(T,s)=>Array.isArray(T.rv)?T.rv[Math.min(T.rv.length-1,s.w|0)]:T.rv,
+    p:(T,s)=>[s.w|0,T.w||1],
+    hint:(T,s)=>!S.club.own?'Il te faut le club':s.on?`Contre ${OBK.derby.opp(T,s)}`:'À inscrire',
+    can:(T,s)=>!s.on&&!!S.club.own,
+    body(T,s){const nd=OBK.derby.need(T);if(nd)return `<p>${nd}</p>`;const n=T.w||1;
+      return `${n>1?`<div class="kv"><span>Victoires d’affilée</span><b>${s.w|0} / ${n}</b></div>${obBar(s.w|0,n)}`:''}
+      ${s.on?`<p>Prochain match de championnat : <b>${OBK.derby.opp(T,s)}</b>. Prépare la compo dans l’onglet Club.</p>${obB(T,'club','Aller au club',{cls:'go'})}`:obB(T,'go',n>1?'Inscrire le club':'Accepter le défi',{cls:'big go'})}
+      <p class="hint">Le match se joue au prochain jour de championnat (saison de juillet à avril). ${n>1?'Une défaite remet le compteur à zéro.':'Perdu ? La revanche suit au match d’après.'}</p>`},
+    act(T,s,v){if(v==='club'){closeModal();S.tab='club';render();return}if(v!=='go'||!S.club.own)return;s.on=1;s.msg='Défi accepté. Le prochain match sera le bon.';obDerbySet()}},
+  team:{tag:'Équipe',
+    sums:(s)=>{const t=[0,0,0];(s.pick||[]).forEach(i=>OB_TEAM[i].slice(0,3).forEach((v,k)=>t[k]+=v));return t},
+    p(T,s){if(s.win)return [4,4];const t=OBK.team.sums(s);return [t.filter((v,k)=>v>=OB_TEAMNEED[k]).length+(s.on?1:0),4]},
+    hint:(T,s)=>s.on?'L’équipe fait ses preuves':`${(s.pick||[]).length} / 3 recrues choisies`,
+    can:(T,s)=>!s.on&&!s.win,
+    body(T,s){if(s.on)return `<p>L’équipe est au travail. Verdict à la fin du mois.</p>`;const pk=s.pick||[],t=OBK.team.sums(s),cost=pk.reduce((a,i)=>a+obC(OB_TEAM[i][3]),0),ok=t.every((v,k)=>v>=OB_TEAMNEED[k])&&pk.length;
+      return `<p class="hint">Trois personnes au plus. Il faut au moins ${OB_TEAMNEED.map((v,k)=>`${v} en ${T.sk[k].toLowerCase()}`).join(', ')}.</p>
+      <div class="ob-team">${T.nm.map((n,i)=>{const c=OB_TEAM[i],on=pk.includes(i);return `<button class="ob-cand ${on?'on':''}" aria-pressed="${on}" data-a="ob" data-id="${T.id}" data-v="p:${i}" ${!on&&pk.length>=3?'disabled':''}><b>${n}</b><span>${T.sk.map((k,j)=>`${k} ${c[j]}`).join(' · ')}</span><small>${fmt(obC(c[3]))}</small></button>`}).join('')}</div>
+      <div class="ob-sums">${T.sk.map((k,j)=>`<span class="${t[j]>=OB_TEAMNEED[j]?'ok':''}">${k} ${t[j]}/${OB_TEAMNEED[j]}</span>`).join('')}</div>
+      ${obB(T,'go',`Embaucher (${fmt(cost)})`,{cls:'big go',dis:!ok||S.cash<cost})}`},
+    act(T,s,v){if(s.on)return;s.pick=s.pick||[];const [k,x]=v.split(':');
+      if(k==='p'){const i=+x,j=s.pick.indexOf(i);if(j>=0)s.pick.splice(j,1);else if(s.pick.length<3)s.pick.push(i);return}
+      if(v==='go'){const t=OBK.team.sums(s);if(!t.every((v,k)=>v>=OB_TEAMNEED[k]))return;const c=s.pick.reduce((a,i)=>a+obC(OB_TEAM[i][3]),0);if(!obPay(c))return;s.on=1;s.end=S.day+1;s.msg='Contrats signés. Premier vrai test à la fin du mois.'}},
+    month(T,s){if(s.on&&S.day>=s.end){s.on=0;s.win=1;s.msg=T.end||'L’équipe a tenu. Ça tourne.'}}},
+  nego:{tag:'Négociation',
+    init(T,s){s.pat=3;s.fl=rand(.62,.86)},
+    ask:T=>obC(T.ask||.02),
+    p:(T,s)=>[s.win?1:0,1],
+    hint:(T,s)=>S.day<(s.wait|0)?`${T.who} revient dans ${obLeft(s.wait)}`:'À négocier',
+    can:(T,s)=>S.day>=(s.wait|0)&&S.cash>=pgR2(OBK.nego.ask(T)*.6),
+    body(T,s){const A=OBK.nego.ask(T);if(S.day<(s.wait|0))return `<p>${T.who} ne veut plus te voir ce mois-ci. Reviens dans ${obLeft(s.wait)}.</p>`;
+      return `<p>${T.who} demande <b>${fmt(A)}</b> pour ${T.what}.</p><div class="kv"><span>Patience</span><b>${'●'.repeat(s.pat|0)}${'○'.repeat(3-(s.pat|0))}</b></div>
+      <div class="ob-acts">${[[.6,'Offre basse'],[.72,'Offre correcte'],[.85,'Offre généreuse'],[1,'Son prix']].map(([k,l])=>{const pr=pgR2(A*k);return obB(T,'o:'+k,`${l}<small>${fmt(pr)}</small>`,{dis:S.cash<pr})}).join('')}</div>
+      <p class="hint">Trop bas, et sa patience fond. À zéro, il faut revenir le mois suivant.</p>`},
+    act(T,s,v){if(S.day<(s.wait|0))return;const k=+v.split(':')[1],pr=pgR2(OBK.nego.ask(T)*k);if(!(k>0))return;
+      if(k>=s.fl-1e-9){if(!obPay(pr))return;s.win=1;s.paid=pr;s.msg=`Marché conclu à ${fmt(pr)}. ${T.end||''}`;return}
+      s.pat=(s.pat|0)-1;s.msg=`${T.who} : « ${s.fl-k<.1?'On y est presque.':'Vous plaisantez ?'} »`;
+      if(s.pat<=0){s.wait=S.day+1;s.pat=3;s.fl=Math.min(.95,s.fl+.04);s.msg=`${T.who} te raccompagne à la porte. Reviens le mois prochain, ce sera un peu plus cher.`;sfx('bad')}}},
+  council:{tag:'Mairie',
+    need:T=>T.need||3,
+    have:(T,s)=>(s.ok||[]).length+(S.pol&&S.pol.office?1:0),
+    p:(T,s)=>[Math.min(OBK.council.have(T,s),OBK.council.need(T))+(s.win?1:0),OBK.council.need(T)+1],
+    hint:(T,s)=>`${OBK.council.have(T,s)} voix sur ${OBK.council.need(T)}`,
+    can:(T,s)=>!s.win,
+    req(m){const [k,v]=m[2];return k==='cash'?fmt(obC(v)):k==='rep'?`réputation ${v}`:k==='sat'?`${v} % de clients contents`:k==='meet'?`énergie −${v}`:`${v} affaires ouvertes`},
+    body(T,s){const ok=s.ok||[],h=OBK.council.have(T,s),n=OBK.council.need(T);
+      return `<p>Il faut ${n} voix au conseil pour faire passer ${T.law}.${S.pol&&S.pol.office?' Ta voix de maire compte déjà.':''}</p>
+      <div class="ob-sus">${T.mem.map((m,i)=>`<div class="ob-su ${ok.includes(i)?'got':''}"><b>${m[0]}</b><span>${m[1]}</span>${ok.includes(i)?'<em>Pour</em>':obB(T,'m:'+i,`Convaincre<small>${OBK.council.req(m)}</small>`,{cls:'small',dis:(s.cd||{})[i]>S.day})}</div>`).join('')}</div>
+      <div class="kv"><span>Voix acquises</span><b>${h} / ${n}</b></div>${obB(T,'vote','Passer au vote',{cls:'big go',dis:h<n})}`},
+    act(T,s,v){s.ok=s.ok||[];s.cd=s.cd||{};
+      if(v==='vote'){if(OBK.council.have(T,s)<OBK.council.need(T))return;s.win=1;s.msg=`Vote acquis. ${T.end||'La loi passe.'}`;return}
+      const i=+v.split(':')[1],m=T.mem[i];if(!m||s.ok.includes(i)||s.cd[i]>S.day)return;const [k,x]=m[2];
+      if(k==='cash'){if(!obPay(obC(x)))return}
+      else if(k==='rep'){if(S.rep<x){s.msg=`${m[0]} : « Reviens avec une meilleure réputation (${x}). »`;return}}
+      else if(k==='sat'){if(openIds().length<3||avgSat()<x){s.msg=`${m[0]} : « Tes clients ne sont pas assez contents (${x} % demandés). »`;return}}
+      else if(k==='open'){if(openIds().length<x){s.msg=`${m[0]} : « Ouvre d’abord ${x} affaires. »`;return}}
+      else if(k==='meet'){if(!obNrg(x))return;if(Math.random()>.65){s.cd[i]=S.day+1;s.msg=`${m[0]} hésite encore. Retente le mois prochain.`;return}}
+      s.ok.push(i);s.msg=`${m[0]} votera pour.`}},
+  expedition:{tag:'Expédition',
+    p:(T,s)=>[Math.min(T.need,s.got|0),T.need],
+    hint:(T,s)=>`${s.got|0} / ${T.need} ${T.it}`,
+    left:s=>s.mo===S.day?2-(s.dm|0):2,
+    can:(T,s)=>OBK.expedition.left(s)>0&&S.energy>=10&&S.cash>=obC(.002),
+    body(T,s){const L=OBK.expedition.left(s),ch=Math.round(100*(.45+.15*(s.eq|0)));
+      return `<div class="kv"><span>Trouvés</span><b>${s.got|0} / ${T.need} ${T.it}</b></div>${obBar(s.got|0,T.need)}
+      <div class="kv"><span>Chance par sortie</span><b>${ch} %</b></div><div class="kv"><span>Sorties restantes ce mois-ci</span><b>${L}</b></div>
+      <div class="ob-acts">${obB(T,'go',`${T.verb||'Partir'}<small>${fmt(obC(.002))}, énergie −10</small>`,{cls:'go',dis:L<=0||S.energy<10||S.cash<obC(.002)})}
+      ${(s.eq|0)<2?obB(T,'eq',`${T.gear||'Meilleur matériel'}<small>${fmt(obC(.008*((s.eq|0)+1)))}, +15 % de chance</small>`,{dis:S.cash<obC(.008*((s.eq|0)+1))}):''}</div>`},
+    act(T,s,v){if(v==='eq'){if((s.eq|0)>=2||!obPay(obC(.008*((s.eq|0)+1))))return;s.eq=(s.eq|0)+1;s.msg='Matériel neuf. Ça change tout.';return}
+      if(v!=='go'||OBK.expedition.left(s)<=0)return;if(S.energy<10){obNrg(10);return}if(!obPay(obC(.002)))return;S.energy=clamp(S.energy-10,0,100);
+      if(s.mo!==S.day){s.mo=S.day;s.dm=0}s.dm=(s.dm|0)+1;
+      if(Math.random()<.45+.15*(s.eq|0)){const n=Math.random()<.15?2:1;s.got=(s.got|0)+n;s.msg=n>1?`Jackpot : deux ${T.it} d’un coup.`:pick(T.found||['Une de plus.','Trouvé, au fond, sous le sable.'])}
+      else s.msg=pick(T.miss||['Rien cette fois. Le courant était trop fort.','Bredouille. Ça arrive.'])}},
+  monument:{tag:'Patrimoine',
+    st:s=>s.st|0,
+    p:(T,s)=>[Math.min(3,s.st|0),3],
+    hint:(T,s)=>['À racheter','Travaux à lancer','Travaux en cours','Prêt à ouvrir','Ouvert'][(s.st|0)+((s.st|0)>=2?1:(s.st|0)===1&&s.on?1:0)]||'',
+    can:(T,s)=>(s.st|0)===0?S.cash>=obC(T.c||.02):(s.st|0)===1?!s.on&&S.cash>=obC(.012):(s.st|0)===2,
+    body(T,s){const st=s.st|0;
+      if(st===0)return `<p>Le propriétaire veut vendre ${T.name}. Personne n’en veut, c’est le moment.</p>${obB(T,'buy',`Racheter (${fmt(obC(T.c||.02))})`,{cls:'big go',dis:S.cash<obC(T.c||.02)})}`;
+      if(st===1)return s.on?`<p>Les travaux avancent. Fin du chantier dans ${obLeft(s.end)}.</p>`:`<p>${T.name} t’appartient. Il faut tout restaurer.</p>${obB(T,'work',`Lancer les travaux (${fmt(obC(.012))})`,{cls:'big go',dis:S.cash<obC(.012)})}`;
+      if(st===2)return `<p>Restauré. Comment l’ouvrir ?</p><div class="ob-acts">${obB(T,'free','Ouvert à tous, gratuit<small>réputation +10</small>',{cls:'go'})}${obB(T,'paid',`Visites payantes<small>+${fmt(obC(.015))} tout de suite</small>`)}</div>`;
+      return ''},
+    act(T,s,v){const st=s.st|0;
+      if(v==='buy'&&st===0){if(!obPay(obC(T.c||.02)))return;s.st=1;s.msg=`${T.name} est à toi. Il y a du travail.`}
+      else if(v==='work'&&st===1&&!s.on){if(!obPay(obC(.012)))return;s.on=1;s.end=S.day+1;s.msg='Les échafaudages montent.'}
+      else if(st===2&&(v==='free'||v==='paid')){if(v==='free')obRep(10);else earn(obC(.015));s.st=3;s.msg=v==='free'?'Les gens font la queue pour entrer. Ton nom est sur la plaque.':'Les billets partent vite. Rentable dès le premier jour.'}},
+    month(T,s){if((s.st|0)===1&&s.on&&S.day>=s.end){s.on=0;s.st=2;s.msg='Fin des travaux. Il ne reste qu’à ouvrir.';toast(`${T.name} : restauré. Il ne reste qu’à l’ouvrir.`)}}},
+  auction:{tag:'Enchères',
+    p:(T,s)=>[s.win?1:0,1],
+    hint:(T,s)=>s.on?`Prix actuel ${fmt(s.pr)}`:S.day<(s.wait|0)?`Prochaine vente dans ${obLeft(s.wait)}`:'Vente ouverte',
+    can:(T,s)=>!s.on&&S.day>=(s.wait|0),
+    body(T,s){if(!s.on)return S.day<(s.wait|0)?`<p>La prochaine vente a lieu dans ${obLeft(s.wait)}.</p>`:`<p>En vente : ${T.lot}. Mise à prix : <b>${fmt(obC(T.c||.01))}</b>. En face : ${T.rv.join(' et ')}.</p><p class="hint">Chaque enchère ajoute 15 %. Tes rivaux ont chacun leur limite, mais ils ne la disent pas.</p>${obB(T,'go','Entrer dans la salle',{cls:'big go'})}`;
+      const nx=pgR2(s.pr*1.15);return `<div class="kv"><span>Prix actuel</span><b>${fmt(s.pr)}</b></div><p>${s.lead<0?'Personne n’a encore levé la main.':s.lead===9?'Tu mènes.':`${T.rv[s.lead]} mène.`}</p>
+      <div class="ob-acts">${obB(T,'bid',`Surenchérir<small>${fmt(nx)}</small>`,{cls:'go',dis:S.cash<nx})}${obB(T,'out','Se retirer')}</div>`},
+    act(T,s,v){if(v==='go'&&!s.on&&S.day>=(s.wait|0)){s.on=1;s.pr=obC(T.c||.01);s.lead=-1;s.mx=T.rv.map(()=>s.pr*rand(1.4,2.3));s.msg='Le commissaire-priseur ouvre la vente.';return}
+      if(!s.on)return;
+      if(v==='out'){s.on=0;s.wait=S.day+1;s.msg='Tu quittes la salle. Une autre vente aura lieu le mois prochain.';return}
+      if(v!=='bid')return;const nx=pgR2(s.pr*1.15);if(S.cash<nx){toast(`Il te manque ${fmt(nx-S.cash)}.`);return}s.pr=nx;s.lead=9;
+      const R=T.rv.map((n,i)=>i).filter(i=>s.mx[i]>=s.pr*1.15);
+      if(R.length){const i=pick(R);s.pr=pgR2(s.pr*1.15);s.lead=i;s.msg=`${T.rv[i]} lève la main : ${fmt(s.pr)}.`}
+      else{if(!obPay(s.pr)){s.on=0;return}s.on=0;s.win=1;s.msg=`Adjugé à ${fmt(s.pr)} ! ${T.end||''}`}}},
+  pitch:{tag:'Levée de fonds',
+    p:(T,s)=>[(s.ok||[]).length,T.inv.length],
+    hint:(T,s)=>`${(s.ok||[]).length} sur ${T.inv.length} convaincus`,
+    can:(T,s)=>T.inv.some((x,i)=>!(s.ok||[]).includes(i)&&!((s.cd||{})[i]>S.day)),
+    body(T,s){const ok=s.ok||[];return `<p class="hint">Lis bien chaque profil. Un mauvais argument, et la porte se ferme pour un mois.</p><div class="ob-sus">${T.inv.map(([n,d],i)=>`<div class="ob-su ${ok.includes(i)?'got':''}"><b>${n}</b><span>${d}</span>${ok.includes(i)?'<em>Signé</em>':(s.cd||{})[i]>S.day?`<em>Revient dans ${obLeft(s.cd[i])}</em>`:`<div class="ob-args">${Object.entries(OB_ARGS).map(([k,l])=>obB(T,`a:${i}:${k}`,l,{cls:'small'})).join('')}</div>`}</div>`).join('')}</div>`},
+    act(T,s,v){const [,x,k]=v.split(':'),i=+x,inv=T.inv[i];s.ok=s.ok||[];s.cd=s.cd||{};if(!inv||s.ok.includes(i)||s.cd[i]>S.day)return;
+      if(inv[2]===k){s.ok.push(i);s.msg=`${inv[0]} signe. « Je vous suis. »`}else{s.cd[i]=S.day+1;s.msg=`${inv[0]} referme son carnet. Retente le mois prochain.`;sfx('bad')}}},
+  streak:{tag:'Inspection',
+    p:(T,s)=>[Math.min(T.m,s.c|0),T.m],
+    hint:(T,s)=>`${s.c|0} mois réussi${(s.c|0)>1?'s':''} sur ${T.m}`,
+    can:()=>false,
+    body(T,s){const sat=Math.round(avgSat()),n=openIds().length,ok=n>=4&&sat>=T.sat;
+      return `<p>L’inspecteur passe à chaque fin de mois. Il veut <b>${T.sat} % de clients contents</b> en moyenne, dans au moins 4 affaires, ${T.m} mois de suite.</p>
+      <div class="kv"><span>Aujourd’hui</span><b class="${ok?'pos':'neg'}">${sat} %${n<4?` (${n} affaire${n>1?'s':''})`:''}</b></div><div class="kv"><span>Mois réussis d’affilée</span><b>${s.c|0} / ${T.m}</b></div>${obBar(s.c|0,T.m)}
+      <p class="hint">Ménage, renfort, rénovation : dans la fiche de chaque boutique, partie Clients.</p>`},
+    month(T,s){if(openIds().length>=4&&avgSat()>=T.sat){s.c=(s.c|0)+1;s.msg=`Inspection réussie (${s.c}/${T.m}).`}else if(s.c){s.c=0;s.msg='Inspection ratée : le compteur repart de zéro.';toast(`${T.n} : inspection ratée, on recommence.`)}}},
+  build:{tag:'Chantier',
+    p:(T,s)=>[(s.b||[]).length,T.mods.length],
+    hint:(T,s)=>s.cur>=0&&s.cur!=null?`${T.mods[s.cur]} en construction`:`${(s.b||[]).length} / ${T.mods.length} modules`,
+    can:(T,s)=>!(s.cur>=0&&s.cur!=null)&&(s.b||[]).length<T.mods.length,
+    body(T,s){const b=s.b||[],cur=s.cur!=null&&s.cur>=0?s.cur:-1,last=T.mods.length-1;
+      return `<p class="hint">Un module à la fois, un mois chacun. ${T.mods[last]} se construit en dernier.</p><div class="ob-acts">${T.mods.map((m,i)=>{const c=obC((T.c||.008)*(1+i*.3));
+        return b.includes(i)?`<div class="ob-done">${m}<small>Terminé</small></div>`:cur===i?`<div class="ob-done wip">${m}<small>En construction, ${obLeft(s.end)}</small></div>`:obB(T,'b:'+i,`${m}<small>${fmt(c)}</small>`,{dis:cur>=0||S.cash<c||(i===last&&b.length<last)})}).join('')}</div>`},
+    act(T,s,v){s.b=s.b||[];if(s.cur!=null&&s.cur>=0)return;const i=+v.split(':')[1],last=T.mods.length-1;if(!(i>=0&&i<=last)||s.b.includes(i)||(i===last&&s.b.length<last))return;
+      if(!obPay(obC((T.c||.008)*(1+i*.3))))return;s.cur=i;s.end=S.day+1;s.msg=`Chantier lancé : ${T.mods[i]}.`},
+    month(T,s){if(s.cur!=null&&s.cur>=0&&S.day>=s.end){s.b=(s.b||[]).concat(s.cur);s.msg=`${T.mods[s.cur]} : terminé.`;s.cur=-1}}},
+  rescue:{tag:'Reprise',
+    p:(T,s)=>[s.own?Math.min(100,s.h|0):0,100],
+    hint:(T,s)=>s.own?`Santé ${Math.min(100,s.h|0)} / 100`:'À racheter',
+    can:(T,s)=>!s.own?S.cash>=obC(T.c||.008):!(s.cd>S.day),
+    body(T,s){if(!s.own)return `<p>${T.name} va fermer. Personne n’y croit plus. Pour ${fmt(obC(T.c||.008))}, c’est à toi.</p>${obB(T,'buy','Reprendre l’affaire',{cls:'big go',dis:S.cash<obC(T.c||.008)})}`;
+      const w=s.cd>S.day;return `<div class="kv"><span>Santé de l’affaire</span><b>${Math.min(100,s.h|0)} / 100</b></div>${obBar(s.h|0,100)}
+      <p class="hint">${w?'Une mesure par mois. Laisse-la agir.':'Une mesure par mois. À 100, elle est sauvée.'}</p>
+      <div class="ob-acts">${obB(T,'cut','Réduire les coûts<small>+18, réputation −2</small>',{dis:w})}${obB(T,'inv',`Investir<small>${fmt(obC(.005))}, +28</small>`,{dis:w||S.cash<obC(.005)})}${obB(T,'img','Changer d’image<small>énergie −8, +10 à +35</small>',{dis:w||S.energy<8})}</div>`},
+    act(T,s,v){if(v==='buy'){if(s.own||!obPay(obC(T.c||.008)))return;s.own=1;s.h=20;s.msg='Les clés sont à toi. Les employés te regardent, inquiets.';return}
+      if(!s.own||s.cd>S.day)return;let g=0;
+      if(v==='cut'){g=18;obRep(-2)}else if(v==='inv'){if(!obPay(obC(.005)))return;g=28}else if(v==='img'){if(!obNrg(8))return;g=randInt(10,35)}else return;
+      s.h=Math.min(100,(s.h|0)+g);s.cd=S.day+1;s.msg=`+${g}. ${s.h>=100?(T.end||'Sauvée.'):pick(['Ça repart doucement.','Les habitués reviennent.','On y croit à nouveau.'])}`}},
+  crisis:{tag:'Urgence',
+    p:(T,s)=>[(s.fx||[]).length,T.sys.length],
+    hint:(T,s)=>s.on?`Il reste ${obLeft(s.end)}`:'Pas encore déclenchée',
+    can:(T,s)=>!s.on||T.sys.some((x,i)=>!(s.fx||[]).includes(i)),
+    body(T,s){if(!s.on)return `<p>${T.intro}</p><p class="hint">Quand tu lances l’opération, tu as ${obMo(T.m||2)} pour tout réparer.</p>${s.fails?`<p class="hint">Échecs : ${s.fails}.</p>`:''}${obB(T,'go','Lancer l’opération',{cls:'big go'})}`;
+      const fx=s.fx||[];return `<p>Il reste <b>${obLeft(s.end)}</b>.</p><div class="ob-sus">${T.sys.map((n,i)=>`<div class="ob-su ${fx.includes(i)?'got':''}"><b>${n}</b>${fx.includes(i)?'<em>Réparé</em>':`<div class="ob-args">${obB(T,'p:'+i,`Pièces neuves<small>${fmt(obC(.004))}</small>`,{cls:'small',dis:S.cash<obC(.004)})}${obB(T,'m:'+i,'Bricoler<small>énergie −12, 70 %</small>',{cls:'small',dis:S.energy<12})}</div>`}</div>`).join('')}</div>`},
+    act(T,s,v){if(v==='go'){if(s.on)return;s.on=1;s.end=S.day+(T.m||2);s.fx=[];s.msg='Tout le monde à son poste.';return}
+      if(!s.on)return;const [k,x]=v.split(':'),i=+x;s.fx=s.fx||[];if(s.fx.includes(i)||!T.sys[i])return;
+      if(k==='p'){if(!obPay(obC(.004)))return;s.fx.push(i);s.msg=`${T.sys[i]} : réparé.`}
+      else if(k==='m'){if(!obNrg(12))return;if(Math.random()<.7){s.fx.push(i);s.msg=`${T.sys[i]} : réparé avec trois bouts de ficelle.`}else s.msg=`${T.sys[i]} : ça n’a pas tenu. Réessaie.`}},
+    month(T,s){if(s.on&&S.day>=s.end&&(s.fx||[]).length<T.sys.length){s.on=0;s.fails=(s.fails|0)+1;s.fx=[];s.msg='Trop tard, tout est à refaire. Relance l’opération quand tu es prêt.';toast(`${T.n} : trop tard. Tu peux relancer.`);sfx('bad')}}},
+  caravan:{tag:'Expédition commerciale',
+    p:(T,s)=>[Math.min(T.need||2,s.ok|0),T.need||2],
+    hint:(T,s)=>s.sent?`Convoi en route, ${obLeft(s.sent.end)}`:`${s.ok|0} / ${T.need||2} convois arrivés`,
+    can:(T,s)=>!s.sent&&S.cash>=obC(.003),
+    body(T,s){if(s.sent)return `<p>Ton convoi passe ${T.routes[s.sent.r][0].toLowerCase()}. Arrivée dans ${obLeft(s.sent.end)}.</p><div class="kv"><span>Convois arrivés</span><b>${s.ok|0} / ${T.need||2}</b></div>`;
+      return `<p>Chaque convoi coûte ${fmt(obC(.003))} et rapporte ${fmt(obC(.004))} s’il arrive.</p><div class="kv"><span>Convois arrivés</span><b>${s.ok|0} / ${T.need||2}</b></div>
+      <div class="ob-acts">${T.routes.map((r,i)=>obB(T,'r:'+i,`${r[0]}<small>${obMo(r[1])}, ${Math.round(r[2]*100)} % d’arriver</small>`,{dis:S.cash<obC(.003)})).join('')}</div>`},
+    act(T,s,v){if(s.sent)return;const i=+v.split(':')[1],r=T.routes[i];if(!r||!obPay(obC(.003)))return;s.sent={r:i,end:S.day+r[1]};s.msg=`Le convoi part ${r[0].toLowerCase()}.`},
+    month(T,s){if(!s.sent||S.day<s.sent.end)return;const r=T.routes[s.sent.r];s.sent=null;
+      if(Math.random()<r[2]){s.ok=(s.ok|0)+1;earn(obC(.004));s.msg='Le convoi est arrivé, marchandise intacte.';toast(`${T.n} : convoi arrivé (+${fmt(obC(.004))}).`)}
+      else{s.msg=pick(T.lost||['Le convoi s’est perdu en route.','Tempête : la cargaison est passée par-dessus bord.']);toast(`${T.n} : convoi perdu.`);sfx('bad')}}},
+  cipher:{tag:'Énigme',
+    init(T,s){s.sec=obShuf([0,1,2,3]);s.cur=[0,1,2,3];s.tr=0;s.best=0},
+    p:(T,s)=>[s.win?4:Math.min(3,s.best|0),4],
+    hint:(T,s)=>`${s.tr|0} essai${(s.tr|0)>1?'s':''}`,
+    can:(T,s)=>S.energy>=4,
+    body(T,s){const rv=(s.tr|0)>=3?s.sec[0]:-1;return `<p>${T.intro}</p><p class="hint">Touche une case pour changer son symbole, puis essaie. On te dit combien sont à la bonne place.${rv>=0?` Un indice gravé : la première case est « ${T.sym[rv]} ».`:''}</p>
+      <div class="ob-glyphs">${(s.cur||[0,1,2,3]).map((g,i)=>`<button class="ob-gl" data-a="ob" data-id="${T.id}" data-v="c:${i}" aria-label="Case ${i+1} : ${T.sym[g]}">${T.sym[g]}</button>`).join('')}</div>
+      ${obB(T,'try','Essayer cette combinaison<small>énergie −4</small>',{cls:'big go',dis:S.energy<4})}`},
+    act(T,s,v){if(!s.sec)OBK.cipher.init(T,s);const [k,x]=v.split(':');
+      if(k==='c'){const i=+x;s.cur[i]=(s.cur[i]+1)%4;return}
+      if(v!=='try'||!obNrg(4))return;const g=s.cur.filter((x,i)=>x===s.sec[i]).length;s.tr=(s.tr|0)+1;s.best=Math.max(s.best|0,g);
+      if(g===4){s.win=1;s.msg=T.end||'Déchiffré.'}else s.msg=`${g} symbole${g>1?'s':''} à la bonne place.`}},
+  regatta:{tag:'Course',
+    init(T,s){s.fc=[0,1,2].map(()=>pick(['calme','fort','rafales']));s.ch=[1,1,1]},
+    p:(T,s)=>[s.win?5:Math.min(4,s.best|0),5],
+    hint:(T,s)=>S.day<(s.cd|0)?`Prochaine course dans ${obLeft(s.cd)}`:'Départ possible',
+    can:(T,s)=>S.day>=(s.cd|0)&&S.energy>=6,
+    body(T,s){if(!s.fc)OBK.regatta.init(T,s);const w=S.day<(s.cd|0);
+      return `<p>${T.intro}</p><p class="hint">Trois manches. Choisis ta voile selon la météo. Il faut 5 points sur 6 pour gagner. La météo se trompe parfois.</p>
+      ${s.fc.map((f,i)=>`<h3 class="ob-h">Manche ${i+1} : ${OB_WIND[f]} annoncé</h3><div class="ob-opts">${OB_SAILS.map(([k,l],j)=>obB(T,`s:${i}:${j}`,l,{cls:s.ch[i]===j?'on':'',pressed:s.ch[i]===j})).join('')}</div>`).join('')}
+      ${obB(T,'go',w?`Prochaine course dans ${obLeft(s.cd)}`:'Prendre le départ<small>énergie −6</small>',{cls:'big go',dis:w||S.energy<6})}`},
+    act(T,s,v){if(!s.fc)OBK.regatta.init(T,s);const p=v.split(':');if(p[0]==='s'){s.ch[+p[1]]=+p[2];return}
+      if(v!=='go'||S.day<(s.cd|0)||!obNrg(6))return;let sc=0;const L=s.fc.map((f,i)=>{const real=Math.random()<.8?f:pick(['calme','fort','rafales']),pt=OB_SAILS[s.ch[i]][2][real];sc+=pt;return `M${i+1} ${OB_WIND[real]} : ${pt} pt${pt>1?'s':''}`});
+      s.best=Math.max(s.best|0,sc);s.cd=S.day+1;
+      if(sc>=5){s.win=1;s.msg=`${sc} points. Première sur la ligne ! (${L.join(', ')})`}else{s.msg=`${sc} points, pas assez. (${L.join(', ')}) Nouvelle course le mois prochain.`;OBK.regatta.init(T,s)}}},
+  diplo:{tag:'Diplomatie',
+    p:(T,s)=>[s.win?T.qs.length:Math.min(T.qs.length-1,s.sc|0),T.qs.length],
+    hint:(T,s)=>S.day<(s.cd|0)?`Nouvelle audience dans ${obLeft(s.cd)}`:'Audience possible',
+    can:(T,s)=>S.day>=(s.cd|0),
+    body(T,s){if(S.day<(s.cd|0))return `<p>L’audience est close. Nouvelle chance dans ${obLeft(s.cd)}.</p>`;const i=s.i|0,q=T.qs[i];
+      return `<p class="hint">${T.intro} Il faut ${T.qs.length-1} bonnes réponses sur ${T.qs.length}.</p><p class="ob-q">${q[0]}</p><div class="ob-acts">${q[1].map((a,k)=>obB(T,'a:'+k,a)).join('')}</div><p class="hint">Question ${i+1} sur ${T.qs.length}</p>`},
+    act(T,s,v){if(S.day<(s.cd|0))return;const i=s.i|0,q=T.qs[i],k=+v.split(':')[1];if(!q)return;if(k===q[2])s.sc=(s.sc|0)+1;s.i=i+1;s.msg=k===q[2]?'Murmure approbateur.':'Un silence gêné.';
+      if(s.i>=T.qs.length){if((s.sc|0)>=T.qs.length-1){s.win=1;s.msg=T.end||'Accord conclu.'}else{s.i=0;s.sc=0;s.cd=S.day+1;s.msg='Ils se retirent sans un mot. Une autre audience le mois prochain.';sfx('bad')}}}}
+};
+OBK.export=Object.assign({},OBK.order,{tag:'Contrat export'});
+OBK.cup=Object.assign({},OBK.derby,{tag:'Coupe'});
+OBK.monument.hint=(T,s)=>{const st=s.st|0;return st===0?'À racheter':st===1?(s.on?`Travaux, encore ${obLeft(s.end)}`:'Travaux à lancer'):'Prêt à ouvrir'};
+/* ---------- Les affaires de chaque ville (repérées par le nom de la ville) ---------- */
+const OB_FEST=(a,b,c)=>[[a[0],[[a[1],.002,10],[a[2],.006,20],[a[3],.014,30]]],[b[0],[[b[1],.002,10],[b[2],.005,20],[b[3],.012,28]]],[c[0],[[c[1],.001,8],[c[2],.008,24],[c[3],.012,30]]]];
+const OB_CITY={
+  'Ta ville':{tag:'Ton quartier. Ici, tout le monde se connaît.',t:[
+    {id:'a',k:'order',n:'Équipe les minimes du FC Quartier',d:'Le club du coin veut des baskets pour toute l’équipe avant le tournoi.',b:0,m:3},
+    {id:'b',k:'ally',n:'Gagne la confiance de Mme Rossi',d:'La boulangère d’en face connaît tout le monde. Si elle parle de toi, le quartier suivra.',who:'Mme Rossi',role:'la boulangère d’en face',gift:'Un bouquet pour sa vitrine',perk:'elle t’envoie ses clients.'},
+    {id:'c',k:'story',n:'La mercerie de M. Albert',d:'M. Albert, 82 ans, ferme boutique. Ce qui va suivre dépend de toi.',steps:[
+      {q:'M. Albert te propose son stock : des milliers de boutons et de rubans des années 60.',ch:[['Tout racheter',{c:.003,rep:3},'Tu repars avec des cartons pleins. Tes clients adorent les boutons rétro.'],['Lui trouver un repreneur',{nrg:8,rep:5},'Trois soirées au téléphone. Une jeune couturière reprend la boutique.']]},
+      {q:'Un promoteur veut raser la rue pour un parking. Le quartier fait tourner une pétition.',ch:[['Signer et faire signer',{rep:6},'Huit cents signatures. La mairie recule.'],['Rester en dehors',{g:.002},'Le promoteur te glisse une enveloppe. Mme Rossi a tout vu.']]},
+      {q:'Le quartier fait une fête pour la mercerie. On te demande quelques mots.',ch:[['Parler du quartier',{rep:6},'Tu parles cinq minutes. M. Albert essuie une larme.'],['Payer la tournée',{c:.002,rep:4},'Tout le monde trinque à ta santé.']]}]},
+    {id:'d',k:'rush',n:'Le samedi des soldes',d:'Trois mois pour battre ton record. Tout le quartier a sorti son porte-monnaie.',m:3,x:1.3}]},
+  'Nantes':{tag:'Nantes : le port, la Loire et les machines.',t:[
+    {id:'a',k:'festival',n:'Organise la Fête de la Loire',d:'Bateaux, guinguettes, concerts sur l’île. La ville te confie l’organisation.',o:OB_FEST(['La scène','Fanfare du quartier','Groupe local qui monte','Tête d’affiche nationale'],['À manger','Food trucks','Guinguettes au bord de l’eau','Banquet sur les quais'],['Le clou du spectacle','Lampions','Parade du Grand Éléphant','Feu d’artifice sur la Loire'])},
+    {id:'b',k:'enquete',n:'Qui vole tes livraisons ?',d:'Des cartons disparaissent entre le port et tes boutiques. Mène l’enquête.',sus:[['Gaël','docker, te doit de l’argent'],['Mme Pichon','concurrente installée sur le quai'],['Yannick','ton propre livreur, toujours en retard']],pl:['Les entrepôts du port','Le café des Machines','Sous la grue Titan','Le marché de Talensac'],end:'Les cartons réapparaissent, et ta réputation de patron qui ne se laisse pas faire aussi.'},
+    {id:'c',k:'derby',n:'Gagne le derby de l’estuaire',d:'Ton club reçoit l’Estuaire FC de Saint-Nazaire. Toute la ville sera au stade.',rv:'Estuaire FC'},
+    {id:'d',k:'order',n:'Les pièces des Machines de l’île',d:'La compagnie des Machines te commande des pièces pour son nouveau héron géant.',b:1,m:3}]},
+  'Lyon':{tag:'Lyon : la table, le vin et les lumières.',t:[
+    {id:'a',k:'team',n:'Monte une brigade pour ton bouchon',d:'Trois personnes, pas une de plus. Il faut tenir la cuisine, la salle et la cave.',sk:['Cuisine','Salle','Cave'],nm:['Mathilde, cheffe de partie','Karim, maître d’hôtel','Odile, sommelière','Bastien, cuisinier','Léna, apprentie','Paul, ancien étoilé'],end:'Premier service complet. Le Guide passe en douce et repart conquis.'},
+    {id:'b',k:'nego',n:'Rachète la cave de Bernard Vial',d:'Une cave voûtée du Vieux Lyon. Bernard est dur en affaires, mais il veut partir à la retraite.',who:'Bernard Vial',what:'sa cave voûtée',ask:.02,end:'Il te tend les clés avec une bouteille de 1989.'},
+    {id:'c',k:'festival',n:'Illumine la Fête des Lumières',d:'Le 8 décembre, toute la ville éteint ses lampes. À toi d’allumer la presqu’île.',o:OB_FEST(['Le spectacle','Bougies aux fenêtres','Projection sur Fourvière','Mapping géant place des Terreaux'],['Les stands','Vin chaud','Marrons et papillotes','Grands chefs en plein air'],['L’ambiance','Musique d’ambiance','Chorale sur les quais','Orchestre sur la Saône'])},
+    {id:'d',k:'council',n:'Fais piétonniser la presqu’île',d:'Moins de voitures, plus de passants devant tes vitrines. Le conseil municipal est partagé.',law:'la piétonnisation de la presqu’île',mem:[['Mme Garnier','veut des fonds pour son école',['cash',.006]],['M. Roux','ne vote que pour des commerçants respectés',['rep',55]],['Mme Benali','veut voir des clients heureux',['sat',65]],['M. Durand','veut te voir en personne',['meet',10]],['Mme Petit','soutient les gros employeurs',['open',5]]],end:'La presqu’île devient piétonne. Tes vitrines n’ont jamais vu autant de monde.'}]},
+  'Marseille':{tag:'Marseille : la mer, le port et le foot.',t:[
+    {id:'a',k:'expedition',n:'Plonge sur l’épave du Frioul',d:'Un cargo coulé en 1720 au large des îles. On dit qu’il transportait de la soie.',need:4,it:'caisses',verb:'Plonger',gear:'Combinaison neuve',found:['Une caisse, scellée, intacte.','Une caisse coincée sous la coque.'],miss:['Le mistral s’est levé. Retour au port.','Rien que des oursins.']},
+    {id:'b',k:'derby',n:'Gagne le Classique contre Lutèce FC',d:'Les Parisiens descendent au Vélodrome. Un match que la ville attend toute l’année.',rv:'Lutèce FC'},
+    {id:'c',k:'ally',n:'Mets Toni Mattei dans ta poche',d:'Le patron du Vieux-Port décide qui vend quoi sur les quais.',who:'Toni Mattei',role:'patron du Vieux-Port',gift:'Une barque repeinte à neuf',perk:'tu as les meilleurs emplacements du port.',say:['Ici, la parole compte plus que le papier.','Tu es d’où, toi ? Bon, ça viendra.','Mon père aurait aimé te connaître.','On verra. Reviens.']},
+    {id:'d',k:'order',n:'Fournis la fête du Panier',d:'Le plus vieux quartier de la ville fait sa fête. Tous les stands se fournissent chez toi.',b:3,m:4}]},
+  'Paris':{tag:'Paris : la mode, le luxe et les terrasses.',t:[
+    {id:'a',k:'monument',n:'Sauve le théâtre du Marais',d:'Un théâtre de 1820, fermé depuis vingt ans. Il tombe en ruine.',name:'le théâtre du Marais',c:.02},
+    {id:'b',k:'team',n:'Prépare ton défilé',d:'Fashion Week dans trois mois. Il te faut une créatrice, des mannequins et quelqu’un pour la presse.',sk:['Couture','Défilé','Presse'],nm:['Inès, styliste','Malik, mannequin','Claire, attachée de presse','Hugo, modéliste','Zoé, stagiaire','Ama, ancienne de chez Dior'],end:'Le défilé fait la une. Les commandes pleuvent.'},
+    {id:'c',k:'council',n:'Fais voter la loi des terrasses',d:'Tu veux des terrasses toute l’année devant tes boutiques. Les riverains râlent.',law:'les terrasses toute l’année',mem:[['M. Lemoine','président des riverains, veut du calme',['meet',12]],['Mme Ferrand','veut un financement pour son square',['cash',.008]],['M. Akli','aime les entreprises qui embauchent',['open',6]],['Mme Vasseur','ne jure que par les avis clients',['sat',70]],['M. Blanc','vote avec la majorité',['rep',60]]],end:'Les terrasses restent ouvertes l’hiver. Les chauffages au gaz chantent.'},
+    {id:'d',k:'story',n:'La Fashion Week',d:'Une semaine où tout Paris s’habille pour être vu. Trois choix, trois coups de poker.',steps:[
+      {q:'Une star veut porter ta collection, mais elle demande l’exclusivité.',ch:[['Accepter',{rep:6},'Elle débarque en couverture avec ta veste.'],['Refuser, rester libre',{g:.003},'Tu vends à tout le monde. Moins de bruit, plus de caisse.']]},
+      {q:'Un magazine propose un article… payant.',ch:[['Payer l’article',{c:.004,rep:6},'Trois pages en papier glacé.'],['Inviter les journalistes à dîner',{nrg:10,rep:4},'Ils repartent avec un sac chacun et un bon souvenir.']]},
+      {q:'Dernier soir. On te demande de monter sur le podium.',ch:[['Y aller',{rep:5},'Trente secondes d’applaudissements. Tu n’oublieras pas.'],['Laisser la place à l’équipe',{rep:3,g:.002},'Ton équipe pleure de joie. Toi, tu souris en coulisse.']]}]}]},
+  'Londres':{tag:'Londres : la City et la clientèle exigeante.',t:[
+    {id:'a',k:'auction',n:'Remporte la vente de Mayfair',d:'Une horloge de 1760 pour ta vitrine de Bond Street. Deux collectionneurs la veulent aussi.',lot:'une horloge de 1760',rv:['Lord Ashby','Mrs. Whitcombe'],c:.01,end:'L’horloge sonne midi dans ta vitrine. Les passants s’arrêtent.'},
+    {id:'b',k:'nego',n:'Signe le bail de la City',d:'Un rez-de-chaussée à deux pas de la Banque d’Angleterre. Mr. Pembroke possède l’immeuble.',who:'Mr. Pembroke',what:'le bail de son rez-de-chaussée',ask:.025,end:'« Pleasure doing business. » Ta plaque est posée le lendemain.'},
+    {id:'c',k:'enquete',n:'La fuite dans tes comptes',d:'Quelqu’un détourne de l’argent, livre par livre. Trois personnes avaient accès aux comptes.',sus:[['Edward','comptable, vient de s’acheter une Jaguar'],['Priya','assistante, travaille tard tous les soirs'],['Tom','stagiaire, pose beaucoup de questions']],pl:['Le pub en bas du bureau','Les relevés de la banque','Le badge d’entrée du soir','Le téléphone de l’entreprise'],end:'Scotland Yard prend le relais. L’argent revient sur ton compte.'},
+    {id:'d',k:'derby',n:'Gagne le derby de Londres',d:'Thames Rovers, de l’autre côté du fleuve. Un siècle de rivalité.',rv:'Thames Rovers'}]},
+  'New York':{tag:'New York : la pierre et Wall Street.',t:[
+    {id:'a',k:'pitch',n:'Lève des fonds à Wall Street',d:'Trois investisseurs, trois caractères. Trouve le bon argument pour chacun.',inv:[['Linda Park','ancienne trader. Ne croit que ce qu’elle peut compter.','chiffres'],['Sam Osei','a fait fortune dans la tech. Veut qu’on le fasse rêver.','vision'],['Ruth Klein','« J’investis dans des gens, pas dans des idées. »','equipe']]},
+    {id:'b',k:'rush',n:'La semaine de Thanksgiving',d:'Black Friday, puis tout le mois de décembre. Si tu dois battre un record, c’est maintenant.',m:2,x:1.35},
+    {id:'c',k:'monument',n:'Rouvre un vieux théâtre de Broadway',d:'Le Liberty Theater, rideau baissé depuis 1985. Il te fait de l’œil.',name:'le Liberty Theater',c:.02},
+    {id:'d',k:'ally',n:'Gagne le respect de Frankie Russo',d:'Frankie tient tous les food trucks de Midtown. Il n’aime pas les nouveaux.',who:'Frankie Russo',role:'roi des food trucks de Midtown',gift:'Un camion repeint à son nom',perk:'tes boutiques ont un camion devant la porte.',say:['Kid, t’as du cran.','Ma mère disait : méfie-toi des gens pressés. Toi, ça va.','On en reparle autour d’un hot-dog.','Pas mal pour un Français.']}]},
+  'Tokyo':{tag:'Tokyo : la tech et le service parfait.',t:[
+    {id:'a',k:'streak',n:'Passe l’inspection kaizen',d:'Un inspecteur de l’association des commerçants passe chaque mois. Il ne laisse rien passer.',sat:78,m:2},
+    {id:'b',k:'team',n:'Monte ton équipe de robotique',d:'Le concours de robots d’Akihabara. Il te faut de la mécanique, du code et du design.',sk:['Mécanique','Code','Design'],nm:['Haruto, mécanicien','Yui, développeuse','Ren, designer','Sakura, ingénieure','Kenta, étudiant','Dr Mori, chercheur'],end:'Votre robot sert le thé sans en renverser une goutte. Premier prix.'},
+    {id:'c',k:'order',n:'Les commandes du hanami',d:'La saison des cerisiers commence. Tout le monde pique-nique, tout le monde achète.',b:4,m:3},
+    {id:'d',k:'derby',n:'Bats Tokyo Bay United',d:'Le club de la baie fait salle comble à chaque match. Prouve que ton club existe.',rv:'Tokyo Bay United'}]},
+  'Dubaï':{tag:'Dubaï : voir grand.',t:[
+    {id:'a',k:'build',n:'Construis ton île artificielle',d:'Du sable, de la patience et beaucoup d’argent. Une île à ton nom au large de la plage.',mods:['La digue','La plage','La marina','L’hôtel sur pilotis'],c:.006},
+    {id:'b',k:'nego',n:'Convaincs Cheikha Mariam',d:'Elle possède la moitié du front de mer. Elle vend rarement, et jamais à bas prix.',who:'Cheikha Mariam',what:'un terrain sur le front de mer',ask:.03,end:'Elle signe avec un stylo en or. Elle te l’offre.'},
+    {id:'c',k:'festival',n:'Lance ton Shopping Festival',d:'Un mois de soldes géantes dans tout l’émirat. Les touristes arrivent par avions entiers.',o:OB_FEST(['La vitrine','Ballons et banderoles','Drones lumineux','Spectacle sur la fontaine'],['Les invités','Influenceurs locaux','Stars de la télé','Une star d’Hollywood'],['Le gros lot','Bons d’achat','Une voiture à gagner','Un lingot d’or par jour'])},
+    {id:'d',k:'auction',n:'Remporte la Rolls de collection',d:'Une Silver Ghost de 1910. Les plus grosses fortunes du Golfe sont dans la salle.',lot:'une Rolls-Royce de 1910',rv:['M. Al Fardan','Mme Kapoor'],c:.012,end:'Tu l’exposes dans ton grand magasin. Les selfies ne s’arrêtent plus.'}]},
+  'Rio de Janeiro':{tag:'Rio : le carnaval et la fête.',t:[
+    {id:'a',k:'rescue',n:'Sauve l’école de samba de Lapa',d:'Unidos da Lapa a perdu ses sponsors. Sans toi, pas de défilé cette année.',name:'Unidos da Lapa',c:.008,end:'Sauvée ! L’école défilera sous tes couleurs.'},
+    {id:'b',k:'festival',n:'Fais défiler ton char au carnaval',d:'Le Sambodrome, quatre-vingt mille personnes, quatre-vingts minutes pour les éblouir.',o:OB_FEST(['Le char','Char décoré à la main','Char à étages','Char géant animé'],['Les costumes','Costumes simples','Plumes et paillettes','Costumes de champion'],['La batterie','Percussions du quartier','Grande batterie','Batterie et chanteur star'])},
+    {id:'c',k:'derby',n:'Gagne le derby du Maracanã',d:'Atlético Guanabara, l’ennemi de toujours. Le stade tremble avant même le coup d’envoi.',rv:'Atlético Guanabara'},
+    {id:'d',k:'ally',n:'Deviens l’ami de Mestre Tião',d:'Le roi du forró de la Feira. S’il te présente, tu fais partie de la famille.',who:'Mestre Tião',role:'roi du forró',gift:'Un accordéon neuf',perk:'la Feira t’adopte.',say:['Ici on danse d’abord, on parle affaires après.','Tu as le rythme, gringo.','Reviens samedi, il y aura de la musique.','Ma femme t’aime bien. C’est bon signe.']}]},
+  'Shanghai':{tag:'Shanghai : l’usine du monde.',t:[
+    {id:'a',k:'export',n:'Honore le contrat export',d:'Un distributeur européen veut trois produits à la fois. Les conteneurs partent dans quatre mois.',b:[2,4,5],m:4},
+    {id:'b',k:'nego',n:'Rachète l’usine de Mme Chen',d:'Une usine à Pudong, des machines neuves. Mme Chen veut vendre, mais au bon prix.',who:'Mme Chen',what:'son usine de Pudong',ask:.025,end:'Poignée de main, thé au jasmin, contrat signé.'},
+    {id:'c',k:'rush',n:'La Fête des célibataires',d:'Le 11 novembre, la plus grosse journée de ventes du monde. Prépare-toi.',m:2,x:1.4},
+    {id:'d',k:'enquete',n:'Traque les contrefaçons',d:'De faux produits à ton nom inondent le marché. Quelqu’un les fabrique tout près.',sus:[['M. Wu','ancien fournisseur que tu as remplacé'],['Lin','ton chef d’atelier, très discret'],['La société Golden Dragon','concurrente qui copie tout']],pl:['Le marché de Qipu','Les docks de Yangshan','L’atelier de nuit','Les annonces en ligne'],end:'L’atelier clandestin ferme. Les vrais clients reviennent.'}]},
+  'Atlantide':{tag:'Atlantide : les perles et la ville sous la mer.',t:[
+    {id:'a',k:'diplo',n:'Fais la paix avec les Tritons',d:'Le peuple des Tritons bloque tes livraisons. Ils acceptent une audience.',intro:'Les Tritons parlent peu et détestent la vantardise.',qs:[['Le doyen : « Pourquoi venir chez nous ? »',['Pour faire fortune.','Pour commercer, à vos conditions.','Parce que la surface est trop petite.'],1],['« Que nous offres-tu ? »',['Une part de mes ventes, chaque mois.','Mon amitié éternelle.','Des babioles de la surface.'],0],['« Et si nous refusons ? »',['Je trouverai d’autres routes.','Je reviendrai avec des avocats.','Alors je reviendrai demander ce qui vous ferait changer d’avis.'],2]],end:'Le doyen te tend une coquille gravée. Tes livraisons passent.'},
+    {id:'b',k:'expedition',n:'Remonte les perles du gouffre',d:'Les plus grosses perles dorment au fond du gouffre noir. Peu en reviennent les mains pleines.',need:5,it:'perles',verb:'Descendre dans le gouffre',gear:'Lampe abyssale',found:['Une perle grosse comme une cerise.','Une perle noire, parfaite.'],miss:['Un banc de méduses t’a fait remonter.','Le noir complet. Rien trouvé.']},
+    {id:'c',k:'monument',n:'Relève le temple englouti',d:'Un temple de corail, effondré depuis mille ans. Les Atlantes rêvent de le revoir debout.',name:'le temple englouti',c:.02},
+    {id:'d',k:'story',n:'Le chant des baleines',d:'Les baleines ont changé de route. Elles passent maintenant au-dessus de tes boutiques.',steps:[
+      {q:'Leur chant fait vibrer les vitres. Les clients ont peur.',ch:[['Renforcer les vitres',{c:.003},'Les vitres tiennent. Le chant devient une curiosité.'],['Organiser des écoutes',{rep:5},'Les gens viennent écouter. Tu vends des coussins.']]},
+      {q:'Un baleineau s’est pris dans un câble.',ch:[['Plonger toi-même',{nrg:12,rep:8},'Tu le libères. Sa mère te frôle en repartant.'],['Payer des plongeurs',{c:.003,rep:4},'Libéré en dix minutes. Bravo à l’équipe.']]},
+      {q:'Le troupeau revient chaque soir. On veut en faire une fête.',ch:[['Fête gratuite',{rep:6},'Toute la ville chante avec les baleines.'],['Places payantes',{g:.004},'Complet chaque soir. Les baleines ne demandent rien.']]}]}]},
+  'La Lune':{tag:'La Lune : tout doit tourner sans toi.',t:[
+    {id:'a',k:'crisis',n:'Répare le dôme avant la nuit lunaire',d:'Une micrométéorite a percé le dôme. Quatorze jours de nuit arrivent.',intro:'L’air fuit doucement. Trois systèmes sont touchés.',sys:['L’oxygène','Le chauffage','Les communications'],m:2},
+    {id:'b',k:'build',n:'Bâtis la base Tranquillité',d:'Une vraie base, au bord de la mer de la Tranquillité. Module par module.',mods:['Panneaux solaires','La serre','Le labo','Le port spatial'],c:.006},
+    {id:'c',k:'team',n:'Forme ton équipage',d:'Trois places dans la navette. Il faut piloter, soigner et réparer.',sk:['Pilotage','Médecine','Mécanique'],nm:['Commandante Diallo','Dr Okafor','Igor, mécanicien','Lucie, pilote d’essai','Sam, cadet','Vera, vétérane d’Apollo 30'],end:'Premier aller-retour sans un pépin. L’équipage est prêt.'},
+    {id:'d',k:'council',n:'Obtiens les vols de nuit',d:'Le conseil de la colonie interdit les vols pendant la nuit lunaire. Tes livraisons en souffrent.',law:'les vols de nuit',mem:[['Cmdt Haas','veut un budget pour la sécurité',['cash',.008]],['Dr Nakamura','dort mal, veut te parler',['meet',12]],['Ingénieure Silva','soutient ceux qui créent des emplois',['open',6]],['M. Obi','regarde ta réputation',['rep',60]],['Mme Petrova','veut des colons contents',['sat',70]]],end:'Les navettes volent jour et nuit. Tes stocks aussi.'}]},
+  'Mars':{tag:'Mars : bâtir une colonie.',t:[
+    {id:'a',k:'cup',n:'Remporte la Coupe interplanétaire',d:'Trois matchs, trois planètes. Il faut les gagner d’affilée.',rv:['Luna City FC','Europa Ice','Terra United'],w:3},
+    {id:'b',k:'build',n:'Lance la terraformation',d:'Quatre étapes pour qu’un jour, on respire ici sans casque.',mods:['Miroirs orbitaux','Usine à oxygène','Premiers lichens','Le premier lac'],c:.007},
+    {id:'c',k:'crisis',n:'Survis à la tempête de poussière',d:'Une tempête grande comme un continent arrive. Les panneaux vont s’éteindre.',intro:'Trois systèmes à protéger avant que le ciel devienne noir.',sys:['Les panneaux solaires','Les serres','Les sas d’entrée'],m:2},
+    {id:'d',k:'pitch',n:'Convaincs la Terre de suivre',d:'Trois délégués terriens décident de l’avenir de la colonie.',inv:[['Délégué Morel','comptable dans l’âme. Veut savoir combien ça rapporte.','chiffres'],['Déléguée Adeyemi','a grandi en regardant les étoiles.','vision'],['Délégué Sato','ne fait confiance qu’aux gens qu’il a rencontrés.','equipe']]}]},
+  'Istanbul':{tag:'Istanbul : le bazar, le Bosphore et les ponts.',t:[
+    {id:'a',k:'caravan',n:'Rouvre la route des épices',d:'Safran, cumin, cannelle. Deux convois doivent arriver au Grand Bazar.',need:2,routes:[['Par la mer Noire',1,.6],['Par la route de la soie',2,.85],['Par les montagnes',1,.45]]},
+    {id:'b',k:'nego',n:'Marchande avec Hasan Bey',d:'Au Grand Bazar, payer le premier prix est une insulte. Hasan Bey vend sa plus belle boutique.',who:'Hasan Bey',what:'sa boutique du Grand Bazar',ask:.025,end:'Il te sert un thé : « Tu es des nôtres. »'},
+    {id:'c',k:'monument',n:'Restaure le hammam de Galata',d:'Un hammam de 1500, coupoles percées et marbre fendu.',name:'le hammam de Galata',c:.02},
+    {id:'d',k:'festival',n:'Organise la nuit du Bosphore',d:'Une nuit de fête sur l’eau, entre l’Europe et l’Asie.',o:OB_FEST(['Sur l’eau','Barques illuminées','Bateaux-concerts','Flotte entière illuminée'],['À table','Simit et thé','Poissons grillés sur les quais','Banquet sur le pont'],['La musique','Joueur de saz','Orchestre traditionnel','Star de la pop turque'])}]},
+  'Le Caire':{tag:'Le Caire : pyramides, Nil et marché des épices.',t:[
+    {id:'a',k:'cipher',n:'Déchiffre la stèle de Saqqarah',d:'Quatre symboles gravés gardent l’entrée d’une salle oubliée.',intro:'Quatre cases, quatre symboles. Une seule combinaison ouvre la porte.',sym:['Ibis','Soleil','Œil','Scarabée'],end:'La pierre pivote. Derrière, une salle intacte depuis 4 000 ans.'},
+    {id:'b',k:'expedition',n:'Mène les fouilles du plateau',d:'Le sable cache des trésors. Les autorités te donnent un permis de fouille.',need:4,it:'objets',verb:'Fouiller une journée',gear:'Équipe de fouille',found:['Une amulette en faïence bleue.','Un vase intact.'],miss:['Du sable, encore du sable.','Le vent a tout recouvert.']},
+    {id:'c',k:'enquete',n:'Arrête les pilleurs de tombes',d:'Des objets des fouilles finissent au marché noir. Quelqu’un les sort du chantier.',sus:[['Karim','gardien de nuit'],['Dr Halvorsen','archéologue étranger'],['Omar','vendeur au marché Khan el-Khalili']],pl:['Le marché Khan el-Khalili','La tente du chantier','Le port d’Alexandrie','Les carnets de fouille'],end:'Les objets retournent au musée. Ton nom est cité dans les journaux.'},
+    {id:'d',k:'caravan',n:'Fais descendre le Nil à tes felouques',d:'Tes marchandises doivent atteindre Assouan. Le fleuve est capricieux.',need:2,routes:[['Au fil du courant',1,.6],['Avec un pilote local',2,.9],['De nuit',1,.45]]}]},
+  'Sydney':{tag:'Sydney : l’opéra, le port et les plages.',t:[
+    {id:'a',k:'regatta',n:'Gagne la régate du port',d:'Cinquante voiliers sous le Harbour Bridge. Le vent tourne vite ici.',intro:'Ton bateau s’appelle comme ta première boutique.'},
+    {id:'b',k:'festival',n:'Illumine Vivid Sydney',d:'Trois semaines de lumière sur l’Opéra et le port.',o:OB_FEST(['Sur l’Opéra','Projection simple','Animation 3D','Spectacle laser'],['Le port','Bateaux décorés','Feux sur l’eau','Drones par centaines'],['La musique','DJ local','Orchestre en plein air','Groupe culte du pays'])},
+    {id:'c',k:'ally',n:'Gagne l’amitié de Kylie',d:'Kylie, reine du surf à Bondi. Toute la plage l’écoute.',who:'Kylie',role:'reine du surf à Bondi',gift:'Une planche taillée sur mesure',perk:'Bondi porte tes couleurs.',say:['No worries, mate.','Viens surfer demain, à l’aube.','T’es moins coincé que les autres patrons.','Bon, d’accord. T’es cool.']},
+    {id:'d',k:'rescue',n:'Sauve le vieux ferry de Manly',d:'Le ferry de 1938 va partir à la casse. Les habitants le pleurent déjà.',name:'le ferry de Manly',c:.008,end:'Il reprend la mer, repeint à neuf. Les habitants applaudissent depuis le quai.'}]}
+};
+/* Ville inconnue (ajoutée plus tard) : quatre affaires génériques, jamais vides */
+const OB_GEN={tag:'',t:[
+  {id:'a',k:'order',n:'La grosse commande',d:'Un client important veut être livré à temps.',b:1,m:3},
+  {id:'b',k:'ally',n:'Un allié en ville',d:'Une figure du quartier peut t’ouvrir des portes.',who:'Sam',role:'figure du quartier',gift:'Un cadeau bien choisi'},
+  {id:'c',k:'rush',n:'Le mois record',d:'Bats ton propre record de ventes.',m:2,x:1.3},
+  {id:'d',k:'festival',n:'La grande fête',d:'La ville te confie sa fête annuelle.',o:OB_FEST(['La scène','Musiciens du coin','Groupe connu','Grande vedette'],['À manger','Stands simples','Cuisine du pays','Grand banquet'],['Le final','Lampions','Parade','Feu d’artifice'])}]};
+const obCity=()=>OB_CITY[(CITIES[S.city||0]||{}).n]||OB_GEN;
+/* ---------- État, progrès, réussite ---------- */
+function obSt(){const c=S.city||0;if(!S.ob||typeof S.ob!=='object'||S.ob.c!==c||!S.ob.t||typeof S.ob.t!=='object'){S.ob={c,t:{}};
+    if(S.leg&&Array.isArray(S.leg.b)&&S.leg.b.includes('ob')){const T=obCity().t[0];if(T)S.ob.t[T.id]={ok:1,gift:1}}}return S.ob}
+function obState(T){const O=obSt();let s=O.t[T.id];if(!s||typeof s!=='object'){s=O.t[T.id]={};const K=OBK[T.k];if(K&&K.init)K.init(T,s)}return s}
+const obTasks=()=>obCity().t.filter(T=>OBK[T.k]);
+function obAll(){const L=obTasks().slice(),g=galTask();if(g)L.push(g);return L}
+const obFind=id=>obAll().find(T=>T.id===id);
+function obP(T){const s=obState(T);if(s.ok)return [1,1];try{const [a,b]=OBK[T.k].p(T,s);return [+a||0,+b>0?+b:1]}catch(e){return [0,1]}}
+const obNeed=T=>{const K=OBK[T.k];try{return K&&K.need?K.need(T):''}catch(e){return ''}};
+function obWin(T,s){if(s.ok)return;s.ok=1;const r=obC(T.rw||.006);earn(r);obRep(3);try{addXP(40)}catch(e){}
+  S.counts=S.counts||{};S.counts.obDone=(S.counts.obDone|0)+1;
+  try{S.journal.unshift({day:S.day,who:(CITIES[S.city]||{}).e||'',name:obCN(),title:T.n,choice:OBK[T.k].tag,res:s.msg||'Réussi.',fx:['+'+fmt(r)]})}catch(e){}
+  sfx('rank');toast(`Réussi : ${T.n}. +${fmt(r)}`);if(T.gal)galNext()}
+function obCheck(){if(!S.started||S.dead)return;obAll().forEach(T=>{const s=obState(T);if(s.ok)return;const [a,b]=obP(T);if(b>0&&a>=b)obWin(T,s)})}
+function obMonth(){if(!S.started)return;obAll().forEach(T=>{const s=obState(T),K=OBK[T.k];if(!s.ok&&K.month&&!obNeed(T))try{K.month(T,s)}catch(e){if(typeof reportErr==='function')reportErr(e,'objectifs')}});obDerbySet();obCheck();obRefresh()}
+/* Derby / coupe : le prochain match de championnat devient le match demandé */
+function obDerbySet(){const C=S.club;if(!C||!C.own||!C.match||C.match.done||C.match.ob)return;
+  const T=obAll().find(T=>(T.k==='derby'||T.k==='cup')&&!obState(T).ok&&obState(T).on);if(!T)return;const s=obState(T);
+  C.match.opp=OBK.derby.opp(T,s);C.match.ob=T.id;C.match.oppStr=Math.round(Math.max(+C.match.oppStr||0,(+C.str||40)+2));
+  if(S.started)setTimeout(()=>toast(`Ce mois-ci : ${C.match.opp}. C’est le match à gagner (onglet Club).`),2800)}
+finishMatch=(f=>function(){const C=S.club,M=C&&C.match,tag=M&&!M.done&&M.ob;const r=f.apply(this,arguments);
+  if(tag)try{const T=obFind(tag);if(T){const s=obState(T);if(M.gf>M.ga){s.w=(s.w|0)+1;s.msg=`Victoire ${M.gf}-${M.ga} contre ${M.opp} !`}else{if(T.k==='cup')s.w=0;s.msg=`${M.gf}-${M.ga} contre ${M.opp}. ${T.k==='cup'?'Le compteur repart à zéro.':'Revanche au prochain match.'}`}obCheck()}}catch(e){}
+  return r})(finishMatch);
+/* Commandes : chaque vente de la bonne affaire compte */
+onCollect=(f=>function(b,got){f.apply(this,arguments);try{if(!S.ob||!got)return;obAll().forEach(T=>{if(T.k!=='order'&&T.k!=='export')return;const s=obState(T);if(!s.on||s.ok||!s.n)return;
+  OBK.order.bs(T).forEach((i,k)=>{if(BIZ[i]===b)s.u[k]=(s.u[k]||0)+Math.max(1,Math.round(got/Math.max(1e-9,revenue(b))))})})}catch(e){}})(onCollect);
+newDay=(f=>function(){const r=f.apply(this,arguments);try{if(S.started&&!S.dead)obMonth()}catch(e){if(typeof reportErr==='function')reportErr(e,'objectifs')}return r})(newDay);
+
+/* ---------- Conquête : socle commun + affaires de la ville ---------- */
+conqGoals=function(){const c=S.city||0,cn=obCN(),lv=pgLv(c),nb=pgNb(c);
+  return [{t:`Ouvre les 8 affaires de ${cn}`,p:()=>[openIds().length,8]},
+    {t:`Fais grandir ${nb} affaires jusqu’au niveau ${lv}`,p:()=>[BIZ.filter(b=>S.biz[b.id].lvl>=lv).length,nb]},
+    {t:`Gagne ${fmt(cityGoal2())} dans cette ville`,p:()=>[S.lifetime,cityGoal2()]},
+    ...obTasks().slice(0,4).map(T=>({t:T.n,ob:T.id,p:()=>obP(T)}))]};
+
+/* ---------- Écran des affaires de la ville ---------- */
+function obCard(T){const s=obState(T),K=OBK[T.k],[a,b]=obP(T),ok=!!s.ok,nd=obNeed(T);let h='';try{h=K.hint(T,s)}catch(e){}
+  return `<button class="ob-card ${ok?'ok':''}" data-a="ob_open" data-id="${T.id}" aria-label="${esc(T.n)}${ok?', réussi':''}"><span class="ob-tag">${K.tag}</span><b class="ob-t">${T.n}</b><span class="ob-d">${ok?'Réussi.':nd||h}</span>${ok?'':obBar(a,b)}</button>`}
+function obModalHTML(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';if(!s.ok&&!nd)try{body=K.body(T,s)}catch(e){body='';if(typeof reportErr==='function')reportErr(e,'objectifs')}
+  return `<div class="ob-m" id="obm" data-id="${T.id}"><p class="ob-kick">${K.tag} · ${T.gal?'Contrat galactique':esc(obCN())}</p><h2>${T.n}</h2><p class="ob-lead">${T.d}</p>
+    <p class="ob-msg" role="status" aria-live="polite"${s.msg?'':' hidden'}>${s.msg||''}</p>
+    ${s.ok?`<p class="ob-win">Réussi.${s.gift?' Ton carnet d’adresses a fait le travail.':''}</p>`:nd?`<p class="ob-need">${nd}</p>`:body}
+    <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button></div>`}
+function obOpen(id){const T=obFind(id);if(!T)return;modal(obModalHTML(T))}
+function obRefresh(v){const m=document.getElementById('obm');
+  if(m&&modalOpen){const T=obFind(m.dataset.id);if(T){const sh=m.closest('.sheet'),top=sh?sh.scrollTop:0;modal(obModalHTML(T));const sh2=document.querySelector('#layer .sheet');if(sh2)sh2.scrollTop=top;
+    if(v){const b=document.querySelector(`#obm [data-v="${CSS&&CSS.escape?CSS.escape(v):v}"]`)||document.querySelector('#obm [data-a="close"]');if(b&&b.focus)try{b.focus({preventScroll:true})}catch(e){}}}}
+  else if(S.tab==='objectifs'&&!modalOpen&&typeof PDOWN!=='undefined'&&!PDOWN)renderMain()}
+function obSection(){const L=obTasks(),d=L.filter(T=>obState(T).ok).length,th=obCity().tag;
+  return `<div class="sec-head"><h2>Les affaires de ${esc(obCN())}</h2><p>${d}/${L.length}</p></div>${th?`<p class="hint ob-tagl">${th}</p>`:''}<div class="ob-tasks">${L.map(obCard).join('')}</div>`}
+vObjectifs=(f=>function(){let h=f();
+  h=h.replace(/<p class="hint" style="margin:0 0 8px">[^<]*<\/p>/,''); /* l’accroche de ville est maintenant au-dessus des affaires */
+  const sec=obSection(),i=h.search(/<div class="panel"><div class="kv"><span>Trésor de l’empire|<div class="route">/);h=i>=0?h.slice(0,i)+sec+h.slice(i):h+sec;
+  if((S.city|0)>=CITIES.length-1)h=h.replace('Dernière étape du voyage.',()=>finObjHTML());
+  return h})(vObjectifs);
+badges=(f=>function(){f.apply(this,arguments);try{if((S.city|0)>=CITIES.length-1&&!S.fin&&conqDone()>=7){const e=$('#b-objectifs');if(e){e.hidden=false;e.classList.remove('dot');e.textContent='!'}}}catch(e){}})(badges);
+
+/* ---------- Clics ---------- */
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const a=b.dataset.a;
+  if(a!=='ob'&&a!=='ob_open'&&a.indexOf('fin_')!==0)return;
+  e.stopImmediatePropagation();e.preventDefault();
+  try{
+    if(a==='ob_open'){sfx('tap');obOpen(b.dataset.id);return}
+    if(a==='ob'){const T=obFind(b.dataset.id);if(!T)return;const s=obState(T),K=OBK[T.k];if(s.ok||obNeed(T))return;const v=b.dataset.v||'';
+      K.act(T,s,v);sfx('tap');obCheck();save();updateLive();if(document.getElementById('obm'))obRefresh(v);return}
+    finClick(a,b);
+  }catch(err){if(typeof reportErr==='function')reportErr(err,'objectifs')}
+},true);
+/* ---------- Temps de jeu (actif, onglet visible) ---------- */
+setInterval(()=>{try{if(S.started&&!S.dead&&document.visibilityState==='visible'){S.playMs=(+S.playMs||0)+1000;S.cityMs=(+S.cityMs||0)+1000}}catch(e){}},1000);
+const obDur=ms=>{ms=+ms||0;const m=Math.round(ms/60000);if(m<60)return m+' min';const h=Math.floor(m/60);return h+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'')};
+
+/* ---------- Mémoire hors partie : héritage, records ---------- */
+const LEG_KEY='flipEmpire_legacy';
+function legGet(){try{const o=JSON.parse(localStorage.getItem(LEG_KEY)||'null');if(o&&typeof o==='object')return {runs:Array.isArray(o.runs)?o.runs:[],best:o.best&&typeof o.best==='object'?o.best:{},pts:+o.pts||0,pend:o.pend||null}}catch(e){}return {runs:[],best:{},pts:0,pend:null}}
+function legSet(o){try{localStorage.setItem(LEG_KEY,JSON.stringify(o))}catch(e){}}
+function legBest(n,ms){if(!n||!(ms>60000))return;const L=legGet();if(!(L.best[n]>0)||ms<L.best[n]){L.best[n]=ms;legSet(L)}}
+const LEG_B=[
+  ['cash','Bas de laine','Tu démarres avec de quoi ouvrir ta deuxième boutique.'],
+  ['star','Nom connu','Deux étoiles de franchise d’office : +20 % sur tous tes revenus.'],
+  ['mgr','Vieil associé','Un gérant t’attend déjà dans ta première boutique.'],
+  ['rep','Bonne presse','Réputation +20 et énergie au maximum au départ.'],
+  ['ob','Carnet d’adresses','Dans chaque ville, une des quatre affaires est déjà réglée.'],
+  ['unl','Déjà rodé','Tous les onglets ouverts d’office, sans tutoriel.']];
+const legSlots=()=>Math.min(4,2+Math.floor(legGet().pts/3));
+/* Applique les bonus choisis au début de la nouvelle vie */
+function legApply(){if(!S.started||S.dead)return;const L=legGet();
+  if(L.pend&&!S.leg&&(S.city|0)===0&&(+S.playMs||0)<600000&&!S.fin){S.leg={b:(L.pend.b||[]).filter(k=>LEG_B.some(x=>x[0]===k)),ap:0,run:L.runs.length+1};L.pend=null;legSet(L)}
+  if(!S.leg||S.leg.ap)return;const b=S.leg.b||[];
+  if(b.includes('cash'))S.cash=Math.max(S.cash,Math.round(BIZ[1].cost*1.2));
+  if(b.includes('star'))S.stars=Math.min(20,(S.stars|0)+2);
+  if(b.includes('mgr'))S.biz[BIZ[0].id].mgr=true;
+  if(b.includes('rep')){S.rep=clamp(S.rep+20,0,100);S.energy=100}
+  if(b.includes('unl')){S.unl={all:1};S.tut={step:9,done:true};S.tours={_all:1};try{ongBuildTabs();unlDOM()}catch(e){}}
+  if(b.includes('ob')){const O=obSt(),T=obCity().t[0];if(T&&!(O.t[T.id]&&O.t[T.id].ok))O.t[T.id]={ok:1,gift:1}}
+  S.leg.ap=1;dispCash=S.cash;save();
+  if(b.length)setTimeout(()=>toast(`Héritage : ${b.map(k=>(LEG_B.find(x=>x[0]===k)||[,''])[1]).join(', ')}.`),1500)}
+setInterval(()=>{try{legApply()}catch(e){}},700);
+
+/* ---------- Titre ---------- */
+function finTitle(n){const h=S.hero||{},T=[['Fondateur d’empire','Fondatrice d’empire'],['Bâtisseur de mondes','Bâtisseuse de mondes'],['Légende de Mars','Légende de Mars'],['Mythe vivant','Mythe vivant']][Math.min(3,Math.max(0,n|0))];
+  return typeof gx==='function'?gx(h,T[0],T[1]):T[0]}
+
+/* ---------- Contrats galactiques (après la fin) ---------- */
+const GAL=[
+  n=>({k:'order',n:'Ravitaille la station Phobos',d:'La station en orbite a besoin de tout, tout de suite.',b:3+(n%4),m:3}),
+  n=>({k:'rush',n:'Le trimestre des records',d:'Les actionnaires de la Terre regardent tes chiffres.',m:3,x:1.5}),
+  n=>({k:'expedition',n:'Mine la ceinture d’astéroïdes',d:'Des cristaux rares flottent entre Mars et Jupiter.',need:5,it:'cristaux',verb:'Envoyer un drone',gear:'Drone de forage'}),
+  n=>({k:'auction',n:'L’enchère de la comète',d:'Une comète entière, avec ses droits miniers.',lot:'les droits d’une comète',rv:['le consortium de Phobos','la reine des astéroïdes'],c:.015}),
+  n=>({k:'cipher',n:'Le signal de Titan',d:'Un signal régulier arrive de Titan. Quatre motifs se répètent.',intro:'Remets les motifs dans l’ordre du signal.',sym:['Orbite','Comète','Anneau','Étoile'],end:'Le signal répond. Quelqu’un, là-bas, a compris.'}),
+  n=>({k:'regatta',n:'La course des voiles solaires',d:'Des voiliers poussés par la lumière, autour de Deimos.',intro:'Ici, le vent, c’est le Soleil.'}),
+  n=>({k:'nego',n:'Le contrat de l’amirale Okafor',d:'La flotte cherche un fournisseur pour dix ans.',who:'L’amirale Okafor',what:'le contrat de la flotte',ask:.03}),
+  n=>({k:'build',n:'L’ascenseur spatial',d:'Un câble entre le sol et l’orbite. Fou, mais possible.',mods:['L’ancrage','Le câble','La cabine','La station du sommet'],c:.008})];
+function galTask(){if(!S.fin||(S.city|0)<CITIES.length-1)return null;if(!S.gal||typeof S.gal!=='object')S.gal={n:1,i:0};
+  const n=Math.max(1,S.gal.n|0),T=Object.assign(GAL[(S.gal.i|0)%GAL.length](n),{id:'g'+n,gal:1,rw:.03});T.n=`Contrat n°${n} : ${T.n}`;return T}
+function galNext(){S.gal.n=(S.gal.n|0)+1;S.gal.i=((S.gal.i|0)+1+randInt(0,GAL.length-2))%GAL.length;const L=legGet();L.pts=(L.pts|0)+1;legSet(L);
+  setTimeout(()=>toast('Contrat rempli : +1 point d’héritage. Un nouveau contrat t’attend.'),900)}
+
+/* ---------- Fin du voyage ---------- */
+function finObjHTML(){
+  if(S.fin)return `</p><div class="fin-box"><p class="fin-k">Voyage bouclé</p><h3>${esc(S.fin.title||finTitle(0))}</h3>
+    <div class="fin-btns"><button class="btn small" data-a="fin_show">Revoir le bilan</button><button class="btn small go" data-a="fin_leg">Héritage</button><button class="btn small" data-a="fin_def">Défis de fin</button></div></div>
+    ${(()=>{const g=galTask();return g?`<div class="ob-tasks" style="margin-top:10px">${obCard(g)}</div>`:''})()}<p class="hint">`;
+  return conqDone()>=7?`</p><button class="btn big go fin-go" data-a="fin_end">Boucler le voyage</button><p class="hint">`:'Les 7 étapes cochées, tu pourras boucler le voyage.'}
+function finRec(){const T=S.cityTimes||{},L=legGet(),names=CITIES.map(c=>c.n).filter(n=>T[n]>60000||L.best[n]);
+  if(!names.length)return '<p class="hint">Pas encore de temps enregistré. Ils se notent quand tu quittes une ville.</p>';
+  return `<table class="ltable fin-t"><tr><th>Ville</th><th>Cette partie</th><th>Record</th></tr>${names.map(n=>`<tr><td>${esc(n)}</td><td>${T[n]>60000?obDur(T[n]):'—'}</td><td>${L.best[n]?obDur(L.best[n]):'—'}${T[n]&&L.best[n]&&T[n]<=L.best[n]?' <b class="pos">record</b>':''}</td></tr>`).join('')}</table>`}
+function finStats(){const f=S.fin||{},kids=(S.kids||[]).length,P=S.partner,h=S.hero||{};
+  return [['Temps de jeu',f.ms>60000?obDur(f.ms):'—'],['Mois vécus',`${f.day||S.day} (${Math.floor((f.day||S.day)/12)} ans)`],['Villes conquises',String(CITIES.length)],
+    ['Fortune gagnée',fmt(S.lifetimeAll)],['Famille',`${S.gen>1?`${S.gen} générations`:'1 génération'}${P?', '+gx(h,'en couple','en couple'):''}${kids?`, ${kids} enfant${kids>1?'s':''}`:''}`],
+    ['Trophées',`${S.trophies.length} / ${TROPHIES.length}`],['Affaires de ville réussies',String((S.counts&&S.counts.obDone)|0)],['Étoiles de franchise',String(S.stars|0)]]}
+function finShow(){const old=document.getElementById('finScr');if(old)old.remove();const f=S.fin||{},h=S.hero||{},first=(S.dynasty&&S.dynasty[0])||null;
+  const who=S.gen>1&&first?`${esc(first.name)} a commencé`:'Tu as commencé';
+  const d=document.createElement('div');d.id='finScr';d.className='fin';d.setAttribute('role','dialog');d.setAttribute('aria-modal','true');d.setAttribute('aria-labelledby','fin-h');
+  d.innerHTML=`<div class="fin-in">
+    <p class="fin-l" style="--d:.2s">${who} dans une chambre, avec 200 € et des cartons.</p>
+    <p class="fin-l" style="--d:1.4s">${CITIES.length} villes plus tard, ton nom est peint sur les dômes de Mars.</p>
+    <div class="fin-planet fin-l" style="--d:2.4s" aria-hidden="true"></div>
+    <p class="fin-k fin-l" style="--d:2.8s">Fin du voyage</p>
+    <h2 id="fin-h" class="fin-l" style="--d:3s">${esc(h.name||'')}, ${esc(f.title||finTitle(0))}</h2>
+    <dl class="fin-st fin-l" style="--d:3.6s">${finStats().map(([k,v])=>`<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    <p class="fin-l fin-txt" style="--d:4.2s">La partie ne s’arrête pas là. Commence un héritage avec des bonus, enchaîne les contrats galactiques ou bats tes temps ville par ville.</p>
+    <div class="fin-l fin-cta" style="--d:4.6s"><button class="btn big go" data-a="fin_leg">Commencer un héritage</button><button class="btn big" data-a="fin_def">Défis de fin</button><button class="btn ghost big" data-a="fin_close">Rester sur Mars</button></div>
+  </div>`;
+  document.body.appendChild(d);setTimeout(()=>{const b=d.querySelector('[data-a="fin_close"]');if(b)try{b.focus({preventScroll:true})}catch(e){}},50)}
+function finEnd(){if(S.fin||(S.city|0)<CITIES.length-1||conqDone()<7)return;const L=legGet(),cn=CITIES[S.city].n;
+  S.fin={at:Date.now(),day:S.day,ms:+S.playMs||0,title:finTitle(L.runs.length)};
+  S.cityTimes=Object.assign({},S.cityTimes||{});S.cityTimes[cn]=+S.cityMs||0;legBest(cn,+S.cityMs||0);
+  const L2=legGet();L2.runs.push({at:S.fin.at,title:S.fin.title,ms:S.fin.ms,day:S.day,fortune:S.lifetimeAll,gen:S.gen});L2.pts=(L2.pts|0)+1;legSet(L2);
+  S.gal={n:1,i:0};try{addXP(500)}catch(e){}
+  try{S.journal.unshift({day:S.day,who:CITIES[S.city].e,name:cn,title:'Fin du voyage',choice:S.fin.title,res:`${CITIES.length} villes, ${fmt(S.lifetimeAll)} gagnés.`,fx:[]})}catch(e){}
+  sfx('rank');save();finShow();render()}
+function finLegHTML(sel){const L=legGet(),k=legSlots();sel=sel||[];
+  return `<div id="legm"><p class="ob-kick">Héritage</p><h2>Une nouvelle vie, pas tout à fait de zéro</h2>
+    <p>Tu recommences dans ta première ville. Choisis ${k} bonus qui te suivront.</p>
+    <p class="hint">Points d’héritage : ${L.pts}. Tous les 3 points, un bonus de plus (jusqu’à 4). Les contrats galactiques en rapportent.</p>
+    <div class="ob-team">${LEG_B.map(([id,n,d])=>{const on=sel.includes(id);return `<button class="ob-cand ${on?'on':''}" aria-pressed="${on}" data-a="fin_pick" data-v="${id}" ${!on&&sel.length>=k?'disabled':''}><b>${n}</b><span>${d}</span></button>`}).join('')}</div>
+    <p class="hint">Tout le reste repart de zéro : argent, villes, famille, trophées. Tes records et tes points restent.</p>
+    <button class="btn big go" style="margin-top:12px;width:100%" data-a="fin_start" ${sel.length?'':'disabled'}>Recommencer avec ${sel.length} bonus</button>
+    <button class="btn ghost big" style="margin-top:8px;width:100%" data-a="close">Plus tard</button></div>`}
+let LEG_SEL=[];
+function finDefHTML(){const g=galTask(),L=legGet();
+  return `<p class="ob-kick">Défis de fin</p><h2>Encore plus loin</h2>
+    <h3 class="ob-h">Contrat galactique</h3>${g?`<p>${g.n}. ${g.d}</p><button class="btn go" data-a="ob_open" data-id="${g.id}">Ouvrir le contrat</button>`:'<p class="hint">Les contrats arrivent quand le voyage est bouclé.</p>'}
+    <p class="hint">Chaque contrat rempli : +1 point d’héritage.</p>
+    <h3 class="ob-h">Tes temps, ville par ville</h3>${finRec()}
+    <h3 class="ob-h">Tes voyages</h3>${L.runs.length?`<ul class="ug">${L.runs.map((r,i)=>`<li><span>${i+1}. ${esc(r.title||'')}</span><span>${r.ms>60000?obDur(r.ms):'—'}</span></li>`).join('')}</ul>`:'<p class="hint">Aucun voyage bouclé pour l’instant.</p>'}
+    <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button>`}
+function finClick(a,b){
+  if(a==='fin_end'){finEnd();return}
+  if(a==='fin_show'){finShow();return}
+  if(a==='fin_close'){const d=document.getElementById('finScr');if(d)d.remove();return}
+  if(a==='fin_def'){const d=document.getElementById('finScr');if(d)d.remove();modal(finDefHTML());return}
+  if(a==='fin_leg'){const d=document.getElementById('finScr');if(d)d.remove();LEG_SEL=[];modal(finLegHTML(LEG_SEL));return}
+  if(a==='fin_pick'){const v=b.dataset.v,i=LEG_SEL.indexOf(v);if(i>=0)LEG_SEL.splice(i,1);else if(LEG_SEL.length<legSlots())LEG_SEL.push(v);modal(finLegHTML(LEG_SEL));const x=document.querySelector(`#legm [data-v="${v}"]`);if(x)try{x.focus()}catch(e){}return}
+  if(a==='fin_start'){if(!LEG_SEL.length)return;modal(`<h2>Recommencer une nouvelle vie ?</h2><p>Argent, villes, famille et trophées repartent de zéro. Tu gardes : ${LEG_SEL.map(k=>(LEG_B.find(x=>x[0]===k)||[,''])[1]).join(', ')}, tes records et tes points d’héritage.</p>
+    <div style="display:grid;gap:8px;margin-top:18px"><button class="btn big go" data-a="fin_go">Oui, recommencer</button><button class="btn ghost" data-a="fin_leg2">Revenir aux bonus</button></div>`);return}
+  if(a==='fin_leg2'){modal(finLegHTML(LEG_SEL));return}
+  if(a==='fin_go'){const L=legGet();L.pend={b:LEG_SEL.slice(),at:Date.now()};legSet(L);save();
+    const bt=document.createElement('button');bt.dataset.a='reset2';bt.hidden=true;document.body.appendChild(bt);bt.click();bt.remove();return}
+}
+/* Garder ces champs d’une ville à l’autre ; noter le temps passé dans la ville quittée */
+franchise=(f=>function(){const c0=S.city,cn=(CITIES[c0]||{}).n,keep={};['fin','leg','tours','playMs','cityTimes','gal'].forEach(k=>{if(S[k]!==undefined)keep[k]=S[k]});const ms=+S.cityMs||0;
+  f.apply(this,arguments);if(S.city===c0)return;Object.assign(S,keep);S.cityTimes=Object.assign({},S.cityTimes||{});if(cn&&ms)S.cityTimes[cn]=ms;S.cityMs=0;legBest(cn,ms);obSt()})(franchise);
+/* Empire : titre, records, aide */
+vEmpire=(f=>function(){const h=f();const L=legGet();let x='';
+  if(S.fin||L.runs.length)x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Ton titre</h3><p><b>${esc(S.fin?S.fin.title:(L.runs[L.runs.length-1]||{}).title||'')}</b></p><p class="hint">${L.runs.length} voyage${L.runs.length>1?'s':''} bouclé${L.runs.length>1?'s':''}, ${L.pts} point${L.pts>1?'s':''} d’héritage.</p>${S.fin?'<div class="fin-btns"><button class="btn small" data-a="fin_show">Revoir le bilan</button><button class="btn small" data-a="fin_def">Défis de fin</button></div>':''}</div>`;
+  if(Object.keys(S.cityTimes||{}).length||Object.keys(L.best).length)x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Tes temps par ville</h3><p class="hint">Temps de jeu réel passé dans chaque ville, jusqu’au départ.</p>${finRec()}</div>`;
+  x+=`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Aide</h3><p class="hint">Revoir la visite guidée de chaque écran.</p><button class="btn small" data-a="co_reset">Revoir les visites</button></div>`;
+  return h.replace('<div class="foot">',()=>x+'<div class="foot">')})(vEmpire);
+/* ---------- Tutoriel guidé : une bulle qui pointe le vrai bouton ---------- */
+/* Cibles : un élément de la page (sélecteur) ou un point de la carte (bulle d’argent, bâtiment, terrain). */
+function coEl(sel){let e=null;try{e=typeof sel==='string'?document.querySelector(sel):sel}catch(x){}if(!e)return null;const r=e.getBoundingClientRect();if(r.width<2||r.height<2)return null;
+  const st=getComputedStyle(e);if(st.visibility==='hidden'||st.display==='none')return null;return {x:r.left,y:r.top,w:r.width,h:r.height,el:e}}
+function coMap(kind,id){if(S.tab!=='ville'||typeof cv==='undefined'||!cv)return null;const R=cv.getBoundingClientRect();
+  if(kind==='bubble'||kind==='event'){const h=HITS_TOP.find(x=>x.kind===kind&&(id==null||x.id===id));if(!h)return null;const [sx,sy]=toScreen(h.x,h.y),r=Math.max(16,h.r*cam.z);return {x:R.left+sx-r,y:R.top+sy-r,w:2*r,h:2*r,round:1,map:1}}
+  const h=HITS.find(x=>x.kind===kind&&x.id===id);if(!h||!h.hex)return null;let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  h.hex.forEach(([a,b])=>{const [sx,sy]=toScreen(a,b);x0=Math.min(x0,sx);x1=Math.max(x1,sx);y0=Math.min(y0,sy);y1=Math.max(y1,sy)});
+  const tp=toScreen(h.top[0],h.top[1]);y0=Math.min(y0,tp[1]-30);return {x:R.left+x0,y:R.top+y0,w:x1-x0,h:y1-y0,map:1,iso:h.top}}
+/* Si la cible est hors de l’écran, la carte glisse vers elle (une fois par étape) */
+function coPan(r){if(!r||!r.map)return;const R=cv.getBoundingClientRect(),cx=r.x+r.w/2,cy=r.y+r.h/2;if(cx>R.left+30&&cx<R.right-30&&cy>R.top+60&&cy<R.bottom-60)return;
+  const iso=r.iso||toIso(cx-R.left,cy-R.top);cam.tx=iso[0];cam.ty=iso[1];try{clampCam()}catch(e){}}
+const CO={mode:'',steps:[],i:0,key:'',until:0,back:null,panned:'',show:null};
+/* Les premiers pas (S.tut.step) */
+tutDef=function(){const b0=BIZ[0],b1=BIZ[1],L0=()=>S.biz[b0.id].lvl,G=Math.max(3,typeof bizGate==='function'?bizGate(S.city):3);return [
+  {t:'Encaisse ta première vente',d:'Touche la bulle au-dessus de ta boutique.',tab:'ville',ok:()=>(S.counts.collect|0)>=1,tgt:()=>coMap('bubble',b0.id)||coMap('biz',b0.id)},
+  {t:'Ouvre la fiche de ta boutique',d:'Touche le bâtiment. Sa fiche s’ouvre en bas de l’écran.',tab:'ville',ok:()=>sel===b0.id||L0()>=G,tgt:()=>coMap('biz',b0.id)},
+  {t:'Agrandis ta boutique',d:`Chaque niveau rapporte plus. Au niveau ${G}, le terrain voisin s’ouvre.`,tab:'ville',ok:()=>L0()>=G,p:()=>[L0(),G,0],
+    tgt:()=>sel===b0.id?coEl('#sh-buy'):coMap('biz',b0.id),dd:()=>sel===b0.id?'':'Touche ta boutique pour rouvrir sa fiche.'},
+  {t:'Ouvre une deuxième boutique',d:'',tab:'ville',ok:()=>openIds().length>=2,p:()=>[Math.min(S.cash,b1.cost),b1.cost,1],
+    dd:()=>S.cash>=b1.cost?(sel===b1.id?'Touche « Acheter et ouvrir ».':'Tu as de quoi. Touche le terrain désigné par la flèche.'):`Il te faut ${fmt(b1.cost)}. Encaisse et agrandis en attendant.`,
+    tgt:()=>S.cash<b1.cost?null:sel===b1.id?coEl('#sh-buy'):coMap('lot',b1.id)},
+  {t:'Engage un gérant',d:'Il encaisse à ta place, même quand le jeu est fermé.',tab:'',ok:()=>BIZ.some(b=>S.biz[b.id].mgr),p:()=>[Math.min(S.cash,MGR[b0.id]),MGR[b0.id],1],
+    dd:()=>S.cash<MGR[b0.id]?`Il coûte ${fmt(MGR[b0.id])}. Continue d’encaisser.`:S.tab==='gestion'?'Touche « Gérant » sous ta boutique.':'Va dans l’onglet Affaires.',
+    tgt:()=>S.cash<MGR[b0.id]?null:S.tab==='gestion'?coEl('#g-mgr-'+b0.id):coEl('.tab[data-t="gestion"]')}]};
+tutHTML=()=>'';
+tutPaint=function(){const m=$('#tutoMain');if(m)m.remove();document.body.classList.toggle('co-tut',tutOn())};
+tutCheck=function(){if(!S.started||!S.tut||S.tut.done||S.dead)return;const D=tutDef();let moved=false,k=0;
+  while(k++<D.length&&(S.tut.step|0)<D.length&&D[S.tut.step|0].ok()){S.tut.step=(S.tut.step|0)+1;moved=true}
+  if((S.tut.step|0)>=D.length){S.tut.done=true;save();tutPaint();sfx('rank');
+    CO.mode='show';CO.show={k:'Premiers pas terminés',t:'À toi de jouer',d:'De nouveaux onglets arrivent au fil de ta partie. Si tu ne sais plus quoi faire, touche « Que faire ? ».',tgt:()=>coEl('.co-pill'),btn:'Compris'};CO.until=Date.now()+20000;return}
+  if(moved){sfx('good');save();CO.panned=''}tutPaint()};
+/* Mini-visites des onglets (2-3 bulles) */
+const TOURS={
+  ville:[['#qtrack','Ton objectif','La prochaine petite mission. Touche-la pour voir la suite.'],['#boost','Rush ×2','Double tes ventes un moment, puis se recharge.'],['.tabs','Les onglets','Tout le jeu est là. D’autres arrivent au fil de ta partie.'],['.co-pill','Que faire ?','Si tu bloques, touche ici : on te dit quoi faire ensuite.']],
+  gestion:[['#main .seg','Quatre écrans','Boutiques, clients, améliorations et bourse.'],['#main [id^="g-buy-"]','Agrandir','Le même bouton que sur la carte, sans chercher le bâtiment.'],['#main [id^="g-mgr-"]:not([disabled]), #main [id^="g-mgr-"]','Gérant','Il encaisse à ta place, même quand le jeu est fermé.']],
+  marche:[['#main .pg-mk','L’objectif de bourse','Seuls les bénéfices de tes ventes comptent.'],['#main .pg-big','Acheter, vendre','Achète quand ça baisse, revends quand ça remonte.']],
+  objectifs:[['#main .obj-main','En ce moment','Une petite mission à la fois, avec sa récompense.'],['#main .panel.conq','La conquête','Coche tout pour partir vers la ville suivante.'],['#main .ob-tasks','Les affaires de la ville','Chaque ville a ses propres défis. Touche une carte pour la jouer.']],
+  vie:[['#main .seg','Ta vie','Toi, ta famille et ton journal.'],['#main .herocard + .panel','Énergie et santé','Trop basses, et tes affaires en pâtissent. Le repos compte.']],
+  immo:[['#main .im-sum','Ton parc','Valeur, loyers, rendement. Les loyers tombent chaque mois.'],['#main .im-mkt','Le marché','Les prix bougent. Achète quand l’indice baisse.']],
+  club:[['#main .clubhero','Ton club','Rachète-le, puis gère tout : places, effectif, stade.'],['#main .sec-head','Les matchs','Un match par mois en saison. Regarde-le en direct pour donner tes consignes.']],
+  mairie:[['#main .clubhero','La mairie','Élections tous les six ans. Une campagne, ça se prépare.'],['#main .pe-cand, #main .panel','Te présenter','Lance-toi quand ta réputation est bonne.']],
+  empire:[['#main .stats','Ton bilan','Tout ce que tu as gagné depuis le début.'],['#main [data-a="savexp"]','Ta sauvegarde','Copie ce code pour jouer sur un autre appareil.']]};
+const coTabKey=()=>S.tab==='marche'?'marche':S.tab;
+function coTour(key,auto){const L=(TOURS[key]||[]).filter(([s])=>coEl(s)||document.querySelector(s));if(!L.length){if(!auto)toast('Pas d’aide pour cet écran.');return}
+  S.tours=S.tours&&typeof S.tours==='object'?S.tours:{};S.tours[key]=1;CO.mode='tour';CO.steps=L;CO.i=0;CO.key='';CO.back=document.activeElement;coScroll()}
+function coScroll(){const s=CO.steps[CO.i];if(!s)return;const e=document.querySelector(s[0]);if(e&&!e.closest('#hud')&&!e.closest('.tabs')&&e.scrollIntoView){const r=e.getBoundingClientRect();if(r.top<120||r.bottom>innerHeight-120)try{e.scrollIntoView({block:'center',behavior:'instant'})}catch(x){e.scrollIntoView()}}}
+function coEnd(){const was=CO.mode;CO.mode='';CO.show=null;CO.key='';if(was&&CO.back&&CO.back.focus&&document.contains(CO.back))try{CO.back.focus({preventScroll:true})}catch(e){}CO.back=null}
+/* « Que faire maintenant ? » : la prochaine action utile, dans l’ordre */
+function coNext(){
+  if(!S.started||S.dead)return {t:'Une vie s’achève',d:'Choisis qui reprend l’empire.'};
+  if(S.event)return {t:'Une décision t’attend',d:'Une enveloppe rose est arrivée à tes locaux. Ouvre-la avant qu’elle expire.',tab:'ville',tgt:()=>coMap('event')||coMap('qg','qg')};
+  const rd=readyMissions();if(rd.length)return {t:'Récupère tes récompenses',d:`${rd.length>1?rd.length+' objectifs remplis':'Un objectif rempli'}. L’argent t’attend dans Objectifs.`,tab:'objectifs',tgt:()=>coEl('#main .claimbar .btn')};
+  if(tutOn()){const D=tutDef(),st=D[Math.min(S.tut.step|0,D.length-1)];return {t:st.t,d:(st.dd&&st.dd())||st.d,tab:st.tab||'',tgt:st.tgt}}
+  if(S.energy<15)return {t:'Repose-toi',d:'Ton énergie est presque vide. Prends un mois de repos dans l’onglet Vie.',tab:tabLocked('vie')?'':'vie',tgt:()=>coEl('#main .herocard + .panel')};
+  const last=(S.city|0)>=CITIES.length-1;
+  if(last&&!S.fin&&conqDone()>=7)return {t:'Boucle le voyage',d:'Tout est coché. Il est temps de voir jusqu’où tu es allé.',tab:'objectifs',tgt:()=>coEl('[data-a="fin_end"]')};
+  if(!last&&newStars()>=1&&conqDone()>=7)return {t:`Pars pour ${CITIES[S.city+1].n}`,d:'La ville est conquise. Ta franchise t’attend.',tab:'objectifs',tgt:()=>coEl('[data-a="franchise"]')};
+  const idle=BIZ.find(b=>S.biz[b.id].lvl&&!S.biz[b.id].mgr&&!S.biz[b.id].running);
+  if(idle)return {t:`Encaisse : ${idle.n}`,d:'Sa bulle d’argent est prête. Touche-la. Un gérant le ferait à ta place.',tab:'ville',tgt:()=>coMap('bubble',idle.id)||coMap('biz',idle.id)};
+  const nl=nextLockedId();if(nl&&S.cash>=BIZ_BY[nl].cost&&(typeof bizGateOk!=='function'||bizGateOk(BIZ_BY[nl])))return {t:`Ouvre ${BIZ_BY[nl].n}`,d:'Tu as de quoi. Une affaire de plus, ce sont des revenus en plus.',tab:'ville',tgt:()=>sel===nl?coEl('#sh-buy'):coMap('lot',nl)};
+  const mg=BIZ.find(b=>S.biz[b.id].lvl&&!S.biz[b.id].mgr&&S.cash>=MGR[b.id]);if(mg)return {t:`Engage un gérant : ${mg.n}`,d:'Il encaisse sans s’arrêter, même jeu fermé.',tab:'gestion',tgt:()=>coEl('#g-mgr-'+mg.id)};
+  const T=obTasks().find(T=>{const s=obState(T);if(s.ok||obNeed(T))return false;try{return OBK[T.k].can(T,s)}catch(e){return false}});
+  if(T&&!tabLocked('objectifs'))return {t:`Avance : ${T.n}`,d:`${OBK[T.k].tag}. ${T.d}`,tab:'objectifs',tgt:()=>coEl(`#main [data-a="ob_open"][data-id="${T.id}"]`)};
+  const lv=pgLv(S.city|0),up=BIZ.filter(b=>S.biz[b.id].lvl&&S.biz[b.id].lvl<lv).sort((a,b)=>quote(a).cost-quote(b).cost)[0];
+  if(up&&quote(up).ok)return {t:`Agrandis ${up.n}`,d:`La conquête demande des affaires au niveau ${lv}. C’est la moins chère à monter.`,tab:'gestion',tgt:()=>coEl('#g-buy-'+up.id)};
+  const g=conqGoals().find(g=>{const [a,b]=g.p();return a<b});
+  return {t:'Laisse tourner',d:`Tes affaires travaillent. ${g?'Prochaine étape : '+g.t.charAt(0).toLowerCase()+g.t.slice(1)+'.':''}`};
+}
+function coAsk(){CO.back=document.activeElement;const n=coNext();CO.mode='ask';CO.key='';CO.show={k:'Que faire maintenant ?',t:n.t,d:n.d,tgt:()=>coEl('.co-pill'),nx:n}}
+function coGo(n){if(!n)return coEnd();if(n.tab&&S.tab!==n.tab&&!tabLocked(n.tab)){S.tab=n.tab;if(n.tab!=='ville')sel=null;render();window.scrollTo(0,0)}
+  if(!n.tgt){coEnd();return}CO.mode='show';CO.key='';CO.panned='';CO.show={k:'Que faire maintenant ?',t:n.t,d:n.d,tgt:n.tgt,btn:'Compris'};CO.until=Date.now()+15000;setTimeout(coScrollTo,60)}
+function coScrollTo(){if(!CO.show)return;const r=CO.show.tgt&&CO.show.tgt();if(r&&r.el&&!r.el.closest('#hud,.tabs')){if(r.y<110||r.y+r.h>innerHeight-110)try{r.el.scrollIntoView({block:'center'})}catch(e){}}}
+/* Calque des bulles */
+function coDOM(){let d=document.getElementById('coach');if(d)return d;d=document.createElement('div');d.id='coach';d.hidden=true;
+  d.innerHTML='<div class="co-ring"></div><div class="co-bub" role="dialog" aria-modal="false" aria-labelledby="co-t" aria-describedby="co-d"><div class="co-in"></div><i class="co-arr"></i></div>';document.body.appendChild(d);return d}
+function coSpec(){
+  if(CO.mode==='tour'){const s=CO.steps[CO.i];if(!s)return null;const n=CO.steps.length;
+    return {k:`Visite · ${CO.i+1}/${n}`,t:s[1],d:s[2],tgt:()=>coEl(s[0]),dim:1,foot:`<button class="co-skip" data-a="co_end">Passer</button><button class="btn small go" data-a="co_nx">${CO.i+1<n?'Suivant':'Terminé'}</button>`,focus:1}}
+  if(CO.mode==='ask'){const s=CO.show;return {k:s.k,t:s.t,d:s.d,tgt:s.tgt,foot:`<button class="co-skip" data-a="co_help">Aide de cet écran</button><button class="btn small ghost" data-a="co_end">Fermer</button>${s.nx&&(s.nx.tgt||s.nx.tab)?'<button class="btn small go" data-a="co_go">Montre-moi</button>':''}`,focus:1}}
+  if(CO.mode==='show'){const s=CO.show;if(!s)return null;return {k:s.k,t:s.t,d:s.d,tgt:s.tgt,foot:`<button class="btn small go" data-a="co_end">${s.btn||'Compris'}</button>`,focus:!!s.focus}}
+  if(tutOn()){const D=tutDef(),i=Math.min(S.tut.step|0,D.length-1),st=D[i];let d=(st.dd&&st.dd())||st.d,tgt=st.tgt;
+    if(st.tab&&S.tab!==st.tab){d='Reviens sur la carte : touche « Ville » en bas.';tgt=()=>coEl('.tab[data-t="ville"]')}
+    const p=st.p?st.p():null;
+    return {k:`Premiers pas · ${i+1}/${D.length}`,t:st.t,d,tgt,tut:1,prog:p,foot:`<button class="co-skip" data-a="tut_skip">Passer le tutoriel</button>`}}
+  return null}
+function coFrame(){requestAnimationFrame(coFrame);try{coPaint()}catch(e){}}
+function coPaint(){const d=coDOM();
+  if(CO.mode==='show'&&CO.until&&Date.now()>CO.until)coEnd();
+  const sp=(modalOpen||document.getElementById('finScr')||!S.started)?null:coSpec();
+  if(!sp){if(!d.hidden){d.hidden=true;CO.key=''}return}
+  const bub=d.querySelector('.co-bub'),ring=d.querySelector('.co-ring'),inn=d.querySelector('.co-in');
+  const pr=sp.prog?`<div class="co-bar"><i style="width:${Math.round(100*clamp(sp.prog[0]/Math.max(1e-9,sp.prog[1]),0,1))}%"></i></div><span class="co-n">${sp.prog[2]?fmt(sp.prog[0])+' / '+fmt(sp.prog[1]):sp.prog[0]+' / '+sp.prog[1]}</span>`:'';
+  const html=`<p class="co-k">${sp.k}</p><h3 id="co-t">${sp.t}</h3>${sp.d?`<p id="co-d" class="co-d">${sp.d}</p>`:'<p id="co-d" hidden></p>'}${pr}<div class="co-f">${sp.foot||''}</div>`;
+  if(d.hidden)d.hidden=false;
+  const key=CO.mode+'|'+html;if(key!==CO.key){const first=!CO.key||CO.key.split('|')[0]!==CO.mode||(CO.mode==='tour');CO.key=key;inn.innerHTML=html;
+    d.classList.toggle('dim',!!sp.dim);d.classList.toggle('tut',!!sp.tut);
+    if(sp.focus&&first){const b=inn.querySelector('.btn.go')||inn.querySelector('button');if(b)setTimeout(()=>{try{b.focus({preventScroll:true})}catch(e){}},30)}}
+  let r=null;try{r=sp.tgt?sp.tgt():null}catch(e){r=null}
+  const pk=CO.mode+(S.tut&&S.tut.step)+sp.t+(r&&r.el?r.el.id||r.el.className:'');
+  if(r&&CO.panned!==pk){CO.panned=pk;if(r.map)coPan(r);else if(r.el&&!r.el.closest('#hud,.tabs')&&(r.y<70||r.y+r.h>innerHeight-70))try{r.el.scrollIntoView({block:'center'});r=sp.tgt()}catch(e){}}
+  const W=innerWidth,H=innerHeight,bw=Math.min(340,W-24);bub.style.width=bw+'px';const bh=bub.offsetHeight||120;
+  if(r){const pad=6;ring.hidden=false;ring.style.left=(r.x-pad)+'px';ring.style.top=(r.y-pad)+'px';ring.style.width=(r.w+2*pad)+'px';ring.style.height=(r.h+2*pad)+'px';ring.classList.toggle('round',!!r.round);
+    const cx=r.x+r.w/2,below=r.y+r.h/2<H*.5,top=clamp(below?r.y+r.h+pad+14:r.y-pad-14-bh,8,Math.max(8,H-bh-8)),left=clamp(cx-bw/2,12,W-bw-12);
+    bub.style.left=left+'px';bub.style.top=top+'px';const ar=bub.querySelector('.co-arr');ar.hidden=false;ar.className='co-arr '+(below?'up':'down');ar.style.left=clamp(cx-left-9,14,bw-32)+'px'}
+  else{ring.hidden=true;const tb=(document.querySelector('.tabs')||{getBoundingClientRect:()=>({top:H})}).getBoundingClientRect().top;
+    bub.style.left=((W-bw)/2)+'px';bub.style.top=Math.max(8,tb-bh-12)+'px';bub.querySelector('.co-arr').hidden=true}
+}
+/* Boutons d’aide dans le bandeau : « Que faire ? » et « ? » */
+function coHud(){const r=document.querySelector('#hud .meta');if(!r||r.querySelector('.co-hud'))return;
+  r.insertAdjacentHTML('beforeend','<span class="co-hud"><button class="co-pill" data-a="co_next" aria-label="Que faire maintenant ?">Que faire ?</button><button class="co-q" data-a="co_help" aria-label="Aide de cet écran">?</button></span>')}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-a]');
+  if(CO.mode==='show'&&CO.show&&CO.show.tgt&&!(b&&b.closest('#coach'))){try{const r=CO.show.tgt();if(r){const x=e.clientX,y=e.clientY;if(x>=r.x-8&&x<=r.x+r.w+8&&y>=r.y-8&&y<=r.y+r.h+8)setTimeout(coEnd,0)}}catch(x){}}
+  if(!b||b.disabled)return;const a=b.dataset.a;if(a.indexOf('co_')!==0)return;e.stopImmediatePropagation();e.preventDefault();
+  if(a==='co_next'){if(CO.mode==='ask')coEnd();else coAsk()}
+  else if(a==='co_help'){coEnd();coTour(coTabKey(),false)}
+  else if(a==='co_go'){const n=CO.show&&CO.show.nx;coGo(n)}
+  else if(a==='co_end')coEnd();
+  else if(a==='co_nx'){CO.i++;CO.key='';if(CO.i>=CO.steps.length)coEnd();else coScroll()}
+  else if(a==='co_reset'){S.tours={};save();toast('Les visites reviendront à l’ouverture de chaque écran.')}
+},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(CO.mode==='tour'||CO.mode==='ask'||CO.mode==='show')&&!modalOpen){coEnd();e.preventDefault()}});
+/* Première ouverture d’un onglet : petite visite (nouvelles parties seulement) */
+renderMain=(f=>function(){f.apply(this,arguments);try{const k=coTabKey();
+  if(S.started&&!tutOn()&&!CO.mode&&S.tours&&typeof S.tours==='object'&&!S.tours._all&&!S.tours[k]&&TOURS[k]&&k!=='ville')setTimeout(()=>{if(!modalOpen&&!CO.mode&&coTabKey()===k&&!S.tours[k])coTour(k,true)},450)}catch(e){}})(renderMain);
+/* Nouvel onglet débloqué : une bulle pointe vers lui */
+unlCheck=(f=>function(){const before=S.unl?Object.keys(S.unl).length:0;f.apply(this,arguments);try{if(!S.unl||S.unl.all||Object.keys(S.unl).length<=before)return;
+  const u=UNL.filter(x=>S.unl[x.t]).pop();if(!u||CO.mode)return;CO.mode='show';CO.key='';CO.show={k:'Nouvel onglet',t:u.n,d:`Touche « ${u.n} » en bas : une courte visite t’attend.`,tgt:()=>coEl(`.tab[data-t="${u.t}"]`),btn:'Plus tard'};CO.until=Date.now()+20000}catch(e){}})(unlCheck);
+newGame=(f=>function(){const g=f.apply(this,arguments);g.tours={};g.playMs=0;g.cityMs=0;return g})(newGame);
+repair=(f=>function(o){const r=f(o);if(r&&typeof r==='object'&&r.started&&(r.tours===undefined||r.tours===null))r.tours={_all:1};return r})(repair);
+(function obBoot(){
+  if(S.started&&(S.tours===undefined||S.tours===null))S.tours=S.tut&&!S.tut.done?{}:{_all:1};
+  const st=document.createElement('style');st.textContent=`
+.ob-tagl{margin:-4px 0 8px}
+.ob-tasks{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media (max-width:420px){.ob-tasks{grid-template-columns:1fr}}
+.ob-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:2px solid var(--ink);border-radius:6px 14px 6px 14px;padding:10px 12px 12px;box-shadow:3px 4px 0 var(--line);cursor:pointer;min-height:44px}
+.ob-card:hover{transform:translate(-1px,-1px);box-shadow:4px 5px 0 var(--line)}
+.ob-card:focus-visible,.ob-cand:focus-visible,.ob-gl:focus-visible,.co-pill:focus-visible,.co-q:focus-visible{outline:3px solid #2E86AB;outline-offset:2px}
+.ob-card.ok{border-color:#17834A;box-shadow:3px 4px 0 rgba(23,131,74,.25)}
+.ob-card .obj-bar{width:100%;margin-top:4px}
+.ob-tag{font-size:.7rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.ob-card.ok .ob-tag{color:#17834A}
+.ob-t{font-size:.98rem;line-height:1.2}
+.ob-d{font-size:.8rem;color:var(--muted);line-height:1.25}
+.ob-m h2{margin:2px 0 6px}
+.ob-kick,.fin-k{font-size:.74rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0}
+.ob-lead{color:var(--muted);margin:0 0 10px}
+.ob-msg{background:var(--line);border-radius:8px;padding:8px 10px;margin:0 0 10px;font-size:.9rem}
+.ob-win{font-weight:800;color:#17834A;font-size:1.1rem}
+.ob-need{font-weight:700}
+.ob-h{font-size:.9rem;margin:12px 0 6px}
+.ob-q{font-weight:700;margin:6px 0 10px}
+.ob-log{font-size:.86rem;color:var(--muted);margin:0 0 6px}
+.ob-acts{display:grid;gap:8px;margin-top:8px}
+.ob-acts .btn,.ob-opts .btn{display:flex;flex-direction:column;align-items:center;min-height:48px;line-height:1.15}
+.ob-acts .btn small,.ob-opts .btn small,.ob-args .btn small{font-size:.74rem;font-weight:600;opacity:.8;margin-top:2px}
+.ob-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ob-opts .btn{font-size:.82rem;padding:6px 4px}
+.ob-opts .btn.on,.ob-cand.on{outline:3px solid #17834A;outline-offset:-1px;background:rgba(23,131,74,.1)}
+.ob-sus{display:grid;gap:8px;margin:6px 0 10px}
+.ob-su{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;border:1.5px solid var(--line);border-radius:10px;padding:8px 10px}
+.ob-su b{grid-column:1}.ob-su span{grid-column:1;font-size:.82rem;color:var(--muted)}
+.ob-su>.btn,.ob-su>em,.ob-su>.ob-args{grid-column:2;grid-row:1/span 2}
+.ob-su em{font-style:normal;font-weight:800;font-size:.8rem;color:var(--muted)}
+.ob-su.got{border-color:#17834A}.ob-su.got em{color:#17834A}.ob-su.out{opacity:.55}
+.ob-args{display:flex;flex-direction:column;gap:4px}
+.ob-args .btn{min-height:40px;font-size:.78rem;padding:4px 8px}
+@media (max-width:420px){.ob-su{grid-template-columns:1fr}.ob-su>.btn,.ob-su>em,.ob-su>.ob-args{grid-column:1;grid-row:auto}.ob-args{flex-direction:row;flex-wrap:wrap}}
+.ob-team{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+.ob-cand{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;font:inherit;color:var(--ink);background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;min-height:44px}
+.ob-cand span{font-size:.78rem;color:var(--muted)}.ob-cand small{font-size:.76rem;font-weight:700}
+.ob-cand[disabled]{opacity:.45;cursor:default}
+.ob-sums{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}.ob-sums span{font-size:.82rem;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--line)}.ob-sums span.ok{background:rgba(23,131,74,.15);color:#17834A}
+.ob-done{border:1.5px dashed #17834A;border-radius:10px;padding:8px;text-align:center;font-weight:700;display:flex;flex-direction:column}.ob-done small{font-weight:600;color:var(--muted)}.ob-done.wip{border-color:#E59C3B}
+.ob-glyphs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.ob-gl{font:inherit;font-weight:800;font-size:.86rem;min-height:64px;border:2px solid var(--ink);border-radius:10px;background:var(--surface);color:var(--ink);cursor:pointer}
+.fin-box{border:2px solid var(--ink);border-radius:8px 16px 8px 16px;padding:10px 12px;margin:10px 0}
+.fin-box h3{margin:2px 0 8px}
+.fin-btns{display:flex;flex-wrap:wrap;gap:8px}
+.fin-go{margin-top:12px;width:100%}
+.fin-t th{text-align:left;font-size:.78rem;color:var(--muted)}
+/* Écran de fin */
+.fin{position:fixed;inset:0;z-index:60;overflow-y:auto;color:#F4EFE6;background:radial-gradient(1px 1px at 12% 18%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 70% 9%,#fff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 85% 40%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 30% 62%,#fff 50%,transparent 51%),radial-gradient(1px 1px at 55% 80%,#fff 50%,transparent 51%),radial-gradient(1.5px 1.5px at 8% 88%,#fff 50%,transparent 51%),linear-gradient(180deg,#0E1424 0%,#1D1A2E 60%,#3A1F1A 100%)}
+.fin-in{max-width:560px;margin:0 auto;padding:max(28px,env(safe-area-inset-top)) 20px 40px;display:flex;flex-direction:column;gap:14px}
+.fin-l{opacity:0;transform:translateY(8px);animation:finIn .9s ease-out forwards;animation-delay:var(--d,0s)}
+@keyframes finIn{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fin-l{animation:none;opacity:1;transform:none}}
+.fin-in>p:first-child,.fin-in>p:nth-child(2){font-size:1.08rem;line-height:1.4;margin:0}
+.fin-planet{width:120px;height:120px;border-radius:50%;margin:8px auto;background:radial-gradient(circle at 35% 30%,#E9885A,#B4442B 55%,#5E1F16);box-shadow:0 0 40px rgba(233,136,90,.35)}
+.fin .fin-k{color:#E9B48A;text-align:center}
+.fin h2{font-size:1.6rem;line-height:1.15;text-align:center;margin:0}
+.fin-st{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:6px 0}
+.fin-st div{background:rgba(255,255,255,.07);border-radius:10px;padding:8px 10px}
+.fin-st dt{font-size:.74rem;color:#C9C2B6}.fin-st dd{margin:2px 0 0;font-weight:800;font-size:1rem}
+.fin-txt{color:#D8D0C4;font-size:.92rem;margin:0}
+.fin-cta{display:grid;gap:8px}
+.fin .btn.ghost{color:#F4EFE6;border-color:rgba(244,239,230,.5)}
+/* Bulles guidées */
+#coach{position:fixed;inset:0;z-index:45;pointer-events:none}
+#coach[hidden]{display:none}
+.co-ring{position:fixed;border:3px solid #FF5FA2;border-radius:12px;pointer-events:none;transition:left .15s,top .15s,width .15s,height .15s;animation:coPulse 1.6s ease-out infinite}
+.co-ring.round{border-radius:50%}
+#coach.dim .co-ring{box-shadow:0 0 0 9999px rgba(12,18,24,.42)}
+@keyframes coPulse{0%,100%{outline:0 solid rgba(255,95,162,.5)}50%{outline:6px solid rgba(255,95,162,0)}}
+@media (prefers-reduced-motion:reduce){.co-ring{animation:none;transition:none}}
+.co-bub{position:fixed;pointer-events:auto;background:var(--surface);color:var(--ink);border:2px solid var(--ink);border-radius:8px 16px 8px 16px;box-shadow:3px 4px 0 var(--sticker,#FF5FA2);padding:10px 12px 10px}
+.co-in .co-k{font-size:.72rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin:0}
+.co-in h3{font-size:1.02rem;line-height:1.2;margin:2px 0 3px}
+.co-d{font-size:.88rem;line-height:1.3;color:var(--ink);margin:0}
+.co-bar{height:7px;border-radius:4px;background:var(--line);margin-top:8px;overflow:hidden}.co-bar i{display:block;height:100%;background:var(--money,#17834A)}
+.co-n{display:block;font-size:.74rem;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+.co-f{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap}
+.co-f .btn{min-height:40px}
+.co-skip{background:none;border:0;color:var(--muted);font:inherit;font-size:.8rem;text-decoration:underline;min-height:40px;padding:0 4px;margin-right:auto;cursor:pointer}
+.co-arr{position:absolute;width:16px;height:16px;background:var(--surface);border:2px solid var(--ink);transform:rotate(45deg)}
+.co-arr.up{top:-9px;border-right:0;border-bottom:0}.co-arr.down{bottom:-9px;border-left:0;border-top:0}
+.co-arr[hidden]{display:none}
+body.co-tut #qtrack{visibility:hidden}
+.co-hud{margin-left:auto;display:inline-flex;gap:6px;align-items:center}
+.co-pill{font:inherit;font-size:.78rem;font-weight:800;white-space:nowrap;min-height:32px;padding:0 10px;border-radius:16px;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;position:relative}
+.co-pill::before{content:"";position:absolute;inset:-6px 0}
+.co-q{font:inherit;font-weight:800;width:32px;height:32px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);color:var(--ink);cursor:pointer;position:relative}
+.co-q::before{content:"";position:absolute;inset:-6px}
+#hud .meta{flex-wrap:nowrap;min-width:0}#hud .meta>span{white-space:nowrap}
+@media (max-width:400px){#hud .meta{gap:6px}.co-pill{padding:0 8px;font-size:.74rem}.co-q{width:30px;height:30px}}`;
+  document.head.appendChild(st);
+  coDOM();requestAnimationFrame(coFrame);
+  setInterval(()=>{try{coHud();obCheck();if(S.started&&!S.dead){obSt();obDerbySet()}}catch(e){if(typeof reportErr==='function')reportErr(e,'objectifs')}},500);
+  coHud();
+})();
+/* ===== FIN AGENT OBJECTIFS ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
