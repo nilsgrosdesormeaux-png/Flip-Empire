@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-10-1025 : Claude de Nils (version 2026-11-10-1025)
+- Plus de temps ×2 / ×4 (bloc AGENT VITESSE avant BOOT) : le temps est toujours ×1, bouton masqué, anciennes parties remises à ×1. Rush = revenus ×2 pendant 90 s, recharge 12 min (8 min avec le Pass).
+
 ## 2026-11-10-1014 : Claude de Nils (version 2026-11-10-1014)
 - Sondage semaine 46 : gardés « Refonte totale du foot » (3 votes en S45) et « Choix mystère » (1 vote) ; nouveaux : « Krach et entrée en bourse », « Gratte-ciel et grands chantiers ». S45 : Nouvelle ville gagnante (4/8). Les choix sont maintenant par semaine (metaPoll) : prévoir ceux de S47.
 - En cours (agents) : difficulté + vie d'entreprise + hors-ligne 2 h ; objectifs variés + fin du jeu + tutoriel ; villes réalistes + Istanbul, Le Caire, Sydney.
