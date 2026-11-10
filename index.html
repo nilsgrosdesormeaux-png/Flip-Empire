@@ -8730,9 +8730,9 @@ function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+RUS
    Tout est créé à la volée : les anciennes sauvegardes passent. Une franchise repart à zéro (nouvelle ville, nouvelles équipes). */
 const EN_GAIN=.6; /* gains des décisions (money) : ×0,6 */
 money=(f=>function(sec){return f(sec*EN_GAIN)})(money);
-const EN_TR={rapide:{n:['Rapide','Rapide'],d:'Fait avancer les commandes plus vite.'},soin:{n:['Soigneux','Soigneuse'],d:'Moins d’incidents.'},
-  vente:{n:['Bon vendeur','Bonne vendeuse'],d:'Ventes +4 %.'},fidele:{n:['Fidèle','Fidèle'],d:'Garde le moral deux fois plus longtemps.'},
-  ambition:{n:['Ambitieux','Ambitieuse'],d:'Se forme pour moitié prix, mais veut monter en grade.'}};
+const EN_TR={rapide:{n:['Rapide','Rapide'],d:'fait avancer les commandes plus vite.'},soin:{n:['Soigneux','Soigneuse'],d:'moins d’incidents.'},
+  vente:{n:['Bon vendeur','Bonne vendeuse'],d:'ventes +4 %.'},fidele:{n:['Fidèle','Fidèle'],d:'garde le moral deux fois plus longtemps.'},
+  ambition:{n:['Ambitieux','Ambitieuse'],d:'se forme pour moitié prix, mais veut monter en grade.'}};
 const EN_KIND={vite:{n:'Petite commande',w:4,d:6,r:1.3,rep:1,mot:0},gros:{n:'Grosse commande',w:14,d:16,r:4.6,rep:2,mot:0},prestige:{n:'Client de prestige',w:8,d:10,r:2.2,rep:5,mot:15}};
 const EN_CL=['la mairie','un club de sport','une école du quartier','un hôtel du centre','une start-up','un couple qui se marie','un traiteur','une influenceuse','un festival d’été','une chaîne de magasins','une entreprise du port','un collectionneur','une ambassade','un grand chef','une star de la télé','un comité d’entreprise','une agence de voyages','un musée'];
 const EN_RD=[{n:'Un produit maison',d:'Ventes +10 %.',c:1.5,m:4},{n:'Une machine plus rapide',d:'Commandes 30 % plus vite, deux fois moins de pannes, ventes +5 %.',c:3,m:8,need:'sk3'},{n:'La gamme signature',d:'Ventes +15 %.',c:6,m:12,need:'chief'}];
@@ -8903,8 +8903,8 @@ function enCmdHTML(id,o){const r=o.ord;let h='';
       ${ready?`<button class="btn big go" data-a="en_deliver" data-id="${id}">Livrer et encaisser ${fmt(r.amt)}</button>`:`<p class="hint">À livrer avant ${dateLabel(r.dl)}. Pendant la fabrication, la boutique vend 15 % de moins.</p><button class="btn small ghost" style="margin-top:6px" data-a="en_drop" data-id="${id}">Annuler (réputation −2)</button>`}</div>`}
   h+=`<h3 class="en-h">${r?'Les prochaines demandes':'Des clients attendent'}</h3>`;
   h+=o.offers.length?o.offers.map((x,i)=>{const K=EN_KIND[x.k],eta=enEta(id,K.w),late=eta>enMo(K.d);
-    return `<div class="en-offer"><div><strong>${enCap(x.cl)}</strong><span class="hint">${K.n} · environ ${eta} mois, délai ${enMo(K.d)} mois${K.rep>1?' · réputation +'+K.rep:''}${K.mot?' · l’équipe adore':''}${late?' · <b style="color:var(--loss)">trop juste pour ton équipe</b>':''}</span></div>
-      <button class="btn small ${r?'ghost':'go'}" data-a="en_take" data-id="${id}" data-i="${i}" ${r?'disabled':''}>+${fmt(enReward(id,x.k))}</button></div>`}).join('')+(r?'<p class="hint">Une commande à la fois : livre celle en cours d’abord.</p>':'')
+    return `<div class="en-offer"><div><strong>${enCap(x.cl)} <b class="pos en-amt">+${fmt(enReward(id,x.k))}</b></strong><span class="hint">${K.n} · environ ${eta} mois, délai ${enMo(K.d)} mois${K.rep>1?' · réputation +'+K.rep:''}${K.mot?' · l’équipe adore':''}${late?' · <b style="color:var(--loss)">trop juste pour ton équipe</b>':''}</span></div>
+      <button class="btn small ${r?'ghost':'go'}" data-a="en_take" data-id="${id}" data-i="${i}" ${r?'disabled':''}>Accepter</button></div>`}).join('')+(r?'<p class="hint">Une commande à la fois : livre celle en cours d’abord.</p>':'')
     :`<p class="hint">Plus de demandes pour l’instant. Nouvelles demandes vers ${dateLabel(o.offT)}.</p>`;
   return h}
 function enTeamHTML(id,o){const pc=enPrimeCost(id);
@@ -8915,7 +8915,7 @@ function enTeamHTML(id,o){const pc=enPrimeCost(id);
       <div class="en-2">${m.sk<5?`<button class="btn small" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Former · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}
       ${boss?'':`<button class="btn small ghost" data-a="en_promo" data-id="${id}" data-i="${i}" ${m.sk<3||S.cash<pr?'disabled':''}>${m.sk<3?'Promouvoir (niveau 3)':'Promouvoir · '+fmt(pr)}</button>`}</div></div></div>`}).join('')
   +`<div class="en-row"><span class="hint">Une équipe motivée vend plus et fabrique plus vite. Le moral baisse chaque mois.</span><button class="btn small" data-a="en_prime" data-id="${id}" ${o.primeT>S.day||S.cash<pc?'disabled':''}>${o.primeT>S.day?'Prime versée':'Prime d’équipe · '+fmt(pc)}</button></div>`}
-function enLabHTML(id,o){const st=S.biz[id],i=o.rd.done,R=EN_RD[i];let h=`<h3 class="en-h">Atelier</h3>`;
+function enLabHTML(id,o){const st=S.biz[id],i=o.rd.done,R=EN_RD[i];let h=`<h3 class="en-h">Projets</h3>`;
   h+=`<div class="en-steps">${EN_RD.map((x,k)=>`<span class="${k<i?'done':k===i?'now':''}">${k<i?'✓ ':''}${x.n}</span>`).join('')}</div>`;
   if(o.rd.i>=0)h+=`<div class="en-card"><strong>${EN_RD[o.rd.i].n}</strong><p class="hint">${EN_RD[o.rd.i].d} Prêt vers ${dateLabel(o.rd.end)}.</p></div>`;
   else if(R){const ok=enRdOk(o,i),c=enRdCost(id,i);h+=`<div class="en-card"><strong>${R.n}</strong><p class="hint">${R.d} ${R.m} mois de mise au point.${ok?'':R.need==='sk3'?' Il faut quelqu’un de niveau 3 dans l’équipe.':' Il faut un chef d’équipe.'}</p>
@@ -8976,7 +8976,7 @@ setTimeout(()=>{try{wkInit();enInit();enSync()}catch(e){}},0);
 .en-offer>div{min-width:0}.en-offer strong{display:block}.en-offer .hint{display:block;font-size:.82rem}.en-offer .btn{flex:none;min-width:96px}.en-offer.on strong{color:var(--money)}
 .en-alert{border-radius:14px;padding:12px;margin-bottom:12px;background:color-mix(in srgb,var(--loss) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--loss) 45%,transparent)}
 .en-alert p{font-size:.88rem;margin:4px 0 8px}
-.en-2{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.en-2 .btn{flex:1 1 140px}
+.en-2{display:flex;gap:6px;margin-top:8px}.en-2 .btn{flex:1 1 0;min-width:0}.en-p .en-2 .btn{font-size:.84rem;padding-left:8px;padding-right:8px}.en-amt{font-size:.9rem;white-space:nowrap}
 .en-p{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}.en-p:first-child{border-top:0}.en-av{flex:none;width:44px;height:44px}.en-av svg{width:44px;height:44px}
 .en-pi{flex:1;min-width:0}.en-pi .hint{display:block;font-size:.82rem}.en-sk{color:var(--money);letter-spacing:1px;font-size:.8rem;white-space:nowrap}.en-sk i{font-style:normal;opacity:.25}
 .en-mot{display:flex;align-items:center;gap:8px;margin-top:4px}.en-mot .obj-bar{flex:1;margin:0}.en-mot .hint{flex:none;width:58px;text-align:right}
