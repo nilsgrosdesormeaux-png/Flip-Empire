@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-10-1025">
+<meta name="fe-build" content="2026-11-10-1548">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4874,7 +4874,7 @@ function metaPassHTML(){
     return `<div class="meta-slot"><span>💾 Emplacement ${n}${n>1?' <span class="tag">👑 Pass</span>':''}<br><span class="hint">${d?'Enregistré le '+new Date(d.at).toLocaleDateString('fr-FR'):'Vide'}</span></span>${lock?'<span class="hint">🔒</span>':`<span class="bs-row"><button class="btn small" data-a="meta_slotsave" data-id="${n}">Enregistrer</button>${d?`<button class="btn small ghost" data-a="meta_slotload" data-id="${n}">Charger</button>`:''}</span>`}</div>`}).join('');
   const ex=META_ITEMS.filter(i=>i.pass);
   return `<div class="meta-pass"><h3>👑 Pass Empire</h3><p class="meta-price">${META_PRICE.pass_month}</p>
-    <ul><li>⚡ Rush rechargé plus vite (toutes les 8 min au lieu de 12)</li><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
+    <ul><li>💾 Plus d’emplacements de sauvegarde</li><li>💾 2 emplacements de sauvegarde en plus</li><li>🗳️ Sondage de la semaine prochaine en avant-première</li><li>🃏 Jusqu’à 3 jokers de série (au lieu de 2)</li><li>🎟️ +25 % de jetons au coffre du jour</li><li>✨ ${ex.length} objets légendaires exclusifs</li></ul>
     <div class="sk-pass">${ex.map(i=>`<div class="sk-pv ${i.k==='theme'?'th':i.k==='avatar'?'av':i.k==='club'?'cl':i.k==='deco'?'dc':'fx'}" ${skPvStyle(i)} title="${i.n}">${skPreview(i)}</div>`).join('')}</div>
     ${pass?'<span class="tag">✓ Actif</span>':`<button class="btn big go" data-a="meta_pay" data-sku="pass_month">S’abonner · bientôt</button>`}
     <p class="hint" style="margin-top:8px">Que du confort : le Pass ne donne pas d’argent ni de puissance dans la partie.</p></div>
@@ -8716,9 +8716,10 @@ drawCarAt=function(x,y,dir,col,kind){
 /* Plus de temps ×2 / ×4 (demande de Nils : c'était un raccourci de triche). Le temps passe toujours à ×1.
    À la place : le Rush (revenus ×2 pendant 90 s), rechargeable toutes les 12 min (8 min avec le Pass) : au joueur de choisir le bon moment. */
 const RUSH_DUR=90000,RUSH_CD=()=>((typeof metaHasPass==='function'&&metaHasPass())?8:12)*60000;
-function boost(){if(Date.now()<S.boostReadyAt)return;S.boostUntil=Date.now()+RUSH_DUR;S.boostReadyAt=S.boostUntil+RUSH_CD();sfx('vip');toast('Rush : revenus ×2 pendant 90 secondes. Prochain dans '+Math.round(RUSH_CD()/60000)+' min.')}
-(function(){const fix=()=>{try{if(S&&S.speed!==1)S.speed=1;if(S&&S.boostReadyAt>Date.now()+RUSH_DUR+RUSH_CD())S.boostReadyAt=Date.now()+RUSH_CD()}catch(e){}};fix();setInterval(fix,500);
-  const st=document.createElement('style');st.textContent='.hud-sp,.speedb,[data-a="speed"]{display:none!important}';document.head.appendChild(st)})();
+/* Rush supprimé aussi (demande de Nils) : bouton caché, plus aucun effet. */
+function boost(){}
+(function(){const fix=()=>{try{if(S&&S.speed!==1)S.speed=1;if(S&&S.boostUntil)S.boostUntil=0;if(S&&S.boostReadyAt>Date.now()+RUSH_DUR+RUSH_CD())S.boostReadyAt=Date.now()+RUSH_CD()}catch(e){}};fix();setInterval(fix,500);
+  const st=document.createElement('style');st.textContent='.hud-sp,.speedb,[data-a="speed"],#boost,[data-a="boost"]{display:none!important}';document.head.appendChild(st)})();
 /* ===== FIN AGENT VITESSE ===== */
 /* ===== AGENT ENTREPRISE ===== */
 /* Demandes de Nils (novembre) : l'argent doit être plus rare, et chaque entreprise doit avoir une vie à l'intérieur.
