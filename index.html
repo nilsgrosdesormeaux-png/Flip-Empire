@@ -10896,6 +10896,45 @@ body.in-on .tabs{visibility:hidden}
 .in-nav{display:flex;gap:6px;width:100%}.in-nav .btn{flex:1 1 0;min-width:0}
 @media (min-width:900px){body.in-on .bsheet{left:auto;right:0;top:56px;width:400px;max-width:400px;height:auto;max-height:none;margin:0;border-radius:18px 0 0 0;border-bottom:0}}`;document.head.appendChild(st)})();
 /* ===== FIN AGENT INTERIEUR ===== */
+/* ===== AGENT SIMPLE ===== */
+/* Moins de texte, moins de choix : on ne change que l'affichage, pas les règles ni la sauvegarde. */
+(function(){const st=document.createElement('style');st.textContent=`
+.sp-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.sp-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:.95rem;min-height:44px}
+.sp-list li>span:nth-child(2){flex:1}
+.sp-list li.ok{opacity:.55}
+.sp-list li[data-a]{cursor:pointer}
+.sp-list .hint{white-space:nowrap}
+details.sp-more{margin-top:14px}
+details.sp-more>summary{cursor:pointer;padding:10px 2px;font-weight:600;color:var(--ink);opacity:.8;min-height:44px;display:flex;align-items:center}
+`;document.head.appendChild(st)})();
+/* -- 1. Objectifs : un objectif en grand, la liste de la ville, rien d'autre (plus d'histoires ni d'accroches de ville) -- */
+function spStrip(h){return String(h||'').replace(/<p class="hint"[^>]*>(?:(?!<\/p>)[\s\S])*<\/p>/g,'')}
+vObjectifs=function(){
+  const rd=readyMissions(),tot=rd.reduce((t,m)=>t+missionReward(m),0),main=MISSIONS.find(m=>!S.claimed.includes(m.id)&&!m.c());
+  const ns=newStars(),c=S.city||0,last=c>=CITIES.length-1,nc=CITIES[Math.min(c+1,CITIES.length-1)],cd=conqDone(),need=cityGoal2(),ready=cd>=7&&ns>=1&&!last;
+  let h='';
+  if(rd.length)h+=`<div class="claimbar"><div><b>${rd.length>1?rd.length+' récompenses':'1 récompense'}</b></div><button class="btn big claim" data-a="claimall">Récupérer +${fmt(tot)}</button></div>`;
+  if(ready)h+=`<section class="obj-main"><p class="obj-k">Ville terminée</p><h2>Cap sur ${nc.n}</h2><button class="btn big go" style="margin-top:12px" data-a="franchise">Partir (+${ns} étoile${ns>1?'s':''})</button></section>`;
+  else if(main){const [a,b]=main.p();h+=`<section class="obj-main"><p class="obj-k">Objectif</p><h2>${mt(main)}</h2>
+    <div class="obj-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div><div class="obj-f"><span>${progTxt(a,b)}</span><span class="tagp">+${fmt(missionReward(main))}</span></div></section>`}
+  const row=g=>{const [a,b]=g.p(),ok=a>=b;return `<li class="${ok?'ok':''}"${g.ob&&!ok?` data-a="ob_open" data-id="${g.ob}" role="button" tabindex="0"`:''}><span class="ck" aria-hidden="true"></span><span>${g.t}</span><span class="hint">${ok?'Fait':progTxt(a,b)}</span></li>`};
+  h+=`<div class="sec-head"><h2>${esc(CITIES[c].n)}</h2><p>${cd}/7</p></div><div class="conq"><ul class="conq-list sp-list">${conqGoals().map(row).join('')}
+    ${last?'':row({t:'1 étoile de franchise',p:()=>[ns>=1?need:S.lifetime,need]})}</ul></div>`;
+  if(last)h+=`<p class="hint" style="margin-top:10px">${finObjHTML().replace('Les 7 étapes cochées, tu pourras boucler le voyage.','')}</p>`;
+  let more='';try{more+=(S.tresor||0)>0?pgTresorHTML():''}catch(e){}
+  const ri=rankIdx();
+  more+=`<div class="panel"><div class="kv"><span>Trophées</span><b>${S.trophies.length}/${TROPHIES.length}</b></div><div class="kv"><span>Rang</span><b>${RANKS[ri][1]}</b></div><div class="kv"><span>Étoiles</span><b>${S.stars|0}</b></div></div>`;
+  try{if(!last&&legCan()&&!S.fin)more+=`<button class="btn small" style="margin-top:8px" data-a="fin_leg">Prestige</button>`}catch(e){}
+  more+=`<button class="btn ghost small gfx-open" style="margin-top:8px" data-a="gfx_gallery">Villes à venir</button>`;
+  return h+`<details class="sp-more"><summary>Détails</summary>${more}</details>`};
+/* Fenêtre d'une affaire de ville : le titre, l'action, c'est tout */
+obModalHTML=function(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';if(!s.ok&&!nd)try{body=spStrip(K.body(T,s))}catch(e){body='';if(typeof reportErr==='function')reportErr(e,'objectifs')}
+  return `<div class="ob-m" id="obm" data-id="${T.id}"><h2>${T.n}</h2>
+    <p class="ob-msg" role="status" aria-live="polite"${s.msg?'':' hidden'}>${s.msg||''}</p>
+    ${s.ok?`<p class="ob-win">Réussi.</p>`:nd?`<p class="ob-need">${nd}</p>`:body}
+    <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button></div>`};
+/* ===== FIN AGENT SIMPLE ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
