@@ -10951,6 +10951,13 @@ enTeamHTML=function(id,o){
   return o.team.map((m,i)=>{const tc=enTrainCost(id,m),boss=o.chief===i;
     return `<div class="en-p"><div class="en-av">${enAv(m)}</div><div class="en-pi"><div class="ug-h"><strong>${esc(m.n)}${boss?` <span class="tag">${gx(m,'Chef','Cheffe')}</span>`:''}</strong>${enStars(m.sk)}</div>
       <div class="en-2">${m.sk<5?`<button class="btn small go" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Améliorer · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}</div></div></div>`}).join('')};
+/* -- 5. Tutoriel : seulement au début (premiers pas), puis la carte « Nouvel onglet » à chaque déblocage. Plus de visites, de bulles « Nouveau » ni de boutons d'aide. -- */
+coTrig=function(){};
+coHud=function(){};
+coSpec=(f=>function(){const s=f();return s&&s.tut?s:null})(coSpec);
+newGame=(f=>function(){const g=f.apply(this,arguments);g.tours={_all:1};return g})(newGame);
+(function(){try{if(S&&S.started){if(!S.tours||typeof S.tours!=='object')S.tours={};S.tours._all=1}}catch(e){}
+  const st=document.createElement('style');st.textContent='.co-hud{display:none!important}';document.head.appendChild(st)})();
 /* ===== FIN AGENT SIMPLE ===== */
 /* ================= BOOT ================= */
 (function boot(){
