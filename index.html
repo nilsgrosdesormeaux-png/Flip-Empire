@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-18-1004">
+<meta name="fe-build" content="2026-11-18-1011">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -10959,6 +10959,25 @@ newGame=(f=>function(){const g=f.apply(this,arguments);g.tours={_all:1};return g
 (function(){try{if(S&&S.started){if(!S.tours||typeof S.tours!=='object')S.tours={};S.tours._all=1}}catch(e){}
   const st=document.createElement('style');st.textContent='.co-hud{display:none!important}';document.head.appendChild(st)})();
 /* ===== FIN AGENT SIMPLE ===== */
+/* ===== AGENT HISTORIQUE ===== */
+/* Historique par ville, gardé à part (clé flipEmpire_hist) : survit au changement de ville ET à « Recommencer ». */
+const HIST_KEY='flipEmpire_hist';
+function histGet(){try{const h=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');h.runs=Array.isArray(h.runs)?h.runs:[];return h}catch(e){return {runs:[]}}}
+function histSet(h){try{localStorage.setItem(HIST_KEY,JSON.stringify(h))}catch(e){}}
+function histRun(h){if(!S.runId)S.runId=Date.now();let r=h.runs.find(x=>x.id===S.runId);if(!r){r={id:S.runId,villes:[]};h.runs.push(r);if(h.runs.length>30)h.runs.shift()}return r}
+function histCity(){const c=S.city||0,ch=(S.chrono||{})[String(c)]||{};return {n:(CITIES[c]||{}).n||'?',min:Math.round((+S.cityMs||0)/60000),gagne:Math.round(S.lifetime||0),open8:ch.open8==null?null:Math.round(ch.open8/60000),lvl20:ch.lvl20==null?null:Math.round(ch.lvl20/60000),fin:Date.now()}}
+franchise=(f=>function(){const c0=S.city,rec=histCity(),chrono=S.chrono,rid=S.runId||Date.now();
+  f.apply(this,arguments);if(S.city===c0)return;S.runId=rid;S.chrono=chrono;
+  try{const h=histGet();histRun(h).villes.push(rec);histSet(h)}catch(e){}})(franchise);
+setInterval(()=>{try{if(S&&S.started&&!S.runId)S.runId=Date.now()}catch(e){}},2000);
+vEmpire=(f=>function(){if(!S.runId)S.runId=Date.now();let h=f();
+  h=h.replace(/<div class="panel"[^>]*><h3[^>]*>(?:Temps par ville|Tes temps par ville)<\/h3>[\s\S]*?<\/table>(?:[\s\S]*?<\/div>)?<\/div>(?=<div class="panel"|<div class="foot")/g,'');
+  const H=histGet(),m=v=>v==null?'–':v+' min',cur=histCity();
+  const runs=H.runs.slice().reverse();if(!runs.some(r=>r.id===S.runId))runs.unshift({id:S.runId||Date.now(),villes:[]});
+  const tb=runs.map((r,i)=>{const cur1=r.id===S.runId;const rows=r.villes.map(v=>`<tr><td>${esc(v.n)}</td><td>${m(v.min)}</td><td>${m(v.open8)}</td><td>${fmt(v.gagne)}</td></tr>`).join('')+(cur1?`<tr><td><b>${esc(cur.n)}</b> (en cours)</td><td>${m(cur.min)}</td><td>${m(cur.open8)}</td><td>${fmt(cur.gagne)}</td></tr>`:'');
+    const d=new Date(r.id);return `<p style="margin:8px 0 4px"><b>${cur1?'Partie en cours':'Partie du '+d.toLocaleDateString('fr-FR')}</b></p><table class="ltable"><tr><td>Ville</td><td>Temps</td><td>8 ouvertes</td><td>Gagné</td></tr>${rows}</table>`}).join('');
+  return h.replace('<div class="foot">',()=>`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Historique des villes</h3>${tb}</div><div class="foot">`)})(vEmpire);
+/* ===== FIN AGENT HISTORIQUE ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);

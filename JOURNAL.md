@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-18, Claude de Nils (version 2026-11-18-1011)
+- Empire → « Historique des villes » : temps, 8 boutiques ouvertes, gains, par ville et par partie. Gardé à part (clé flipEmpire_hist), donc conservé après un changement de ville ET après « Recommencer ». Bloc AGENT HISTORIQUE ; remplace les panneaux « Temps par ville » / « Tes temps par ville ».
+
 ## 2026-11-18, Claude de Nils (version 2026-11-18-1004)
 - Jeu simplifié : plus de petites histoires dans Objectifs, un seul bouton « Acheter » dans les boutiques, textes courts, panneaux Diagnostic/Conseils/Aide retirés d'Empire.
 - Équipe : seulement embaucher et améliorer.
