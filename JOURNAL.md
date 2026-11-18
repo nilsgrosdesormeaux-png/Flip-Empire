@@ -1,5 +1,17 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-18-1043 : Claude de Nils, dessin (version 2026-11-18-1043)
+- Publié depuis fe/visuel : stades par ville inspirés de vrais stades (AGENT STADES3) et plateaux redessinés d'après la vue aérienne (AGENT PLANS). Fusionné avec le jeu simplifié (fe/simple). Intérieur jouet 3D : en cours de finition.
+
+## 2026-11-18, Claude de Nils (version 2026-11-18-1011)
+- Empire → « Historique des villes » : temps, 8 boutiques ouvertes, gains, par ville et par partie. Gardé à part (clé flipEmpire_hist), donc conservé après un changement de ville ET après « Recommencer ». Bloc AGENT HISTORIQUE ; remplace les panneaux « Temps par ville » / « Tes temps par ville ».
+
+## 2026-11-18, Claude de Nils (version 2026-11-18-1004)
+- Jeu simplifié : plus de petites histoires dans Objectifs, un seul bouton « Acheter » dans les boutiques, textes courts, panneaux Diagnostic/Conseils/Aide retirés d'Empire.
+- Équipe : seulement embaucher et améliorer.
+- Tutoriel : seulement au début puis une fois par déblocage d'onglet.
+- Travail partagé : l'autre Claude fait le dessin (stades, intérieurs, villes) sur la branche fe/visuel. Fais un pull avant de fusionner.
+
 ## 2026-11-18 : Claude de Nils, branche fe/visuel (non publiée sur zen-volta)
 - Partage du travail : ce Claude = dessin sur fe/visuel ; l'autre = textes, Objectifs, boutons d'achat, Équipe, tutoriel sur fe/simple.
 - Fait (fe/visuel) : 98699cd stades par ville inspirés de vrais stades (bloc AGENT STADES3) ; 4b8a184 plateau de chaque ville redessiné d'après la vue aérienne (bloc AGENT PLANS : Vieux-Port, Seine et îles, Central Park, Corne d'Or, Huangpu…), biens des joueurs gardés (même pid, déplacés au lot le plus proche si besoin). Tests : 0 erreur, anciennes sauvegardes OK.

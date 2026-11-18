@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1E2B2A">
-<meta name="fe-build" content="2026-11-10-1618">
+<meta name="fe-build" content="2026-11-18-1043">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -4090,7 +4090,7 @@ function shopRun(only,kinds){const P=shopPlan(only,kinds);if(!P.n&&!P.lv){toast(
       if(n>0){spend(costN(b,st.lvl,n));st.lvl+=n;st.q.wait=clamp(st.q.wait-.12*n,0,100)}}}});
   computeNb();sfx('rank');toast(`${only?BIZ_BY[only].e+' Au max':'Tout acheté'} : ${k} achat${k>1?'s':''}${P.lv?` et ${P.lv} niveau${P.lv>1?'x':''}`:''} pour ${fmt(c0-S.cash)}.`)}
 function shopQuickHTML(){const P=shopPlan(null,['open','mgr','upg']);
-  return `<div class="panel im-shopq"><div><h3 class="im-h3">Achat rapide</h3><p class="hint">Ouvertures, gérants et améliorations, du moins cher au plus cher, tant que ton argent suffit.</p></div>
+  return `<div class="panel im-shopq"><div><h3 class="im-h3">Achat rapide</h3><p class="hint">Du moins cher au plus cher.</p></div>
     <button class="btn go" data-a="shopall" ${P.n?`data-cost="${P.tot}"`:'disabled'}>${P.n?`Tout acheter : ${P.n} achat${P.n>1?'s':''}, ${fmt(P.tot)}`:'Rien d’abordable pour l’instant'}</button></div>`}
 /* Boutons d’achat rapide ajoutés aux écrans existants (sans les réécrire) */
 vAffaires=(f=>function(){let h=f();BIZ.forEach(b=>{const k=`<button class="btn small ghost" data-a="locate" data-id="${b.id}">`;h=h.replace(k,bizMaxBtn(b)+k)});return shopQuickHTML()+h})(vAffaires);
@@ -11585,6 +11585,88 @@ PL['Mars']={keepProps:1,fn:(x,y)=>{if(y<=3&&x<=9)return 'F';if(y>=17&&x>=5)retur
   fieldA:'#7FB34E',fieldB:'#4E8A3A',
   d:{B:{walls:['#FFFFFF','#9FD0E8'],roofs:['#D8C8BC'],roof:'bubble',fl:[1,2],fill:.82,gr:'#B4603C'}}};
 /* ===== FIN AGENT PLANS ===== */
+/* ===== AGENT SIMPLE ===== */
+/* Moins de texte, moins de choix : on ne change que l'affichage, pas les règles ni la sauvegarde. */
+(function(){const st=document.createElement('style');st.textContent=`
+.sp-list{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.sp-list li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:.95rem;min-height:44px}
+.sp-list li>span:nth-child(2){flex:1}
+.sp-list li.ok{opacity:.55}
+.sp-list li[data-a]{cursor:pointer}
+.sp-list .hint{white-space:nowrap}
+details.sp-more{margin-top:14px}
+details.sp-more>summary{cursor:pointer;padding:10px 2px;font-weight:600;color:var(--ink);opacity:.8;min-height:44px;display:flex;align-items:center}
+`;document.head.appendChild(st)})();
+/* -- 1. Objectifs : un objectif en grand, la liste de la ville, rien d'autre (plus d'histoires ni d'accroches de ville) -- */
+function spStrip(h){return String(h||'').replace(/<p class="hint"[^>]*>(?:(?!<\/p>)[\s\S])*<\/p>/g,'')}
+vObjectifs=function(){
+  const rd=readyMissions(),tot=rd.reduce((t,m)=>t+missionReward(m),0),main=MISSIONS.find(m=>!S.claimed.includes(m.id)&&!m.c());
+  const ns=newStars(),c=S.city||0,last=c>=CITIES.length-1,nc=CITIES[Math.min(c+1,CITIES.length-1)],cd=conqDone(),need=cityGoal2(),ready=cd>=7&&ns>=1&&!last;
+  let h='';
+  if(rd.length)h+=`<div class="claimbar"><div><b>${rd.length>1?rd.length+' récompenses':'1 récompense'}</b></div><button class="btn big claim" data-a="claimall">Récupérer +${fmt(tot)}</button></div>`;
+  if(ready)h+=`<section class="obj-main"><p class="obj-k">Ville terminée</p><h2>Cap sur ${nc.n}</h2><button class="btn big go" style="margin-top:12px" data-a="franchise">Partir (+${ns} étoile${ns>1?'s':''})</button></section>`;
+  else if(main){const [a,b]=main.p();h+=`<section class="obj-main"><p class="obj-k">Objectif</p><h2>${mt(main)}</h2>
+    <div class="obj-bar"><i style="width:${Math.min(100,a/b*100)}%"></i></div><div class="obj-f"><span>${progTxt(a,b)}</span><span class="tagp">+${fmt(missionReward(main))}</span></div></section>`}
+  const row=g=>{const [a,b]=g.p(),ok=a>=b;return `<li class="${ok?'ok':''}"${g.ob&&!ok?` data-a="ob_open" data-id="${g.ob}" role="button" tabindex="0"`:''}><span class="ck" aria-hidden="true"></span><span>${g.t}</span><span class="hint">${ok?'Fait':progTxt(a,b)}</span></li>`};
+  h+=`<div class="sec-head"><h2>${esc(CITIES[c].n)}</h2><p>${cd}/7</p></div><div class="conq"><ul class="conq-list sp-list">${conqGoals().map(row).join('')}
+    ${last?'':row({t:'1 étoile de franchise',p:()=>[ns>=1?need:S.lifetime,need]})}</ul></div>`;
+  if(last)h+=`<p class="hint" style="margin-top:10px">${finObjHTML().replace('Les 7 étapes cochées, tu pourras boucler le voyage.','')}</p>`;
+  let more='';try{more+=(S.tresor||0)>0?pgTresorHTML():''}catch(e){}
+  const ri=rankIdx();
+  more+=`<div class="panel"><div class="kv"><span>Trophées</span><b>${S.trophies.length}/${TROPHIES.length}</b></div><div class="kv"><span>Rang</span><b>${RANKS[ri][1]}</b></div><div class="kv"><span>Étoiles</span><b>${S.stars|0}</b></div></div>`;
+  try{if(!last&&legCan()&&!S.fin)more+=`<button class="btn small" style="margin-top:8px" data-a="fin_leg">Prestige</button>`}catch(e){}
+  more+=`<button class="btn ghost small gfx-open" style="margin-top:8px" data-a="gfx_gallery">Villes à venir</button>`;
+  return h+`<details class="sp-more"><summary>Détails</summary>${more}</details>`};
+/* Fenêtre d'une affaire de ville : le titre, l'action, c'est tout */
+obModalHTML=function(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';if(!s.ok&&!nd)try{body=spStrip(K.body(T,s))}catch(e){body='';if(typeof reportErr==='function')reportErr(e,'objectifs')}
+  return `<div class="ob-m" id="obm" data-id="${T.id}"><h2>${T.n}</h2>
+    <p class="ob-msg" role="status" aria-live="polite"${s.msg?'':' hidden'}>${s.msg||''}</p>
+    ${s.ok?`<p class="ob-win">Réussi.</p>`:nd?`<p class="ob-need">${nd}</p>`:body}
+    <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button></div>`};
+/* -- 2. Boutiques : un seul gros bouton « Acheter » (plus de ×10 / Palier / Max, plus de « Au max ») -- */
+modesHTML=()=>'';
+bizMaxBtn=()=>'';
+quote=(f=>function(b){S.buyMode=1;const q=f(b);if(q&&typeof q.label==='string')q.label=q.label.replace('Acheter ×1 pour','Acheter pour');return q})(quote);
+/* -- 3. Textes courts : une seule courte ligne d'aide ; plus de panneau Diagnostic ni de panneaux d'aide dans Empire -- */
+diagHTML=()=>'';
+function spShort(root){try{(root||document).querySelectorAll('p.hint,.hint-l').forEach(e=>{if(e.children.length||e.dataset.sp)return;const t=e.textContent;if(t.length<=80)return;
+  let c=t.split(/(?<=[.!?…])\s/)[0];if(c.length>90)c=c.slice(0,88).replace(/[\s,;:]+\S*$/,'')+'…';e.textContent=c;e.dataset.sp=1})}catch(x){}}
+renderMain=(f=>function(){const r=f.apply(this,arguments);spShort($('#main'));return r})(renderMain);
+renderSheet=(f=>function(){const r=f.apply(this,arguments);spShort($('#bsheet'));return r})(renderSheet);
+vEmpire=(f=>function(){return f().replace(/<div class="panel"[^>]*><h3[^>]*>(?:Conseils de départ|Aide)<\/h3>(?:(?!<div class="panel")[\s\S])*?<\/div>(?=<div class="panel"|<div class="foot")/g,'')})(vEmpire);
+/* -- 4. Équipe : embaucher (personnel de la boutique) et former ; plus de coups de boost, promotions, primes ni descriptions -- */
+renderSheet=(f=>function(){const r=f.apply(this,arguments);try{document.querySelectorAll('#bsheet [data-a="act"]').forEach(e=>{if(!e.closest('.en-in'))e.remove()})}catch(x){}return r})(renderSheet);
+enTeamHTML=function(id,o){
+  return o.team.map((m,i)=>{const tc=enTrainCost(id,m),boss=o.chief===i;
+    return `<div class="en-p"><div class="en-av">${enAv(m)}</div><div class="en-pi"><div class="ug-h"><strong>${esc(m.n)}${boss?` <span class="tag">${gx(m,'Chef','Cheffe')}</span>`:''}</strong>${enStars(m.sk)}</div>
+      <div class="en-2">${m.sk<5?`<button class="btn small go" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Améliorer · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}</div></div></div>`}).join('')};
+/* -- 5. Tutoriel : seulement au début (premiers pas), puis la carte « Nouvel onglet » à chaque déblocage. Plus de visites, de bulles « Nouveau » ni de boutons d'aide. -- */
+coTrig=function(){};
+coHud=function(){};
+coSpec=(f=>function(){const s=f();return s&&s.tut?s:null})(coSpec);
+newGame=(f=>function(){const g=f.apply(this,arguments);g.tours={_all:1};return g})(newGame);
+(function(){try{if(S&&S.started){if(!S.tours||typeof S.tours!=='object')S.tours={};S.tours._all=1}}catch(e){}
+  const st=document.createElement('style');st.textContent='.co-hud{display:none!important}';document.head.appendChild(st)})();
+/* ===== FIN AGENT SIMPLE ===== */
+/* ===== AGENT HISTORIQUE ===== */
+/* Historique par ville, gardé à part (clé flipEmpire_hist) : survit au changement de ville ET à « Recommencer ». */
+const HIST_KEY='flipEmpire_hist';
+function histGet(){try{const h=JSON.parse(localStorage.getItem(HIST_KEY)||'{}');h.runs=Array.isArray(h.runs)?h.runs:[];return h}catch(e){return {runs:[]}}}
+function histSet(h){try{localStorage.setItem(HIST_KEY,JSON.stringify(h))}catch(e){}}
+function histRun(h){if(!S.runId)S.runId=Date.now();let r=h.runs.find(x=>x.id===S.runId);if(!r){r={id:S.runId,villes:[]};h.runs.push(r);if(h.runs.length>30)h.runs.shift()}return r}
+function histCity(){const c=S.city||0,ch=(S.chrono||{})[String(c)]||{};return {n:(CITIES[c]||{}).n||'?',min:Math.round((+S.cityMs||0)/60000),gagne:Math.round(S.lifetime||0),open8:ch.open8==null?null:Math.round(ch.open8/60000),lvl20:ch.lvl20==null?null:Math.round(ch.lvl20/60000),fin:Date.now()}}
+franchise=(f=>function(){const c0=S.city,rec=histCity(),chrono=S.chrono,rid=S.runId||Date.now();
+  f.apply(this,arguments);if(S.city===c0)return;S.runId=rid;S.chrono=chrono;
+  try{const h=histGet();histRun(h).villes.push(rec);histSet(h)}catch(e){}})(franchise);
+setInterval(()=>{try{if(S&&S.started&&!S.runId)S.runId=Date.now()}catch(e){}},2000);
+vEmpire=(f=>function(){if(!S.runId)S.runId=Date.now();let h=f();
+  h=h.replace(/<div class="panel"[^>]*><h3[^>]*>(?:Temps par ville|Tes temps par ville)<\/h3>[\s\S]*?<\/table>(?:[\s\S]*?<\/div>)?<\/div>(?=<div class="panel"|<div class="foot")/g,'');
+  const H=histGet(),m=v=>v==null?'–':v+' min',cur=histCity();
+  const runs=H.runs.slice().reverse();if(!runs.some(r=>r.id===S.runId))runs.unshift({id:S.runId||Date.now(),villes:[]});
+  const tb=runs.map((r,i)=>{const cur1=r.id===S.runId;const rows=r.villes.map(v=>`<tr><td>${esc(v.n)}</td><td>${m(v.min)}</td><td>${m(v.open8)}</td><td>${fmt(v.gagne)}</td></tr>`).join('')+(cur1?`<tr><td><b>${esc(cur.n)}</b> (en cours)</td><td>${m(cur.min)}</td><td>${m(cur.open8)}</td><td>${fmt(cur.gagne)}</td></tr>`:'');
+    const d=new Date(r.id);return `<p style="margin:8px 0 4px"><b>${cur1?'Partie en cours':'Partie du '+d.toLocaleDateString('fr-FR')}</b></p><table class="ltable"><tr><td>Ville</td><td>Temps</td><td>8 ouvertes</td><td>Gagné</td></tr>${rows}</table>`}).join('');
+  return h.replace('<div class="foot">',()=>`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Historique des villes</h3>${tb}</div><div class="foot">`)})(vEmpire);
+/* ===== FIN AGENT HISTORIQUE ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
