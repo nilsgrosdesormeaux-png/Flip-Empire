@@ -1,5 +1,8 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-18-1101 : Claude de Nils, dessin (version 2026-11-18-1101)
+- Intérieur des boutiques façon jouet 3D isométrique (bloc AGENT INTERIEUR) : pièce en coupe, volumes à 3 faces, une scène par commerce et par ville (136), revue complète des scènes. Bouton « coup de boost » caché dans les fenêtres de service (retiré par la simplification). Scènes Lune/Mars encore simples.
+
 ## 2026-11-18-1043 : Claude de Nils, dessin (version 2026-11-18-1043)
 - Publié depuis fe/visuel : stades par ville inspirés de vrais stades (AGENT STADES3) et plateaux redessinés d'après la vue aérienne (AGENT PLANS). Fusionné avec le jeu simplifié (fe/simple). Intérieur jouet 3D : en cours de finition.
 
