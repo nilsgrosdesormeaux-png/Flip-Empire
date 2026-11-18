@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-18, Claude de Nils (version 2026-11-18-1004)
+- Jeu simplifié : plus de petites histoires dans Objectifs, un seul bouton « Acheter » dans les boutiques, textes courts, panneaux Diagnostic/Conseils/Aide retirés d'Empire.
+- Équipe : seulement embaucher et améliorer.
+- Tutoriel : seulement au début puis une fois par déblocage d'onglet.
+- Travail partagé : l'autre Claude fait le dessin (stades, intérieurs, villes) sur la branche fe/visuel. Fais un pull avant de fusionner.
+
 ## 2026-11-10-1618 : Claude de Nils (version 2026-11-10-1618)
 - Bloc AGENT INTERIEUR (après OBJECTIFS) : toucher sa boutique sur la carte ouvre l'intérieur dessiné (vue en coupe, 6 scènes par type, variantes par ville, plus riche avec le niveau) ; équipe nommée animée, clients qui font la queue, services visibles et achetables dans la scène (sol sale → agent d'entretien, file → caisse en plus, mur fissuré → technicien), commandes / atelier / incidents cliquables. Pendant le tutoriel, l'ancienne fiche reste. Pas de nouveau champ dans S.
 - Reste : villes redessinées entièrement d'après vue satellite ; plusieurs designs de personnages à proposer ; sauvegarde en ligne ; tournoi 3 jours ; lisibilité (grands nombres, panneau Diagnostic).
