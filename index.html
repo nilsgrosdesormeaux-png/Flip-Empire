@@ -10945,6 +10945,12 @@ function spShort(root){try{(root||document).querySelectorAll('p.hint,.hint-l').f
 renderMain=(f=>function(){const r=f.apply(this,arguments);spShort($('#main'));return r})(renderMain);
 renderSheet=(f=>function(){const r=f.apply(this,arguments);spShort($('#bsheet'));return r})(renderSheet);
 vEmpire=(f=>function(){return f().replace(/<div class="panel"[^>]*><h3[^>]*>(?:Conseils de départ|Aide)<\/h3>(?:(?!<div class="panel")[\s\S])*?<\/div>(?=<div class="panel"|<div class="foot")/g,'')})(vEmpire);
+/* -- 4. Équipe : embaucher (personnel de la boutique) et former ; plus de coups de boost, promotions, primes ni descriptions -- */
+renderSheet=(f=>function(){const r=f.apply(this,arguments);try{document.querySelectorAll('#bsheet [data-a="act"]').forEach(e=>{if(!e.closest('.en-in'))e.remove()})}catch(x){}return r})(renderSheet);
+enTeamHTML=function(id,o){
+  return o.team.map((m,i)=>{const tc=enTrainCost(id,m),boss=o.chief===i;
+    return `<div class="en-p"><div class="en-av">${enAv(m)}</div><div class="en-pi"><div class="ug-h"><strong>${esc(m.n)}${boss?` <span class="tag">${gx(m,'Chef','Cheffe')}</span>`:''}</strong>${enStars(m.sk)}</div>
+      <div class="en-2">${m.sk<5?`<button class="btn small go" data-a="en_train" data-id="${id}" data-i="${i}" ${m.tr>S.day||S.cash<tc?'disabled':''}>${m.tr>S.day?'En formation':'Améliorer · '+fmt(tc)}</button>`:'<span class="hint">Au top</span>'}</div></div></div>`}).join('')};
 /* ===== FIN AGENT SIMPLE ===== */
 /* ================= BOOT ================= */
 (function boot(){
