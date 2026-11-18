@@ -1060,7 +1060,7 @@ const tempMult=()=>{const ev=dayEvent(S.day);return (boosted()?2:1)*(frenzy()?5:
 const modMult=id=>S.mods.reduce((a,m)=>(S.day<=m.until&&(!m.biz||m.biz===id))?a*m.m:a,1);
 const palierMult=l=>Math.pow(2,PALIERS.filter(p=>l>=p).length);
 const nextPalier=l=>PALIERS.find(p=>l<p);
-const baseRev=b=>b.base*S.biz[b.id].lvl*palierMult(S.biz[b.id].lvl)*bizUpg(b.id);
+const baseRev=b=>b.base*S.biz[b.id].lvl*palierMult(S.biz[b.id].lvl)*bizUpg(b.id)*pkRev(b.id);
 let nbCache={};
 const nbMult=id=>1+(nbCache[id]||0);
 const steadyRev=b=>baseRev(b)*permMult()*satMult(b.id)*modMult(b.id)*nbMult(b.id);
@@ -1315,7 +1315,7 @@ const DIVS=['District','Régional 1','National 3','National','Ligue 2','Ligue 1'
 const OPPCLUB=['US Saint-Fiacre','AS Port-Joli','Olympique des Prés','FC Rive-Gauche','Stade Marin','Racing Vallon','AC Les Pins','SC Haut-Pont','Étoile du Bourg','Union Nord'];
 const clubCost=()=>Math.round(20000*CITY_MULT(S.city));
 const isSeason=m=>m>=7||m<=4;
-const clubIncome=()=>{const c=S.club;return Math.round(c.fans*(4+4*c.stade)*(1+c.div*.6)*CITY_MULT(S.city)/3)};
+const clubIncome=()=>{const c=S.club;return Math.round(c.fans*(4+4*c.stade)*(1+c.div*.6)*CITY_MULT(S.city)*pkClub()/3)};
 const clubWages=()=>{const c=S.club;return Math.round(22*c.str*(1+c.div*.8)*CITY_MULT(S.city)/3)};
 const recruitCost=()=>Math.round(400*Math.pow(S.club.str/10,2)*(1+S.club.div*.5)*CITY_MULT(S.city)*(S.hero.passions&&S.hero.passions.includes('foot')?.8:1));
 const COACHES=[{n:'Entraîneur bénévole',c:0},{n:'Entraîneur diplômé',c:15000},{n:'Ancien pro reconverti',c:120000},{n:'Coach de renom',c:900000}];
@@ -3252,7 +3252,7 @@ const COIN={e:'🪙',n:'FlipCoin',u:'jeton',p:50,vol:.08,mul:200,news:[['Un mill
 const INDEXA={e:'🏙️',n:'Indice de la ville',u:'part',p:1000,vol:.012,mul:20,news:[['L’économie locale tourne à plein régime','Le chômage recule en ville'],['Une récession est annoncée','Un gros employeur ferme son usine']]};
 let assetDef=i=>i===0?Object.assign({mul:1},mkt()):i===1?COIN:INDEXA;
 function freshMkt(){const a=[0,1,2].map(i=>{const d=assetDef(i);return{qty:0,avg:0,price:d.p,target:d.p,hist:[d.p],tp:0,sl:0}});return{a,sel:0,cap:0,profit:0,news:[],nextNews:35,histT:0}}
-const assetCap=i=>20*Math.pow(5,S.mkt.cap)*assetDef(i).mul;
+const assetCap=i=>20*Math.pow(5,S.mkt.cap)*assetDef(i).mul*pkBourse();
 function mktTick(dt){
   const M=S.mkt;if(!M||!M.a)return;
   M.a.forEach((A,i)=>{const d=assetDef(i);let lp=Math.log(A.price);lp+=.035*(Math.log(A.target)-lp)*dt+d.vol*gauss()*Math.sqrt(dt)*.6;A.price=clamp(Math.exp(lp),d.p*.1,d.p*12);
@@ -3316,7 +3316,7 @@ const CLUBNAMES=['US Saint-Fiacre','AS Port-Joli','Olympique des Prés','FC Rive
 const clubCost2=()=>Math.round(15000*CITY_MULT(S.city));
 const lvlStr=div=>24+div*12;
 const clubStr2=()=>{const c=S.club;if(!c.squad||!c.squad.length)return c.str;return Math.round(c.squad.reduce((a,p)=>a+p.note,0)/c.squad.length+c.coach*3+((c.morale||50)-50)/10)};
-const clubIncome2=()=>{const c=S.club;return Math.round(c.fans*(4+4*c.stade)*(1+c.div*.6)*CITY_MULT(S.city)/3)};
+const clubIncome2=()=>{const c=S.club;return Math.round(c.fans*(4+4*c.stade)*(1+c.div*.6)*CITY_MULT(S.city)*pkClub()/3)};
 const clubWages2=()=>{const c=S.club;return Math.round(.6*(c.squad||[]).reduce((a,p)=>a+Math.pow(p.note,1.6),0)*(1+c.div*.5)*CITY_MULT(S.city)/3)};
 const playerPrice=(note,div)=>Math.round(250*Math.pow(note/10,2.6)*(1+div*.6)*CITY_MULT(S.city)*(hasP('foot')?.8:1));
 function genTable(div){const names=CLUBNAMES.slice().sort(()=>Math.random()-.5).slice(0,9);return [{n:S.club.name,me:1,pts:0,str:0},...names.map(n=>({n,pts:0,str:lvlStr(div)+randInt(-9,9)}))]}
@@ -6296,8 +6296,8 @@ document.addEventListener('visibilitychange',()=>{try{if(document.hidden&&S.star
 function ryAway(sec,atBoot){
   if(!S.started||S.dead||!(sec>0))return;
   const eff=Math.min(sec,RY.offFull);
-  let off=0;BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*eff});
-  let rent=dailyRent()*eff/DAY_SEC;off=isFinite(off)?Math.max(0,Math.round(off)):0;rent=isFinite(rent)?Math.max(0,Math.round(rent)):0;
+  let off=0;BIZ.forEach(b=>{const st=S.biz[b.id];if(st&&st.lvl>0&&st.mgr)off+=steadyRev(b)/b.time*eff*pkOff()});
+  let rent=dailyRent()*eff/DAY_SEC*pkOff();off=isFinite(off)?Math.max(0,Math.round(off)):0;rent=isFinite(rent)?Math.max(0,Math.round(rent)):0;
   let chg=0;try{if(typeof enChargeRate==='function')chg=Math.round(off*enChargeRate())}catch(e){chg=0}chg=isFinite(chg)?Math.min(Math.max(0,chg),off):0;
   const tot=Math.max(0,off+rent-chg);if(tot>0)earn(tot);if(atBoot)dispCash=S.cash;
   let wk='';try{if(typeof wkAway==='function')wk=wkAway(sec)}catch(e){}
@@ -12235,6 +12235,73 @@ vEmpire=(f=>function(){if(!S.runId)S.runId=Date.now();let h=f();
     const d=new Date(r.id);return `<p style="margin:8px 0 4px"><b>${cur1?'Partie en cours':'Partie du '+d.toLocaleDateString('fr-FR')}</b></p><table class="ltable"><tr><td>Ville</td><td>Temps</td><td>8 ouvertes</td><td>Gagné</td></tr>${rows}</table>`}).join('');
   return h.replace('<div class="foot">',()=>`<div class="panel" style="margin-top:10px"><h3 style="margin:0 0 6px">Historique des villes</h3>${tb}</div><div class="foot">`)})(vEmpire);
 /* ===== FIN AGENT HISTORIQUE ===== */
+/* ===== AGENT DEFIS ===== */
+/* Effets permanents (S.perks) : chaque défi réussi en donne un. Cumul plafonné à ×3. Conservés au changement de ville. */
+var PK0={};
+function pkO(){return (typeof S!=='undefined'&&S&&S.perks&&typeof S.perks==='object')?S.perks:PK0}
+function pkN(k){const v=+pkO()[k];return v>0?Math.min(30,v):0}
+const pkCap=x=>Math.min(3,x);
+function pkIx(id){if(!pkIx.m){pkIx.m={};BIZ.forEach((b,i)=>pkIx.m[b.id]=i)}return pkIx.m[id]}
+const pkSpeed=i=>pkCap(Math.pow(1.2,pkN('vitesse:'+i)));
+const pkRev=id=>pkCap(1+.25*pkN('revenu:'+pkIx(id)));
+const pkMgr=()=>Math.max(.3,Math.pow(.7,pkN('gerants')));
+const pkUpg=()=>Math.max(.4,Math.pow(.85,pkN('amelio')));
+const pkClub=()=>pkCap(1+.3*pkN('club'));
+const pkLoy=()=>pkCap(1+.2*pkN('loyers'));
+const pkBourse=()=>pkCap(1+.5*pkN('bourse'));
+const pkOff=()=>pkCap(1+.25*pkN('horsligne'));
+var PK_MGR0=null,PK_UPG0=null;
+function pkBase(){PK_MGR0=Object.assign({},MGR);PK_UPG0=UPG.map(u=>u.cost)}
+function pkApply(){try{
+  BIZ.forEach((b,i)=>{if(!(b.t0>0))b.t0=b.time;b.time=b.t0/pkSpeed(i)});
+  if(PK_MGR0){BIZ.forEach(b=>{if(PK_MGR0[b.id]>0)MGR[b.id]=Math.round(PK_MGR0[b.id]*pkMgr())});UPG.forEach((u,i)=>{if(PK_UPG0[i]>0)u.cost=PK_UPG0[i]*pkUpg()})}
+}catch(e){if(typeof reportErr==='function')reportErr(e,'defis')}}
+function pkGive(k){if(!k)return;if(!S.perks||typeof S.perks!=='object')S.perks={};S.perks[k]=Math.min(30,(+S.perks[k]||0)+1);pkApply();try{updateLive()}catch(e){}}
+function pkTxt(k){const a=String(k).split(':'),b=BIZ[+a[1]],n=b?b.n:'la boutique';
+  switch(a[0]){case 'vitesse':return `${n} tourne 20 % plus vite`;case 'revenu':return `${n} rapporte 25 % de plus`;case 'gerants':return 'Gérants 30 % moins chers';
+    case 'amelio':return 'Améliorations 15 % moins chères';case 'club':return 'Recettes du club +30 %';case 'loyers':return 'Loyers +20 %';
+    case 'bourse':return 'Portefeuille de bourse +50 %';case 'horsligne':return 'Gains hors ligne +25 %'}return ''}
+const pkHash=s=>{let h=7;String(s).split('').forEach(c=>{h=(h*31+c.charCodeAt(0))%100003});return h};
+function pkKeyOb(T){const h=pkHash(T.id+':'+(S.city|0)),bb=Array.isArray(T.b)?T.b[0]:T.b,b=(bb>=0&&bb<8)?bb|0:h%8;
+  switch(T.k){case 'order':case 'export':return 'vitesse:'+b;case 'festival':case 'caravan':return 'revenu:'+b;case 'ally':case 'team':return 'gerants';
+    case 'nego':case 'auction':return 'amelio';case 'derby':case 'cup':return 'club';case 'council':case 'monument':case 'build':return 'loyers';
+    case 'pitch':case 'cipher':case 'enquete':return 'bourse';case 'expedition':case 'regatta':return 'horsligne'}
+  return (h%2?'revenu:':'vitesse:')+((h>>1)%8)}
+cityPrices=(f=>function(){f.apply(this,arguments);pkBase();pkApply()})(cityPrices);
+newGame=(f=>function(){const g=f.apply(this,arguments);g.perks={};return g})(newGame);
+franchise=(f=>function(){const p=S.perks,c0=S.city;f.apply(this,arguments);if(S.city!==c0){S.perks=(p&&typeof p==='object')?p:{};try{applyCityBiz(S.city)}catch(e){pkApply()}}})(franchise);
+propRent=(f=>function(){return f.apply(this,arguments)*pkLoy()})(propRent);
+ecoGate=(f=>function(){const g=f.apply(this,arguments),k=pkClub();if(k!==1&&g)['tix','buv','shop','spons','tv','tot'].forEach(x=>{if(isFinite(g[x]))g[x]=Math.round(g[x]*k)});return g})(ecoGate);
+/* Défis de ville : un effet permanent par défi, affiché avant et rappelé à la réussite */
+obWin=(f=>function(T,s){const was=s&&s.ok;f.apply(this,arguments);if(!was&&s&&s.ok){try{const k=pkKeyOb(T);pkGive(k);toast('Débloqué : '+pkTxt(k));if(S.journal&&S.journal[0])S.journal[0].fx.push(pkTxt(k))}catch(e){}}})(obWin);
+obCard=(f=>function(T){const h=f.apply(this,arguments);let t='';try{t=pkTxt(pkKeyOb(T));const ok=obState(T).ok;return h.replace(/<\/button>$/,`<span class="ob-fx">${ok?'Débloqué':'Débloque'} : ${t}</span></button>`)}catch(e){return h}})(obCard);
+obModalHTML=(f=>function(T){const h=f.apply(this,arguments);try{const t=pkTxt(pkKeyOb(T));return obState(T).ok?h.replace('<p class="ob-win">Réussi.',`<p class="ob-win">Réussi. Débloqué : ${t}.`):h.replace('<button class="btn ghost big"',`<p class="ob-fx">Débloque : ${t}</p><button class="btn ghost big"`)}catch(e){return h}})(obModalHTML);
+/* Conquête : un siège à acheter (au lieu d'un compteur de gains) ; il ouvre la franchise */
+const pkSeatPrice=()=>Math.max(100,Math.round(cityGoal2()/20));
+const pkSeatOk=()=>typeof S.seat==='number'&&S.seat===(S.city|0);
+newStars=(f=>function(){const n=f.apply(this,arguments);return n<1&&pkSeatOk()?1:n})(newStars);
+conqGoals=(f=>function(){const c=S.city|0,cn=obCN(),nc=CITIES[Math.min(c+1,CITIES.length-1)];
+  return f.apply(this,arguments).map(g=>{
+    if(/dans cette ville/.test(g.t))return {t:`Achète ton siège ${c?'à '+cn:'ici'} (${fmt(pkSeatPrice())}) : ouvre ${c>=CITIES.length-1?'la fin du voyage':nc.n}`,ob:'__seat',p:()=>[pkSeatOk()?1:0,1]};
+    if(/Fais grandir/.test(g.t)&&!/×2/.test(g.t))return Object.assign({},g,{t:g.t+' : revenus ×2 à chaque palier'});
+    return g})})(conqGoals);
+obOpen=(f=>function(id){if(id!=='__seat')return f.apply(this,arguments);
+  if(pkSeatOk()){toast('Siège déjà acheté.');return}const c=pkSeatPrice();
+  if(!(S.cash>=c)){sfx('no');toast(`Il te manque ${fmt(c-S.cash)} pour le siège.`);return}
+  spend(c);S.seat=S.city|0;sfx('rank');toast('Siège acheté. La franchise est ouverte.');try{save();updateLive()}catch(e){}})(obOpen);
+/* Missions : un effet chacune (plus de simples récompenses d'argent) */
+(()=>{const F={m1:'vitesse:0',m2:'revenu:0',m3:'vitesse:1',m4:'amelio',m5:'revenu:1',m6:'gerants',m7:'horsligne',m8:'loyers',m9:'gerants',m10:'horsligne',m11:'vitesse:2',m12:'amelio',m13:'loyers',m14:'club',m14b:'bourse',
+  m15:'revenu:2',m16:'vitesse:3',m17:'revenu:3',m18:'amelio',m19:'loyers',m20:'revenu:4',m21:'club',m22:'bourse',m23:'vitesse:4',m24:'horsligne',m25:'gerants',m26:'revenu:5'};
+  MISSIONS.forEach(m=>{m.fx=F[m.id]||'horsligne'})})();
+claimMissions=(f=>function(ids,btn){const pre=(ids||[]).filter(id=>!S.claimed.includes(id));const r=f.apply(this,arguments);const got=[];
+  pre.forEach(id=>{if(S.claimed.includes(id)){const m=MISSIONS.find(x=>x.id===id);if(m&&m.fx){pkGive(m.fx);got.push(pkTxt(m.fx))}}});
+  if(got.length)toast('Débloqué : '+got.join(', '));return r})(claimMissions);
+vObjectifs=(f=>function(){let h=f.apply(this,arguments);try{const main=MISSIONS.find(m=>!S.claimed.includes(m.id)&&!m.c());
+  if(main&&main.fx&&h.indexOf('class="obj-k">Objectif')>=0)h=h.replace('<div class="obj-bar">',`<p class="obj-fx">Débloque : ${pkTxt(main.fx)}</p><div class="obj-bar">`)}catch(e){}return h})(vObjectifs);
+(()=>{const st=document.createElement('style');st.textContent='.ob-fx{display:block;font-size:.85em;font-weight:600;margin-top:6px;opacity:.9}p.ob-fx{margin:6px 0 0}';document.head.appendChild(st)})();
+pkBase();pkApply();
+/* ===== FIN AGENT DEFIS ===== */
+
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
