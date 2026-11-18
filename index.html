@@ -4090,7 +4090,7 @@ function shopRun(only,kinds){const P=shopPlan(only,kinds);if(!P.n&&!P.lv){toast(
       if(n>0){spend(costN(b,st.lvl,n));st.lvl+=n;st.q.wait=clamp(st.q.wait-.12*n,0,100)}}}});
   computeNb();sfx('rank');toast(`${only?BIZ_BY[only].e+' Au max':'Tout acheté'} : ${k} achat${k>1?'s':''}${P.lv?` et ${P.lv} niveau${P.lv>1?'x':''}`:''} pour ${fmt(c0-S.cash)}.`)}
 function shopQuickHTML(){const P=shopPlan(null,['open','mgr','upg']);
-  return `<div class="panel im-shopq"><div><h3 class="im-h3">Achat rapide</h3><p class="hint">Ouvertures, gérants et améliorations, du moins cher au plus cher, tant que ton argent suffit.</p></div>
+  return `<div class="panel im-shopq"><div><h3 class="im-h3">Achat rapide</h3><p class="hint">Du moins cher au plus cher.</p></div>
     <button class="btn go" data-a="shopall" ${P.n?`data-cost="${P.tot}"`:'disabled'}>${P.n?`Tout acheter : ${P.n} achat${P.n>1?'s':''}, ${fmt(P.tot)}`:'Rien d’abordable pour l’instant'}</button></div>`}
 /* Boutons d’achat rapide ajoutés aux écrans existants (sans les réécrire) */
 vAffaires=(f=>function(){let h=f();BIZ.forEach(b=>{const k=`<button class="btn small ghost" data-a="locate" data-id="${b.id}">`;h=h.replace(k,bizMaxBtn(b)+k)});return shopQuickHTML()+h})(vAffaires);
@@ -10938,6 +10938,13 @@ obModalHTML=function(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';i
 modesHTML=()=>'';
 bizMaxBtn=()=>'';
 quote=(f=>function(b){S.buyMode=1;const q=f(b);if(q&&typeof q.label==='string')q.label=q.label.replace('Acheter ×1 pour','Acheter pour');return q})(quote);
+/* -- 3. Textes courts : une seule courte ligne d'aide ; plus de panneau Diagnostic ni de panneaux d'aide dans Empire -- */
+diagHTML=()=>'';
+function spShort(root){try{(root||document).querySelectorAll('p.hint,.hint-l').forEach(e=>{if(e.children.length||e.dataset.sp)return;const t=e.textContent;if(t.length<=80)return;
+  let c=t.split(/(?<=[.!?…])\s/)[0];if(c.length>90)c=c.slice(0,88).replace(/[\s,;:]+\S*$/,'')+'…';e.textContent=c;e.dataset.sp=1})}catch(x){}}
+renderMain=(f=>function(){const r=f.apply(this,arguments);spShort($('#main'));return r})(renderMain);
+renderSheet=(f=>function(){const r=f.apply(this,arguments);spShort($('#bsheet'));return r})(renderSheet);
+vEmpire=(f=>function(){return f().replace(/<div class="panel"[^>]*><h3[^>]*>(?:Conseils de départ|Aide)<\/h3>(?:(?!<div class="panel")[\s\S])*?<\/div>(?=<div class="panel"|<div class="foot")/g,'')})(vEmpire);
 /* ===== FIN AGENT SIMPLE ===== */
 /* ================= BOOT ================= */
 (function boot(){
