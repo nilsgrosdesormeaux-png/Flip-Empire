@@ -1,5 +1,11 @@
 # Journal du projet (le plus récent en haut)
 
+## 2026-11-18 : Claude de Nils, branche fe/visuel (non publiée sur zen-volta)
+- Partage du travail : ce Claude = dessin sur fe/visuel ; l'autre = textes, Objectifs, boutons d'achat, Équipe, tutoriel sur fe/simple.
+- Fait (fe/visuel) : 98699cd stades par ville inspirés de vrais stades (bloc AGENT STADES3) ; 4b8a184 plateau de chaque ville redessiné d'après la vue aérienne (bloc AGENT PLANS : Vieux-Port, Seine et îles, Central Park, Corne d'Or, Huangpu…), biens des joueurs gardés (même pid, déplacés au lot le plus proche si besoin). Tests : 0 erreur, anciennes sauvegardes OK.
+- En pause : intérieur des boutiques façon jouet 3D isométrique → travaux-en-cours/interieur-jouet-3d.patch (voir LISEZMOI.md).
+- Pas encore publié sur claude/zen-volta-wpuz92 (attendre l'accord de l'autre moitié).
+
 ## 2026-11-10-1618 : Claude de Nils (version 2026-11-10-1618)
 - Bloc AGENT INTERIEUR (après OBJECTIFS) : toucher sa boutique sur la carte ouvre l'intérieur dessiné (vue en coupe, 6 scènes par type, variantes par ville, plus riche avec le niveau) ; équipe nommée animée, clients qui font la queue, services visibles et achetables dans la scène (sol sale → agent d'entretien, file → caisse en plus, mur fissuré → technicien), commandes / atelier / incidents cliquables. Pendant le tutoriel, l'ancienne fiche reste. Pas de nouveau champ dans S.
 - Reste : villes redessinées entièrement d'après vue satellite ; plusieurs designs de personnages à proposer ; sauvegarde en ligne ; tournoi 3 jours ; lisibilité (grands nombres, panneau Diagnostic).
