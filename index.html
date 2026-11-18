@@ -10934,6 +10934,10 @@ obModalHTML=function(T){const s=obState(T),K=OBK[T.k],nd=obNeed(T);let body='';i
     <p class="ob-msg" role="status" aria-live="polite"${s.msg?'':' hidden'}>${s.msg||''}</p>
     ${s.ok?`<p class="ob-win">Réussi.</p>`:nd?`<p class="ob-need">${nd}</p>`:body}
     <button class="btn ghost big" style="margin-top:14px;width:100%" data-a="close">Fermer</button></div>`};
+/* -- 2. Boutiques : un seul gros bouton « Acheter » (plus de ×10 / Palier / Max, plus de « Au max ») -- */
+modesHTML=()=>'';
+bizMaxBtn=()=>'';
+quote=(f=>function(b){S.buyMode=1;const q=f(b);if(q&&typeof q.label==='string')q.label=q.label.replace('Acheter ×1 pour','Acheter pour');return q})(quote);
 /* ===== FIN AGENT SIMPLE ===== */
 /* ================= BOOT ================= */
 (function boot(){
