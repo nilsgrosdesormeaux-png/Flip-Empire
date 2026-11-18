@@ -9066,7 +9066,7 @@ function v2RingBuild(cn,sc,thumb){
       const e=dx===1?quadT(t.x+.86,t.y,t.x+1,t.y+1,t.z):dx===-1?quadT(t.x,t.y,t.x+.14,t.y+1,t.z):dy===1?quadT(t.x,t.y+.86,t.x+1,t.y+1,t.z):quadT(t.x,t.y,t.x+1,t.y+.14,t.z);poly(g,e,shade(v2Mix(geo.palmBank?'#7FA058':qc,H.c,H.f),1))})}
   g.globalAlpha=1;
   /* 2. avenues en étoile (Paris) */
-  const aves=[];if(geo.star){const [sx,sy]=geo.star;[-2.6,-2.1,-1.6,-1.1,-.6,-.1].forEach(a=>{aves.push([sx,sy,sx+Math.cos(a)*30,sy+Math.sin(a)*30])})}
+  const aves=[];if(geo.star){const [sx,sy]=geo.star;[-2.6,-2.1,-1.6,-1.1,-.6,-.1].forEach(a=>{aves.push([sx,sy,sx+Math.cos(a)*9,sy+Math.sin(a)*9])})}
   const onAve=(x,y)=>aves.some(([x0,y0,x1,y1])=>{const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),u=((x-x0)*dx+(y-y0)*dy)/L/L;if(u<0||u>1)return false;return Math.abs((x-x0)*dy-(y-y0)*dx)/L<.42});
   aves.forEach(([x0,y0,x1,y1])=>{const L=Math.hypot(x1-x0,y1-y0),nx=-(y1-y0)/L*.32,ny=(x1-x0)/L*.32;g.globalAlpha=.95;poly(g,[iso(x0+nx,y0+ny),iso(x1+nx,y1+ny),iso(x1-nx,y1-ny),iso(x0-nx,y0-ny)],shade(road,1));
     g.strokeStyle=shade('#5E8F48',1);g.lineWidth=2;g.setLineDash([2,5]);[[nx*1.25,ny*1.25],[-nx*1.25,-ny*1.25]].forEach(([ox,oy])=>{g.beginPath();g.moveTo(...iso(x0+ox,y0+oy));g.lineTo(...iso(x1+ox,y1+oy));g.stroke()});g.setLineDash([])});
@@ -11045,6 +11045,546 @@ function sd3Draw(sp,cn){
 }
 drawStade=(f=>function(){const cn=v2CN(),sp=SD3[cn];if(!sp)return f();try{return sd3Draw(sp,cn)}catch(e){console.warn(e);return f()}})(drawStade);
 /* ===== FIN AGENT STADES3 ===== */
+/* ===== AGENT PLANS ===== */
+/* Le plateau de chaque ville dessiné d’après sa vue du ciel : eau, quais, parcs, quartiers (trame des rues,
+   hauteur et couleur des toits), monuments à leur place relative. Recette par ville dans PL[nom] :
+   une carte de 20 × 20 caractères (ligne = y, colonne = x), lue seulement hors routes, commerces et bâtiments publics.
+   Caractères : '-' inchangé · '.' herbe · lettres majuscules d’un quartier (voir d) · P parc · G pelouse à allées ·
+   W eau · M port (bateaux) · Q quai ou place pavée · S sable · I île pavée · D désert · F champs · Z promenade en vagues.
+   Biens du joueur : les maisons et immeubles achetables gardent leur identifiant (pid), leur type et leurs étages ;
+   ceux qui tombent sur une case redessinée sont seulement déplacés vers le lot bâti le plus proche.
+   Les autres bâtiments ajoutés sont du décor (pas achetables), donc l’économie ne change pas. */
+const PL={};
+const PLS={pl:null,cn:'',K:null};
+const PLOFF={};
+/* Déplacer un monument : on décale tout son dessin (iso est linéaire) */
+(()=>{Object.keys(LMDRAW).forEach(k=>{const f=LMDRAW[k];LMDRAW[k]=function(){const o=PLOFF[k];if(!o)return f.apply(this,arguments);const d=iso(o[0],o[1],o[2]||0);ctx.save();ctx.translate(d[0],d[1]);let r;try{r=f.apply(this,arguments)}finally{ctx.restore()}return r?[r[0]+d[0],r[1]+d[1]]:r}})})();
+const PLK0=Object.assign({},LMKEY);
+const plH=(x,y,k)=>v2Seed(x*7+3,y*13+5,k||0);
+const plBuildCh=c=>c>='A'&&c<='Z'&&!'PGWMQSIDFZ'.includes(c);
+function plDist(pl,ch){const P=cPal(),T0=TH_,d=(pl.d&&pl.d[ch])||{};
+  return Object.assign({walls:P.walls||T0.houses,roofs:[P.roof||T0.roofs[0],P.roof2||T0.roofs[0]],roof:T0.mansard?'mansard':T0.roofP>.5?'pitched':'flat',fl:T0.fl||[2,4],fill:.84,lot:1,gr:P.walk||'#D9D2C3',street:''},d)}
+function plApply(ci){
+  const cn=(CITIES[ci]||{}).n,pl=PL[cn];PLS.pl=null;PLS.cn=cn;PLS.K=null;
+  Object.keys(PLOFF).forEach(k=>delete PLOFF[k]);Object.keys(PLK0).forEach(k=>LMKEY[k]=PLK0[k]);
+  if(!pl)return;
+  /* 1. monuments déplacés ou ajoutés */
+  const lmRect=(t)=>{const l=LM.find(q=>q.t===t);if(!l)return null;const z=SLOTS[l.s];return z?z.slice():null};
+  const freeR=[],takeR=[];
+  Object.entries(pl.lm||{}).forEach(([t,o])=>{if(!LM.some(l=>l.t===t))return;PLOFF[t]=o;LMKEY[t]=(PLK0[t]||10)+o[0]+o[1];const r=lmRect(t);if(r){freeR.push(r);takeR.push([r[0]+o[0],r[1]+o[1],r[2],r[3]])}});
+  (pl.add||[]).forEach(([t,k,r])=>{if(!LM.some(l=>l.t===t))LM.push({t,s:'_'+t});LMKEY[t]=k;if(r)takeR.push(r)});
+  const inR=(x,y,r)=>x>=Math.round(r[0])&&x<Math.round(r[0]+r[2])&&y>=Math.round(r[1])&&y<Math.round(r[1]+r[3]);
+  freeR.forEach(r=>{for(let x=0;x<N;x++)for(let y=0;y<N;y++)if(inR(x,y,r)&&OCC[x][y]==='lm')OCC[x][y]=null});
+  takeR.forEach(r=>{for(let x=0;x<N;x++)for(let y=0;y<N;y++)if(inR(x,y,r)&&OCC[x][y]!=='road'&&OCC[x][y]!=='plot'&&OCC[x][y]!=='civic')OCC[x][y]='lm'});
+  /* 2. carte des cases redessinées */
+  const K=Array.from({length:N},()=>Array(N).fill('-'));
+  for(let y=0;y<N;y++){const row=(pl.map&&pl.map[y])||'';for(let x=0;x<N;x++){const o=OCC[x][y];if(o==='road'||o==='plot'||o==='civic')continue;let c=pl.fn?pl.fn(x,y):(row[x]||'-');if(c==='=')c='-';
+    if(o==='lm'&&plBuildCh(c))c=pl.lmGround||'Q';K[x][y]=c}}
+  if(pl.keepProps)DECOR.forEach(o=>{if(!o.pid)return;for(let x=Math.floor(o.x);x<Math.ceil(o.x+o.w);x++)for(let y=Math.floor(o.y);y<Math.ceil(o.y+o.d);y++)if(x>=0&&y>=0&&x<N&&y<N)K[x][y]='-'});
+  if(pl.noSea){WATER=false;ENTS=ENTS.filter(e=>!(e.boat||e.camel))}
+  /* 3. on retire ce qui se trouve sur les cases redessinées (les biens sont gardés pour être replacés) */
+  const legacy=[];DECOR=DECOR.filter(o=>{const x=Math.floor(o.w?o.x+o.w/2:o.x),y=Math.floor(o.d?o.y+o.d/2:o.y);if(x<0||y<0||x>=N||y>=N)return true;
+    if(o.t==='lamp')return K[x][y]!=='W'&&K[x][y]!=='M';
+    if(K[x][y]==='-')return true;if(o.pid){legacy.push(o);return false}return false});
+  /* 4. lots bâtis */
+  const aves=pl.aves||[];const onAve=(x,y,m)=>aves.some(([x0,y0,x1,y1,w])=>{const dx=x1-x0,dy=y1-y0,L=Math.hypot(dx,dy),u=((x-x0)*dx+(y-y0)*dy)/L/L;return u>=-.02&&u<=1.02&&Math.abs((x-x0)*dy-(y-y0)*dx)/L<w/2+(m||0)});
+  const cells=[];for(let x=0;x<N;x++)for(let y=0;y<N;y++){const c=K[x][y];if(plBuildCh(c)&&OCC[x][y]!=='lm'&&!onAve(x+.5,y+.5,.25))cells.push({x,y,c,used:false})}
+  /* biens existants : vers le lot libre le plus proche (même ordre à chaque chargement, donc mêmes places) */
+  const near=(o)=>{let best=null,bd=1e9;const cx=o.x+o.w/2,cy=o.y+o.d/2;for(const c of cells){if(c.used)continue;const d=Math.hypot(c.x+.5-cx,c.y+.5-cy)+plH(c.x,c.y,9)*.01;if(d<bd){bd=d;best=c}}return best};
+  legacy.sort((a,b)=>(+a.pid.slice(1)||0)-(+b.pid.slice(1)||0));
+  legacy.forEach(o=>{const c=near(o);if(!c){DECOR.push(o);return}c.used=true;const st=plDist(pl,c.c),g=(1-st.fill)/2,R=plH(c.x,c.y,3);
+    o.x=c.x+g;o.y=c.y+g;o.w=o.d=1-2*g;o.c=st.walls[(R*st.walls.length)|0];o.rc=st.roofs[(plH(c.x,c.y,4)*st.roofs.length)|0];o.roof=st.roof==='pitched';o.pl=1;DECOR.push(o)});
+  let id=0;
+  for(const c of cells){if(c.used)continue;const st=plDist(pl,c.c);const subs=st.lot===4?[[0,0],[.5,0],[0,.5],[.5,.5]]:st.lot===2?(plH(c.x,c.y,1)<.5?[[0,0],[.5,0]]:[[0,0],[0,.5]]):[[0,0]];
+    subs.forEach(([u,v],i)=>{const k=plH(c.x,c.y,10+i);if(st.lot>1&&k<(st.holes||.08))return;const sw=st.lot===4?.5:st.lot===2?(subs[1][0]?.5:1):1,sd=st.lot===4?.5:st.lot===2?(subs[1][1]?.5:1):1;
+      const g=(1-st.fill)/2*(st.lot>1?.6:1),gx=st.street.includes('y')?Math.max(g,.08):g,gy=st.street.includes('x')?Math.max(g,.08):g;
+      const s2=c.x+c.y,cap=s2>=21?5:s2>=17?9:99,f=Math.min(cap,st.fl[0]+Math.floor(plH(c.x,c.y,20+i)*(st.fl[1]-st.fl[0]+1)));
+      DECOR.push({t:'fountain',k2:'plb',x:c.x+u+gx,y:c.y+v+gy,w:sw-2*gx,d:sd-2*gy,f,hk:st.hk||1,c:st.walls[(plH(c.x,c.y,30+i)*st.walls.length)|0],rc:st.roofs[(plH(c.x,c.y,40+i)*st.roofs.length)|0],rt:st.roof,
+        tank:st.tank&&k<st.tank,ac:st.ac&&k>1-st.ac,glass:st.glass&&plH(c.x,c.y,50+i)<st.glass,min:st.min&&plH(c.x,c.y,60+i)<st.min,dome:st.dome&&plH(c.x,c.y,70+i)<st.dome,sig:st.sig,id:id++})})}
+  /* 5. végétation, bateaux, mobilier */
+  const tree=(x,y,s,k,c)=>DECOR.push({t:'tree',x,y,s,c:c||pk(mulberry((x*97+y*31)|0),['#3E8E41','#4E9F3D','#3E8E41']),k:k||TH_.tree||'round'});
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++){const c=K[x][y],r=plH(x,y,80);if(OCC[x][y]==='lm')continue;
+    if(c==='P'){tree(x+.3+r*.4,y+.3+plH(x,y,81)*.4,.85+r*.4,pl.parkTree);if(plH(x,y,82)<.5)tree(x+.15+plH(x,y,83)*.7,y+.15+plH(x,y,84)*.7,.7,pl.parkTree)}
+    else if(c==='G'){if(plH(x,y,85)<.35)tree(x+.1,y+.5,.7,pl.parkTree)}
+    else if(c==='Q'){if(pl.quayTree&&r<pl.quayTree)tree(x+.5,y+.5,.75,pl.parkTree)}
+    else if(c==='S'){if(pl.palms&&r<pl.palms)tree(x+.5,y+.5,.9,'palm')}
+    else if(c==='.'){if(r<.3)tree(x+.5,y+.5,.8)}}
+  aves.forEach(([x0,y0,x1,y1,w])=>{const L=Math.hypot(x1-x0,y1-y0),nx=-(y1-y0)/L,ny=(x1-x0)/L;for(let t=.6;t<L;t+=.9){[1,-1].forEach(s=>{const x=x0+(x1-x0)*t/L+nx*s*(w/2+.12),y=y0+(y1-y0)*t/L+ny*s*(w/2+.12),cx=Math.floor(x),cy=Math.floor(y);
+    if(cx<0||cy<0||cx>=N||cy>=N||K[cx][cy]==='-'||K[cx][cy]==='W'||OCC[cx][cy]==='lm')return;tree(x,y,.62,pl.aveTree||'round')})}});
+  (pl.extra||[]).forEach(o=>DECOR.push(Object.assign({t:'fountain'},o)));
+  (pl.boats||[]).forEach(p=>addEnt('ped',p,.32,{boat:pl.boatKind||'boat',loop:true}));
+  /* 6. occupation : plus rien de généré dessus */
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++){const c=K[x][y];if(c==='-'||OCC[x][y]==='lm')continue;OCC[x][y]=c==='P'||c==='G'?'park':c==='W'||c==='M'?'water':'decor'}
+  PLS.pl=pl;PLS.K=K;
+  computeNb();G.bucket=-1;
+  try{if(!(typeof GFX!=='undefined'&&GFX.thumb)){ENTS=ENTS.filter(e=>!e.vvProp);vvReset()}}catch(e){}
+}
+genCity=(f=>function(ci){f(ci);try{plApply(ci)}catch(e){console.warn(e)}})(genCity);
+
+/* ---------- Bâtiments de décor : dessinés une fois dans une petite image (recalculée si la lumière ou le zoom change) ---------- */
+function plBldG(g,o){const fl=o.f,hk=o.hk||1,h=fl*FH*hk,x=o.x,y=o.y,w=o.w,d=o.d,c=o.c,z0=o.z0||0,flat=o.rt!=='pitched'&&o.rt!=='mansard',L1=(a,b)=>{g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1])};
+  if(o.rt==='bubble'){const p=iso(x+w/2,y+d/2,z0),rx=Math.min(w,d)*40,ry=rx/2,hh=Math.min(54,h*.9+rx*.5);g.fillStyle=shade(o.rc||'#D5D5D5',1);g.beginPath();g.ellipse(p[0],p[1],rx,ry,0,0,7);g.fill();
+    const gr=g.createLinearGradient(p[0]-rx,0,p[0]+rx,0);gr.addColorStop(0,'rgba(225,245,255,.92)');gr.addColorStop(1,'rgba(140,180,210,.88)');g.fillStyle=gr;g.beginPath();g.ellipse(p[0],p[1]-1,rx*.94,hh,0,Math.PI,0);g.closePath();g.fill();
+    if(o.c&&o.c!=='#FFFFFF'){g.fillStyle=shade(o.c,1);g.globalAlpha=.45;g.beginPath();g.ellipse(p[0],p[1]-2,rx*.6,hh*.35,0,Math.PI,0);g.closePath();g.fill();g.globalAlpha=1}
+    g.strokeStyle='rgba(255,255,255,.75)';g.lineWidth=.8;for(let k=1;k<4;k++){g.beginPath();g.ellipse(p[0],p[1]-1,rx*.94*k/4,hh,0,Math.PI,0);g.stroke()}
+    if(NIGHT>.3){g.fillStyle=`rgba(255,214,94,${(.35*NIGHT).toFixed(2)})`;g.beginPath();g.ellipse(p[0],p[1]-4,rx*.55,hh*.45,0,Math.PI,0);g.closePath();g.fill()}
+    g.fillStyle='rgba(255,255,255,.6)';g.beginPath();g.ellipse(p[0]-rx*.42,p[1]-hh*.6,rx*.12,hh*.18,-.6,0,7);g.fill();return}
+  const r=v2gBox(g,x,y,w,d,h,c,flat?o.rc:c,z0);
+  v2gQ(g,r.fL,0,1,0,2,shade(c,.74));v2gQ(g,r.fR,0,1,0,2,shade(c,.56));
+  if(h>=FH*.7){const n=Math.max(1,Math.round(h/(FH*hk))),lit=NIGHT>.42,sd=(x*31+y*17)|0;g.lineCap='butt';
+    for(const [f,k,len] of [[r.fL,.86,w],[r.fR,.66,d]]){const a=f(.07,0),b=f(.93,0),L=Math.hypot(b[0]-a[0],b[1]-a[1]);if(L<3)continue;
+      const per=L/Math.max(2,Math.round(len*(o.glass?1:6))),dash=o.glass?[L,0]:[per*.55,per*.45];g.setLineDash(dash);g.lineWidth=o.glass?FH*.62*hk:FH*.36*hk;
+      g.strokeStyle=o.glass?shade('#9DBACB',k*1.1):shade(o.wc||'#5E6E7C',k*1.08);g.beginPath();
+      for(let j=0;j<n;j++){const z=(j+.55)*FH*hk;if(z>h-2)break;L1(f(.07,z),f(.93,z))}g.stroke();
+      if(lit){g.strokeStyle='#FFD98A';g.beginPath();for(let j=0;j<n;j++){if((sd+j)%4===0)continue;const z=(j+.55)*FH*hk;if(z>h-2)break;g.lineDashOffset=-((sd+j*7)%4)*per;L1(f(.07,z),f(.93,z))}g.setLineDash([per*.55,per*1.45]);g.stroke();g.lineDashOffset=0}}
+    g.setLineDash([])}
+  const zt=z0+h;
+  if(o.rt==='pitched'){const rh=Math.min(10,d*12),A=iso(x,y,zt),B=iso(x+w,y,zt),C=iso(x+w,y+d,zt),D=iso(x,y+d,zt),R1=iso(x,y+d/2,zt+rh),R2=iso(x+w,y+d/2,zt+rh);
+    poly(g,[A,B,R2,R1],shade(o.rc,.72));poly(g,[C,B,R2],shade(c,.62));poly(g,[D,C,R2,R1],shade(o.rc,.98));g.strokeStyle=shade(o.rc,.8);g.lineWidth=.5;g.beginPath();L1(sd3L(D,R1,.5),sd3L(C,R2,.5));g.stroke()}
+  else if(o.rt==='mansard'){const ins=Math.min(.12,w*.2),A=iso(x,y+d,zt),B=iso(x+w,y+d,zt),C=iso(x+w,y,zt),a=iso(x+ins,y+d-ins,zt+8),b=iso(x+w-ins,y+d-ins,zt+8),cc=iso(x+w-ins,y+ins,zt+8),dd=iso(x+ins,y+ins,zt+8);
+    poly(g,[A,B,b,a],shade(o.rc,.92));poly(g,[B,C,cc,b],shade(o.rc,.7));poly(g,[a,b,cc,dd],shade(o.rc,1.12));
+    if(w>.4){g.fillStyle=shade('#E8E2D2',1);for(const u of [.3,.7]){const p=sd3L(A,B,u),q2=sd3L(a,b,u);g.fillRect((p[0]+q2[0])/2-1.1,(p[1]+q2[1])/2-2.6,2.2,3)}}
+    v2gBox(g,x+w*.6,y+d*.2,.08,.08,5,'#C9826B','#B0563C',zt+6)}
+  else{v2gQ(g,r.fL,0,1,h-1.6,h,shade(c,1.02));v2gQ(g,r.fR,0,1,h-1.6,h,shade(c,.8));
+    if(o.tank){const p=iso(x+w*.3,y+d*.3,zt);g.fillStyle=shade('#8A6A4A',1);g.fillRect(p[0]-3,p[1]-9,6,7);g.fillStyle=shade('#6A5038',1);g.fillRect(p[0],p[1]-9,3,7);poly(g,[[p[0]-3.6,p[1]-9],[p[0]+3.6,p[1]-9],[p[0],p[1]-13]],shade('#5E4A38',1));g.strokeStyle=shade('#3A3A3A',1);g.lineWidth=.6;g.beginPath();L1([p[0]-2.5,p[1]],[p[0]-2.5,p[1]-2]);L1([p[0]+2.5,p[1]],[p[0]+2.5,p[1]-2]);g.stroke()}
+    else if(o.ac){v2gBox(g,x+w*.5,y+d*.2,Math.min(.22,w*.35),Math.min(.16,d*.3),3.5,'#B9BCBE','#C9CCCE',zt)}
+    if(o.min)v2gMinaret(g,x+w*.8,y+d*.2,34,'#EFE9DE',zt);
+    if(o.dome)v2gDome(g,x+w/2,y+d/2,Math.min(w,d)*.36,zt,o.sig==='gold'?'#D4AF37':'#9AA5AA')}
+  if(o.sig==='neon'&&fl>=3){const nc=NEON[o.id%4];v2gQ(g,r.fL,.8,.95,FH*.6,Math.min(h-3,FH*2.6),NIGHT>.3?nc:shade(nc,.9))}}
+function plBld(o){const s=Math.min(2.5,Math.max(1,Math.round(DPR*cam.z*2)/2)),key=G.bucket*10+s;
+  if(!o.sp||o.sk!==key){const h=o.f*FH*(o.hk||1),z0=o.z0||0,x0=iso(o.x,o.y+o.d)[0]-3,x1=iso(o.x+o.w,o.y)[0]+3,y0=iso(o.x,o.y,z0+h)[1]-(o.min?52:o.dome?36:o.rt==='bubble'?60:26),y1=iso(o.x+o.w,o.y+o.d,z0)[1]+3;
+    const cv=o.sp||document.createElement('canvas');cv.width=Math.max(1,Math.ceil((x1-x0)*s));cv.height=Math.max(1,Math.ceil((y1-y0)*s));const g=cv.getContext('2d');g.setTransform(s,0,0,s,-x0*s,-y0*s);
+    try{plBldG(g,o)}catch(e){}o.sp=cv;o.sk=key;o.bx=[x0,y0,x1-x0,y1-y0]}
+  ctx.drawImage(o.sp,o.bx[0],o.bx[1],o.bx[2],o.bx[3])}
+function plBoat(o){return plBoatG(ctx,o)}
+function plBoatG(ctx,o){const p=iso(o.x,o.y),s=o.r?1:-1;poly(ctx,[[p[0]-6,p[1]-1+s],[p[0]+6,p[1]-1-s],[p[0]+4.5,p[1]+1.5-s],[p[0]-4.5,p[1]+1.5+s]],shade(o.c,1));poly(ctx,[[p[0]-4,p[1]-1.5+s*.7],[p[0]+3,p[1]-1.6-s*.7],[p[0]+2,p[1]-.4],[p[0]-3,p[1]-.2]],shade('#C9B79C',1));
+  if(o.sail){ctx.strokeStyle=shade('#8A8A8A',1);ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(p[0],p[1]-1);ctx.lineTo(p[0],p[1]-15);ctx.stroke();poly(ctx,[[p[0]+.5,p[1]-14],[p[0]+.5,p[1]-2],[p[0]+5,p[1]-3]],shade('#FFFFFF',.98))}}
+c2Prop=(f=>function(o){if(o.k2==='plb')return plBld(o);if(o.k2==='plboat')return plBoat(o);if(o.k2==='plfn'&&PLFN[o.fn])return PLFN[o.fn](o);return f(o)})(c2Prop);
+const PLFN={};
+
+/* ---------- Sol des cases redessinées (cuit dans le cache du sol) ---------- */
+function plGround(){const pl=PLS.pl,K=PLS.K;if(!pl||!K)return;const g=G.cv.getContext('2d');g.setTransform(G.sc,0,0,G.sc,-G.minX*G.sc,-G.minY*G.sc);
+  const P=cPal(),T0=TH_,wc=pl.water||T0.water||P.water||'#4E8DB0',park=pl.park||T0.park||P.park,road=P.road||T0.road;
+  const isW=(x,y)=>x>=0&&y>=0&&x<N&&y<N&&(K[x][y]==='W'||K[x][y]==='M');
+  const quay=pl.quay||'#CFC6B4';
+  for(let x=0;x<N;x++)for(let y=0;y<N;y++){const c=K[x][y];if(c==='-')continue;const r=plH(x,y,5),Q4=(a,b,cc,d,col)=>poly(g,quadT(x+a,y+b,x+cc,y+d),col);
+    if(c==='W'||c==='M'){Q4(0,0,1,1,shade(wc,.98+r*.04));if(r<.6){const p=iso(x+plH(x,y,6),y+plH(x,y,7));g.globalAlpha=.3;g.strokeStyle=shade('#FFFFFF',1);g.lineWidth=1;g.beginPath();g.moveTo(p[0]-6,p[1]);g.quadraticCurveTo(p[0],p[1]-2,p[0]+6,p[1]);g.stroke();g.globalAlpha=1}
+      const e=.12,qc=shade(quay,1);if(!isW(x-1,y))Q4(0,0,e,1,qc);if(!isW(x+1,y))Q4(1-e,0,1,1,qc);if(!isW(x,y-1))Q4(0,0,1,e,qc);if(!isW(x,y+1))Q4(0,1-e,1,1,qc);
+      if(c==='M'){g.strokeStyle=shade('#8A7A62',1);g.lineWidth=1.2;const a=iso(x+.1,y+.5),b=iso(x+.9,y+.5);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();
+        for(let k=0;k<(pl.boatsPer||3);k++){const u=(k+.5)/(pl.boatsPer||3);plBoatG(g,{x:x+.12+u*.76,y:y+.5+(k%2?.2:-.2),sail:plH(x,y,99+k)<.75,c:plH(x,y,98+k)<.2?'#2E86AB':'#F7F5EF',r:k%2})}}continue}
+    if(c==='.'){continue}
+    if(c==='P'){Q4(0,0,1,1,shade(park,.96+r*.06));g.globalAlpha=.16;g.fillStyle=shade('#2F6A2A',1);const p=iso(x+.5,y+.5);g.beginPath();g.ellipse(p[0]+(r-.5)*10,p[1],12,6,0,0,7);g.fill();g.globalAlpha=1;continue}
+    if(c==='G'){const gG=(a,b)=>a>=0&&b>=0&&a<N&&b<N&&K[a][b]==='G',gc=shade(pl.gravel||'#E6DCC4',1),e=.16;Q4(0,0,1,1,shade(pl.lawn||'#8CC665',.98+r*.04));
+      if(!gG(x-1,y))Q4(0,0,e,1,gc);if(!gG(x+1,y))Q4(1-e,0,1,1,gc);if(!gG(x,y-1))Q4(0,0,1,e,gc);if(!gG(x,y+1))Q4(0,1-e,1,1,gc);if(pl.gAlley==='y')Q4(.46,0,.54,1,gc);if(pl.gAlley==='x')Q4(0,.46,1,.54,gc);continue}
+    if(c==='Q'||c==='I'){Q4(0,0,1,1,shade(pl.pave||'#E2D9C6',.97+r*.05));g.globalAlpha=.25;g.strokeStyle=shade('#9C9282',1);g.lineWidth=.4;for(let k=1;k<4;k++){const a=iso(x+k/4,y),b=iso(x+k/4,y+1);g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke()}g.globalAlpha=1;continue}
+    if(c==='S'){Q4(0,0,1,1,shade('#EBD9B0',.97+r*.05));continue}
+    if(c==='D'){Q4(0,0,1,1,shade('#E2C690',.96+r*.06));g.globalAlpha=.3;g.strokeStyle=shade('#C9A86A',1);g.lineWidth=.8;const a=iso(x+.1,y+.3+r*.4),b=iso(x+.9,y+.2+r*.4);g.beginPath();g.moveTo(a[0],a[1]);g.quadraticCurveTo((a[0]+b[0])/2,(a[1]+b[1])/2-4,b[0],b[1]);g.stroke();g.globalAlpha=1;continue}
+    if(c==='F'){Q4(0,0,1,1,shade(pl.fieldA||'#9CC46A',1));g.globalAlpha=.5;for(let k=0;k<4;k++)Q4(k/4+.04,.06,k/4+.16,.94,shade(pl.fieldB||'#6E9A48',1));g.globalAlpha=1;continue}
+    if(c==='Z'){Q4(0,0,1,1,shade('#F2EEE4',1));g.strokeStyle=shade('#2B2B2B',1);g.lineWidth=1.1;g.beginPath();for(let k=0;k<=8;k++){const p=iso(x+.5+Math.sin(k*1.6)*.28,y+k/8);k?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])}g.stroke();continue}
+    /* quartier bâti : sol minéral, ruelles */
+    const st=plDist(pl,c);Q4(0,0,1,1,shade(st.gr,.98+r*.04));
+    if(st.street.includes('x'))Q4(0,0,1,.13,shade(st.lane||road,1));if(st.street.includes('y'))Q4(0,0,.13,1,shade(st.lane||road,1))}
+  /* avenues */
+  if(pl.aves){g.save();g.beginPath();for(let x=0;x<N;x++)for(let y=0;y<N;y++){const c=K[x][y];if(c==='-'||c==='W'||c==='M'||c==='P')continue;const p=quadT(x,y,x+1,y+1);g.moveTo(p[0][0],p[0][1]);for(let i=1;i<4;i++)g.lineTo(p[i][0],p[i][1]);g.closePath()}g.clip();
+    pl.aves.forEach(([x0,y0,x1,y1,w])=>{const L=Math.hypot(x1-x0,y1-y0),nx=-(y1-y0)/L*w/2,ny=(x1-x0)/L*w/2;poly(g,[iso(x0+nx,y0+ny),iso(x1+nx,y1+ny),iso(x1-nx,y1-ny),iso(x0-nx,y0-ny)],shade(pl.aveCol||P.walk||'#D9D2C3',1));
+      const k=.62;poly(g,[iso(x0+nx*k,y0+ny*k),iso(x1+nx*k,y1+ny*k),iso(x1-nx*k,y1-ny*k),iso(x0-nx*k,y0-ny*k)],shade(road,1))});g.restore()}
+  /* ponts : parapets sur les routes qui traversent l’eau */
+  for(let i=0;i<N;i++)ROADS.forEach(rd=>{[[rd,i,1],[i,rd,0]].forEach(([x,y,vert])=>{if(vert?(isW(x-1,y)&&isW(x+1,y)):(isW(x,y-1)&&isW(x,y+1))){const pc=shade('#E4DED2',1),sh=shade('#9A9488',1);
+    if(vert){poly(g,quadT(x+.02,y,x+.12,y+1),pc);poly(g,quadT(x+.88,y,x+.98,y+1),pc);poly(g,quadT(x-.06,y,x+.02,y+1),sh);poly(g,quadT(x+.98,y,x+1.06,y+1),sh)}
+    else{poly(g,quadT(x,y+.02,x+1,y+.12),pc);poly(g,quadT(x,y+.88,x+1,y+.98),pc);poly(g,quadT(x,y-.06,x+1,y+.02),sh);poly(g,quadT(x,y+.98,x+1,y+1.06),sh)}}})});
+  if(pl.ground)try{pl.ground(g,K)}catch(e){console.warn(e)}
+}
+buildGround=(f=>function(){f();if(PLS.pl)try{plGround()}catch(e){console.warn(e)}})(buildGround);
+/* Détails de couronne propres aux plans (remplacent ceux du bloc VILLES2 quand la ville a changé de géographie) */
+v2RingExtras=(f=>function(cn,geo,items,K){const pl=PL[cn];if(pl&&pl.ringX){const fn=(x,y,h)=>items.push({k:x+y,x,y,fn:h});pl.ringX(fn,K);return}return f.apply(this,arguments)})(v2RingExtras);
+function plRingBoat(fn,x,y,col,sail){fn(x,y,(g,H)=>{const p=iso(x,y);poly(g,[[p[0]-6,p[1]-1],[p[0]+6,p[1]-1],[p[0]+4.5,p[1]+1.6],[p[0]-4.5,p[1]+1.6]],shade(v2Mix(col,H.c,H.f),1));if(sail)poly(g,[[p[0],p[1]-2],[p[0],p[1]-15],[p[0]+6,p[1]-3]],shade(v2Mix('#F7F3EA',H.c,H.f),1))})}
+
+/* =================== Recettes des villes =================== */
+/* Paris : la Seine traverse le fond du plateau, île de la Cité (Notre-Dame) et île Saint-Louis, quais plantés ;
+   rive gauche : la tour Eiffel au bord du Champ-de-Mars, îlots haussmanniens aux toits de zinc, avenues en biais ;
+   rive droite (au-delà du fleuve) : le Louvre et les Tuileries, l’Arc de Triomphe au centre de l’Étoile. */
+PL['Paris']={noSea:1,quayTree:.55,pave:'#E6DCC2',quay:'#D8CDB4',gravel:'#E9DFC6',lawn:'#8DC468',
+  map:['WWWW=WWWWW=WWWWW=WWW',
+       'WWWW=WWWWW=IIIII=III',
+       'WWWW=WWWWW=WWWWW=WWW',
+       'QQQQ=QQQQQ=QQQQQ=QQQ',
+       '====================',
+       'GGGG=BBBBB=BBBBB=BBB',
+       'GGGG=BBBBB=BBBBB=BBB',
+       'GGGG=BBBBB=BBBBB=BBB',
+       'GGGG=BBBBB=BBBBB=BBB',
+       'GGGG=BBBBB=BBBBB=BBB',
+       '====================',
+       'GGGG=-----=--BBB=---',
+       'GGGG=-----=--BBB=---',
+       'GGGG=-----=--BBB=---',
+       'GGGG=-----=--BBB=---',
+       'BBBB=-----=--BBB=BBB',
+       '====================',
+       'BBBB=BBBBB=BBBBB=BBB',
+       'BBBB=BBBBB=BBBBB=BBB',
+       'BBBB=BBBBB=BBBBB=BBB'],
+  d:{B:{walls:['#F0E4C4','#EAD9B4','#F4E9CC','#E8DCC0'],roofs:['#6E7B87','#7D8A96','#66727E'],roof:'mansard',fl:[5,6],fill:.96,street:'',gr:'#D8CDB4',wc:'#8494A2'}},gAlley:'y',
+  aves:[[0,19.8,4.6,15.2,.7],[10.5,15.2,19.8,17.6,.6],[5,19.9,9.6,15.4,.6]],aveCol:'#E2D7BF',
+  lm:{louvre:[5.2,-16.6],arc:[-15.6,-7.4]},add:[['notredame',15.6,[11,1,5,1]]],
+  boats:[[[-2,.6],[N+2,.6]],[[N+2,2.4],[-2,2.4]]],
+  ringX:(fn)=>{plRingBoat(fn,-6,1.4,'#F2F2F2');plRingBoat(fn,24,1.6,'#E5E5E5')}};
+LMDRAW.notredame=()=>{const W='#E8DDC6',R='#5E6B78';const r=box(12.6,1.18,2.3,.64,26,W,{top:R});for(let k=0;k<8;k++)q(r.fL,.06+k*.115,.11+k*.115,8,20,shade('#5A5048',1));pitched(12.6,1.18,2.3,.64,26,R,W);
+  [[12.1,1.1],[12.1,1.55]].forEach(([x,y])=>{const t=box(x,y,.42,.38,48,W,{top:'#D8CCB2'});q(t.fL,.3,.7,30,44,shade('#4A4038',1))});const rose=iso(12.1,1.5,30);ctx.fillStyle=shade('#4A4038',1);ctx.beginPath();ctx.arc(rose[0]-6,rose[1]+6,3,0,7);ctx.fill();
+  box(14.5,1.0,.5,1.0,22,W,{top:R});const s=iso(13.6,1.5,30);ctx.strokeStyle=shade('#7A8590',1);ctx.lineWidth=1.4;line(s,[s[0],s[1]-30]);ctx.fillStyle=shade('#7A8590',1);ctx.beginPath();ctx.moveTo(s[0]-2.5,s[1]-6);ctx.lineTo(s[0],s[1]-30);ctx.lineTo(s[0]+2.5,s[1]-6);ctx.fill();
+  ctx.strokeStyle=shade(W,.85);ctx.lineWidth=1;for(let k=0;k<5;k++){const a=iso(12.8+k*.4,1.82,4),b=iso(12.8+k*.4,1.82,18);line([a[0],a[1]+4],b)}
+  /* square et pointe de l’île */
+  tree({x:15.4,y:1.5,s:.7,c:'#3E8E41',k:'round'});tree({x:11.4,y:1.4,s:.65,c:'#4E9F3D',k:'round'});return [s[0],s[1]-32]};
+Object.assign(V2GEO['Paris'],{water:(x,y)=>(y>=0&&y<2.95&&(x<0||x>=N))||(x>=-5.4&&x<-2.6&&y>=2.95&&y<30),isle:(x,y)=>x>=N&&y>=1&&y<2&&x<23,
+  park:[[1,-4.6,5.2,-1.2],[-4.8,-8,-.2,-3.2],[-2.4,4,0,30]],star:[-2.4,-5.6]});
+
+/* Marseille : le Vieux-Port, bassin rectangulaire plein de voiliers, entre dans la ville par l’ouest ; au sud,
+   la colline de Notre-Dame-de-la-Garde ; au nord le Panier (ruelles serrées) ; partout des toits de tuiles orangées. */
+PL['Marseille']={quay:'#D9CDB2',pave:'#E9DCC2',quayTree:.35,boatsPer:4,
+  map:['OOOO=OOOOO=-----=BBB',
+       'OOOO=OOOOO=-----=BBB',
+       'OOOO=OOOOO=-----=BBB',
+       'OOOO=OOOOO=-----=BBB',
+       '====================',
+       'MMMM=-----=BBBBB=BBB',
+       'MMMM=BBBBB=BBBBB=BBB',
+       'MMMM=BBBBB=BBBBB=BBB',
+       'MMMM=BBBBB=BBBBB=BBB',
+       'MMMM=BBBBB=BBBBB=BBB',
+       '====================',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{O:{walls:['#F2D3A0','#EBC28E','#F4E2C4','#E8B08A','#F0CDA8','#DDA77E'],roofs:['#C9603A','#B4532F','#D0703F'],roof:'pitched',fl:[3,4],lot:2,fill:.9,gr:'#D9C9A8',holes:.04},
+     B:{walls:['#F4E6CF','#EED9B6','#F2C98F','#E9B58A','#F7F1E4'],roofs:['#C9603A','#A94C2E','#D0703F'],roof:'pitched',fl:[4,6],fill:.9,gr:'#E2D3B6'}},
+  parkTree:'round',lm:{ndgarde:[0,6.4]},
+  ringX:(fn)=>{for(let i=0;i<22;i++){const x=-5.6+(i%5)*1.1+v2Seed(i,1)*.3,y=5.4+Math.floor(i/5)*1.05;plRingBoat(fn,x,y,'#F2F2F2',true)}
+    [[-6.6,4.4],[-6.6,10.2]].forEach(([x,y])=>fn(x,y,(g,H)=>{v2gBox(g,x-.7,y-.5,1.4,1,16,v2Mix('#E2D2B0',H.c,H.f),v2Mix('#D2C2A0',H.c,H.f))}));plRingBoat(fn,3,22,'#F2F2F2',true);plRingBoat(fn,12,23.5,'#2E86AB')}};
+Object.assign(V2GEO['Marseille'],{water:(x,y)=>y>=19.6||x<-7.2+.6*Math.sin(y*.4)||(x<0&&y>=5&&y<10)});
+/* Nantes : le château des ducs dans ses douves, le Bouffay aux ruelles serrées, le jardin des Plantes à l’est,
+   pierre de tuffeau blanche et ardoise, quais plantés au bord de la Loire. */
+PL['Nantes']={quayTree:.5,lmGround:'Q',
+  map:['OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       '====================',
+       'WWWW=-----=BBBBB=PPP',
+       'WQQW=BBBBB=BBBBB=PPP',
+       'WQQW=BBBBB=BBBBB=PPP',
+       'WQQW=BBBBB=BBBBB=BBB',
+       'WWWW=BBBBB=BBBBB=BBB',
+       '====================',
+       'BBBB=-----=--BBB=---',
+       'BBBB=-----=--BBB=---',
+       'BBBB=-----=--BBB=---',
+       'BBBB=-----=--BBB=---',
+       'BBBB=-----=--BBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#F2EEE4','#EAE4D6','#E4DCCA','#F4F0E6'],roofs:['#4F5B66','#56616C','#46515C'],roof:'pitched',fl:[4,5],fill:.92,gr:'#DCD6C8',wc:'#6A7682'},
+     O:{walls:['#F2EEE4','#E8DCC4','#EFE6D6','#D9C9A8'],roofs:['#4F5B66','#5A4A40'],roof:'pitched',fl:[3,4],lot:2,fill:.9,gr:'#D6CFC0',holes:.05}}};
+
+/* Lyon : la Presqu’île entre Saône (à l’ouest, dans la couronne) et Rhône (au sud), façades ocre, rose et orange,
+   toits de tuiles ; Fourvière sur sa colline de l’autre côté de la Saône ; les pentes de la Croix-Rousse au nord ;
+   la place Bellecour ; le parc de la Tête d’Or au nord-est ; la Part-Dieu et sa tour Crayon. */
+PL['Lyon']={quayTree:.6,lm:{fourviere:[-8.8,0,22]},
+  map:['CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       '====================',
+       'QBBB=-----=BBBBB=BBB',
+       'QBBB=BBBBB=BBBBB=BBB',
+       'QBBB=BBBBB=BBBBB=BBB',
+       'QBBB=BBBBB=BBBBB=BBB',
+       'QBBB=BBBBB=BBBBB=BBB',
+       '====================',
+       'QBBB=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#E6A272','#EFC283','#D98C6C','#ECB98E','#E7CFA0','#F2D6A8','#E58360'],roofs:['#B65A3C','#9A4B33','#C46A44'],roof:'pitched',fl:[5,6],fill:.93,gr:'#E2D0B2'},
+     C:{walls:['#E7CFA0','#F2D6A8','#D9B48A','#EFC283','#D8C6A6'],roofs:['#B65A3C','#9A4B33'],roof:'pitched',fl:[6,7],fill:.9,gr:'#D9C6A6',street:'x'}}};
+Object.assign(V2GEO['Lyon'],{park:[[-8.2,5.4,-5.4,9.6]]});
+
+/* Londres : briques et stuc blanc, toits d’ardoise et cheminées ; Westminster et Big Ben à l’ouest, St James’s Park,
+   Trafalgar Square, le London Eye au bord de la Tamise, les tours de verre de la City à l’est, quais plantés. */
+PL['Londres']={quayTree:.7,lm:{eye:[0,2.6]},lmGround:'Q',
+  map:['BBBB=BBBBB=-----=TTT',
+       'BBBB=BBBBB=-----=TTT',
+       'BBBB=BBBBB=-----=TTT',
+       'BBBB=BBBBB=-----=TTT',
+       '====================',
+       '----=-----=BBBBB=TTT',
+       '----=QQBBB=BBBBB=TTT',
+       '----=QQBBB=BBBBB=TTT',
+       '----=QBBBB=BBBBB=TTT',
+       '----=QBBBB=BBBBB=TTT',
+       '====================',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'PPPP=-----=--BBB=---',
+       'QQQQ=-----=--BBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#9A5038','#A65E42','#874834','#B26B4C','#EDE8DC','#8F5A44','#F2EEE4'],roofs:['#4A525C','#3F4751'],roof:'pitched',fl:[3,4],lot:2,fill:.92,gr:'#C9C2B6',holes:.03},
+     T:{walls:['#9DB4C4','#B8C4CC','#7F95A6','#C9D3D8','#6F8EA0'],roofs:['#6A747C'],roof:'flat',fl:[11,19],fill:.8,glass:.65,ac:.5,gr:'#BFC4C8'}},
+  extra:[{k2:'plfn',fn:'nelson',x:5.6,y:6.6}]};
+PLFN.nelson=o=>{const p=iso(o.x,o.y);box(o.x-.18,o.y-.18,.36,.36,10,'#D8D2C2',{top:'#C9C2B0'});cyl(o.x,o.y,.06,56,'#E2DCCC',{z0:10});const t=iso(o.x,o.y,66);ctx.fillStyle=shade('#5A5E64',1);ctx.fillRect(t[0]-1.5,t[1]-6,3,6);
+  [[-.5,.2],[.2,-.5]].forEach(([dx,dy])=>{const q2=iso(o.x+dx,o.y+dy);ctx.fillStyle=shade('#5FB3E0',1);ctx.beginPath();ctx.ellipse(q2[0],q2[1],8,4,0,0,7);ctx.fill()})};
+
+/* Istanbul : la Corne d’Or coupe le haut du plateau (pont de Galata), la tour de Galata sur l’autre rive ;
+   la péninsule historique en maisons de bois et tuiles, coupoles et minarets ; le parc de Gülhane à l’est. */
+PL['Istanbul']={quayTree:.4,lm:{galata:[0,-1.5]},boatKind:'boat',
+  map:['CCCC=CCCCC=-----=CCC',
+       'CCCC=CCCCC=-----=CCC',
+       'WWWW=WWWWW=WWWWW=WWW',
+       'QQQQ=QQQQQ=QQQQQ=QQQ',
+       '====================',
+       '----=-----=BBBBB=PPP',
+       '----=BBBBB=BBBBB=PPP',
+       '----=BBBBB=BBBBB=PPP',
+       '----=BBBBB=BBBBB=BBB',
+       '----=BBBBB=BBBBB=BBB',
+       '====================',
+       'BBBB=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#EADBC0','#E7C9A0','#F2E6D2','#DDB89A','#E9D7B8','#CFC2AE','#E4C4B4','#B98A6A'],roofs:['#B4573D','#9A4632','#A94C2E'],roof:'pitched',fl:[2,4],lot:2,fill:.9,gr:'#D9CDB8',holes:.05,dome:.05,min:.04},
+     C:{walls:['#EADBC0','#E4C4B4','#F2E6D2','#CFC2AE'],roofs:['#B4573D','#9A4632'],roof:'pitched',fl:[5,6],fill:.9,gr:'#D6CBB8'}},
+  boats:[[[-2,2.5],[N+2,2.5]],[[N+2,2.6],[-2,2.6]]]};
+Object.assign(V2GEO['Istanbul'],{water:(f=>(x,y)=>f(x,y)||(y>=2&&y<3.95&&(x<0||x>=N)))(V2GEO['Istanbul'].water)});
+
+/* New York : Central Park tout le haut du plateau (le Reservoir), la grille de Manhattan avec ses rues étroites,
+   Broadway en biais, le Chrysler à l’est, l’Empire State à l’ouest, Battery Park face à la statue de la Liberté. */
+PL['New York']={lm:{chrysler:[5,5]},parkTree:'round',
+  map:['PPPP=PPPPP=PPPPP=CCC',
+       'PPPP=PWWWP=PPPPP=CCC',
+       'PPPP=PWWWP=PPPPP=CCC',
+       'PPPP=PPPPP=PPPPP=CCC',
+       '====================',
+       '----=-----=TTTTT=---',
+       '----=TTTTT=TTTTT=---',
+       '----=TTTTT=TTTTT=---',
+       '----=TTTTT=TTTTT=TTT',
+       '----=TTTTT=TTTTT=TTT',
+       '====================',
+       'TTTT=-----=--TTT=---',
+       'TTTT=-----=--TTT=---',
+       'TTTT=-----=--TTT=---',
+       'TTTT=-----=--TTT=---',
+       'TTTT=-----=--TTT=TTT',
+       '====================',
+       'PPPP=-----=TTTTT=TTT',
+       '--------------------',
+       '--------------------'],
+  d:{T:{walls:['#8A5843','#A6704E','#C2B9A8','#7B6152','#9AA2A8','#D8D0C0','#6E7F8E','#B8BEC2'],roofs:['#5A5E64','#6A6A68'],roof:'flat',fl:[9,17],fill:.86,street:'x',tank:.35,glass:.22,gr:'#B9BEC2',lane:'#4A4E55'},
+     C:{walls:['#8A5843','#7B5446','#9C6A52','#B08A70','#D8D0C0'],roofs:['#4B4F54'],roof:'flat',fl:[5,7],fill:.88,street:'x',tank:.3,gr:'#B9BEC2',lane:'#4A4E55'}},
+  aves:[[.6,4.6,9.4,19.4,.5]],aveCol:'#C9CDD1'};
+Object.assign(V2GEO['New York'],{park:[[0,-8.8,16,0]]});
+
+/* Tokyo : petits immeubles serrés et ruelles dans les deux sens, toits plats et clims, enseignes à Ginza,
+   tours de verre au nord, la Sumida à l’est jusqu’à la baie, le parc d’Hibiya, le carrefour de Shibuya. */
+PL['Tokyo']={quayTree:.5,parkTree:'round',
+  map:['TTTT=TTTTT=-----=BWW',
+       'TTTT=TTTTT=-----=BWW',
+       'TTTT=TTTTT=-----=BWW',
+       'TTTT=TTTTT=-----=BWW',
+       '====================',
+       '----=-----=CCCCC=BWW',
+       '----=BBBBB=CCCCC=BWW',
+       '----=BBBBB=CCCCC=BWW',
+       '----=BBBBB=CCCCC=BBW',
+       '----=BBBBB=CCCCC=BBW',
+       '====================',
+       'PPPP=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=BBB',
+       '====================',
+       'BBBB=-----=BBBBB=BBB',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#EEECE7','#DADCD9','#C8CDD2','#E7E0D4','#D3C7B4','#B9BEC2'],roofs:['#8A8E92','#9C9C98','#A8ACA8'],roof:'flat',fl:[2,5],lot:4,fill:.86,street:'xy',ac:.55,gr:'#C9CCCC',lane:'#5A5E66',holes:.04},
+     C:{walls:['#E7E0D4','#C8CDD2','#EEECE7','#D3C7B4'],roofs:['#8A8E92'],roof:'flat',fl:[5,8],lot:2,fill:.88,street:'x',ac:.4,sig:'neon',gr:'#C9CCCC',lane:'#5A5E66'},
+     T:{walls:['#A9BCC8','#8FA3B0','#C4CED4','#B7C4CC'],roofs:['#7A848C'],roof:'flat',fl:[13,22],fill:.8,glass:.85,ac:.5,gr:'#C9CCCC'}},
+  ground:(g)=>{const x=10,y=10;g.strokeStyle=shade('#F2F2F2',1);g.lineWidth=1.6;g.setLineDash([2,2.4]);[[x+.1,y+.1,x+.9,y+.9],[x+.9,y+.1,x+.1,y+.9]].forEach(([a,b,c,d])=>{const p=iso(a,b),q2=iso(c,d);g.beginPath();g.moveTo(p[0],p[1]);g.lineTo(q2[0],q2[1]);g.stroke()});g.setLineDash([])}};
+Object.assign(V2GEO['Tokyo'],{water:(f=>(x,y)=>f(x,y)||(x>=N&&x<N+2.6))(V2GEO['Tokyo'].water)});
+
+/* Sydney : le port en bas, l’Opéra sur sa pointe à l’est de Circular Quay, The Rocks en grès près du pont,
+   les tours du CBD, les maisons mitoyennes des collines, Hyde Park et le Jardin botanique. */
+PL['Sydney']={quayTree:.4,lm:{opera:[6.6,0]},
+  map:['CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       'CCCC=CCCCC=-----=PPP',
+       '====================',
+       '----=-----=TTTTT=PPP',
+       '----=TTTTT=TTTTT=PPP',
+       '----=TTTTT=TTTTT=PPP',
+       '----=TTTTT=TTTTT=TTT',
+       '----=TTTTT=TTTTT=TTT',
+       '====================',
+       'TTTT=-----=--TTT=---',
+       '----=-----=--TTT=---',
+       '----=-----=--TTT=---',
+       '----=-----=--TTT=---',
+       '----=-----=--TTT=PPP',
+       '====================',
+       'OOOO=OOOOO=W----=PPP',
+       '--------------------',
+       '--------------------'],
+  d:{T:{walls:['#9DB8C8','#7FA2B6','#D9C29A','#C9D3D8','#6F8EA0'],roofs:['#6A747C'],roof:'flat',fl:[10,20],fill:.82,glass:.7,ac:.4,gr:'#CFCBC2'},
+     C:{walls:['#E6CFA2','#F2EFE8','#C9B086','#B5664A','#D8C29A','#A85A3E'],roofs:['#A9472F','#8E3F2C','#5A6570'],roof:'pitched',fl:[2,2],lot:2,fill:.9,street:'x',gr:'#D8D2C2'},
+     O:{walls:['#D9B983','#CFAE78','#E2C896','#C9A06A'],roofs:['#8E3F2C','#5A6570'],roof:'pitched',fl:[2,3],lot:2,fill:.9,gr:'#D8C8A8'}}};
+
+/* Dubaï : la Sheikh Zayed Road bordée de tours de verre, le lac de Burj Khalifa à ses pieds, le parc de Zabeel
+   autour du Frame, les villas blanches de Jumeirah et la plage avec ses palmiers. */
+PL['Dubaï']={palms:.5,parkTree:'palm',
+  map:['TTTT=TTTTT=TTTTT=TTT',
+       'TTTT=TTTTT=TTTTT=TTT',
+       'TTTT=TTTTT=TTTTT=TTT',
+       'TTTT=TTTTT=TTTTT=TTT',
+       '====================',
+       '----=-----=TTTTT=TTT',
+       '----=VVVVV=TTTTT=TTT',
+       '----=VVVVV=VVVVV=TTT',
+       '----=VVVVV=VVVVV=VVV',
+       '----=VVVVV=VVVVV=VVV',
+       '====================',
+       'WWWW=-----=--VVV=---',
+       '----=-----=--VVV=---',
+       '----=-----=--VVV=---',
+       '----=-----=--VVV=---',
+       '----=-----=--VVV=VVV',
+       '====================',
+       'SSSS=-----=SSSSS=SSS',
+       '--------------------',
+       '--------------------'],
+  water:'#3FB8C9',
+  d:{T:{walls:['#AEB8C4','#C9D1D9','#9FB2C2','#E6E2D6','#8FA4B4','#B9C6CC'],roofs:['#C9D1D9'],roof:'flat',fl:[14,26],fill:.72,glass:.85,ac:.3,gr:'#E9DFC9'},
+     V:{walls:['#F2E6D0','#E8DCC4','#F7F3EA','#EADFC9'],roofs:['#D8C7A6'],roof:'flat',fl:[1,2],lot:2,fill:.78,gr:'#E9DCC0',holes:.25}}};
+
+/* Le Caire : la vieille ville islamique aux minarets et coupoles au nord, le centre-ville khédivial aux toits
+   plats chargés de citernes, la place Tahrir près du Nil, le parc al-Azhar, la corniche plantée de palmiers. */
+PL['Le Caire']={quayTree:.5,parkTree:'palm',
+  map:['OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       'OOOO=OOOOO=-----=PPP',
+       '====================',
+       '----=-----=BBBBB=PPP',
+       '----=BBBBB=BBBBB=PPP',
+       '----=BBBBB=BBBBB=PPP',
+       '----=BBBBB=BBBBB=BBB',
+       '----=BBBBB=BBBBB=BBB',
+       '====================',
+       'BBBB=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=QQBBB=---',
+       '----=-----=QQBBB=---',
+       '----=-----=QQBBB=BBB',
+       '====================',
+       'QQQQ=-----=QQQQQ=QQQ',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#D6BF9A','#C9AD86','#E2D0AE','#BFA07A','#B5976F','#CDB590'],roofs:['#BFA883','#B09A76'],roof:'flat',fl:[5,8],fill:.9,tank:.45,gr:'#D9C9A6'},
+     O:{walls:['#D6BF9A','#E2D0AE','#CDB590','#C2A27A','#A88C68'],roofs:['#BFA883'],roof:'flat',fl:[2,4],lot:2,fill:.92,gr:'#D2BF98',min:.08,dome:.06,holes:.03}}};
+
+/* Rio : le Christ sur le Corcovado, une favela colorée accrochée à la colline, le Centro, le calçadão en vagues
+   noires et blanches le long de Copacabana, le parc du Flamengo et la plage de Botafogo sur la baie. */
+PL['Rio de Janeiro']={palms:.45,parkTree:'palm',quayTree:.5,
+  map:['OOOO=OOOOO=-----=TTZ',
+       'OOOO=OOOOO=-----=TTZ',
+       'OOOO=BBBBB=-----=TTZ',
+       'OOOO=BBBBB=-----=TTZ',
+       '====================',
+       '----=-----=BBBBB=TTZ',
+       '----=BBBBB=BBBBB=TTZ',
+       '----=BBBBB=BBBBB=TTZ',
+       '----=BBBBB=BBBBB=TTZ',
+       '----=BBBBB=BBBBB=TTZ',
+       '====================',
+       'BBBB=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=---',
+       '----=-----=--BBB=TTZ',
+       '====================',
+       'PPPP=-----=SSSSS=SSS',
+       '--------------------',
+       '--------------------'],
+  d:{B:{walls:['#F2EFE8','#E6E0D2','#F7C948','#86BDF0','#F59AB8','#DCD4C4'],roofs:['#8A8E92','#D2643C'],roof:'flat',fl:[6,11],fill:.86,ac:.4,gr:'#E6DFD0'},
+     T:{walls:['#F2EFE8','#E6E0D2','#DCD4C4','#F7F3EA'],roofs:['#B9BCBE'],roof:'flat',fl:[10,14],fill:.84,ac:.4,gr:'#EFE6D2'},
+     O:{walls:['#E8A26A','#F2C27A','#D9786A','#8FC0D8','#E6D0A8','#C98E6A','#9BC27A','#F59AB8'],roofs:['#8A8A86','#B5643E'],roof:'flat',fl:[1,2],lot:4,fill:.94,gr:'#B9A27A',holes:.02}}};
+
+/* Shanghai : le Huangpu traverse le fond du plateau ; sur le quai, le Bund et ses façades à coupoles ;
+   en face, dans la couronne, Pudong avec la Perle de l’Orient et la Shanghai Tower ; derrière, les lilongs
+   en brique grise et le jardin Yuyuan. */
+PL['Shanghai']={noSea:1,quayTree:.6,lm:{pearl:[4.2,-12.2],shanghaitower:[-1.8,-7.4],bund:[0,-6.8]},
+  map:['WWWW=WWWWW=WWWWW=WWW',
+       'WWWW=WWWWW=WWWWW=WWW',
+       'WWWW=WWWWW=WWWWW=WWW',
+       'QQQQ=QQQQQ=QQQQQ=QQQ',
+       '====================',
+       '----=-----=UUUUU=UUU',
+       '----=BBBBB=UUUUU=UUU',
+       '----=BBBBB=UUUUU=UUU',
+       '----=BBBBB=BBBBB=BBB',
+       '----=BBBBB=BBBBB=BBB',
+       '====================',
+       'BBBB=-----=--BBB=---',
+       'OOOO=-----=--BBB=---',
+       'OOOO=-----=--BBB=---',
+       'OOOO=-----=--BBB=---',
+       'OOOO=-----=--BBB=OOO',
+       '====================',
+       'OOOO=OPPPO=OOOOO=OOO',
+       'OOOO=OPPPO=OOOOO=OOO',
+       'OOOO=OOOOO=OOOOO=OOO'],
+  d:{U:{walls:['#D8CDB4','#CFC2A6','#E2D8C2','#C9BEA6'],roofs:['#8E9A8E','#6E7A70'],roof:'flat',fl:[6,8],fill:.94,dome:.18,gr:'#D8D2C4',wc:'#5E6670'},
+     B:{walls:['#9A958F','#B0AAA2','#ECE6DB','#C9C2B6','#8FA3B0','#DCD4C4'],roofs:['#6E6E6E','#3A3F47'],roof:'flat',fl:[6,12],fill:.86,ac:.4,glass:.2,gr:'#C9C2B6'},
+     O:{walls:['#9A958F','#B0AAA2','#BE5A43','#DCD4C4','#8E8A84'],roofs:['#3A3F47','#4A4F57'],roof:'pitched',fl:[2,2],lot:2,fill:.9,street:'x',gr:'#B9B2A6',lane:'#8E8A84'}},
+  boats:[[[-2,.6],[N+2,.6]],[[N+2,2.2],[-2,2.2]],[[-2,1.4],[N+2,1.4]]]};
+Object.assign(V2GEO['Shanghai'],{water:(x,y)=>(y>=-.05&&y<2.95&&(x<0||x>=N)),tall:(x,y)=>y<-1.2,park:[[4.6,-6.2,7.6,-2.8],[10.4,-6.8,12.6,-4.4]]});
+
+/* Atlantide : la ville des cercles d’eau de Platon, canaux lumineux en anneau, jardins de corail, bulles de verre. */
+PL['Atlantide']={keepProps:1,fn:(x,y)=>{const d=Math.hypot(x+.5-10,y+.5-10);if(d>=8.1&&d<9.3)return 'W';if(d>=9.3)return (x+y)%5===0?'P':'B';return (x*7+y*3)%9===0?'P':'-'},
+  water:'#3FD4E6',quay:'#BFE3EE',
+  d:{B:{walls:['#FFFFFF','#FFB3C8','#B48CFF','#7FE3F0'],roofs:['#D5D5D5'],roof:'bubble',fl:[1,2],fill:.82,gr:'#BFD8D0'}}};
+/* La Lune : pistes d’atterrissage, champs de panneaux solaires, petites bulles d’habitation. */
+PL['La Lune']={keepProps:1,fn:(x,y)=>{if(y<=3&&x<=3)return 'Q';if(y<=3&&x>=17)return 'F';if(y>=17&&x>=11)return 'F';if((x>=17&&y>=5&&y<=7)||(y>=17&&x<=3))return 'B';return '-'},
+  pave:'#B9B5C9',fieldA:'#2C4E8A',fieldB:'#6C8CC8',
+  d:{B:{walls:['#FFFFFF'],roofs:['#C9C5DA'],roof:'bubble',fl:[1,2],fill:.8,gr:'#A9A4BC'}}};
+/* Mars : serres cultivées en rangées, bulles d’habitation sur le sol rouge. */
+PL['Mars']={keepProps:1,fn:(x,y)=>{if(y<=3&&x<=9)return 'F';if(y>=17&&x>=5)return 'F';if(x>=17&&y<=7)return 'B';return '-'},
+  fieldA:'#7FB34E',fieldB:'#4E8A3A',
+  d:{B:{walls:['#FFFFFF','#9FD0E8'],roofs:['#D8C8BC'],roof:'bubble',fl:[1,2],fill:.82,gr:'#B4603C'}}};
+/* ===== FIN AGENT PLANS ===== */
 /* ================= BOOT ================= */
 (function boot(){
   applyCityBiz(S.city);
